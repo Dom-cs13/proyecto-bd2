@@ -1,0 +1,28 @@
+# ==============================================================================
+# CODEOWNERS - Dueños por motor y componente (ver AGENTS.md y PLANIFICACION.md)
+# ==============================================================================
+# Cada adaptador y su carpeta de base de datos exige revisión de su dueño.
+# Integrantes pueden actualizar sus usuarios de GitHub conforme se sumen.
+
+# Configuración global
+* @Dom-cs13
+
+# I1: Hospital General · MongoDB Atlas
+/src/infrastructure/adapters/mongodb/ @Dom-cs13
+/infra/database/mongodb/ @Dom-cs13
+/docs/bitacoras/I1-hospital-mongodb/ @Dom-cs13
+
+# I2: Clínica Odontológica · PostgreSQL (Supabase)
+/src/infrastructure/adapters/postgresql/ @Dom-cs13
+/infra/database/postgresql/ @Dom-cs13
+/docs/bitacoras/I2-odontologia-postgresql/ @Dom-cs13
+
+# I3: Laboratorio Clínico · Firebase Firestore
+/src/infrastructure/adapters/firestore/ @Dom-cs13
+/infra/database/firestore/ @Dom-cs13
+/docs/bitacoras/I3-laboratorio-firestore/ @Dom-cs13
+
+# I4: Centro Pediátrico · MariaDB local (Docker)
+/src/infrastructure/adapters/mariadb/ @Dom-cs13
+/infra/database/mariadb/ @Dom-cs13
+/docs/bitacoras/I4-pediatria-mariadb/ @Dom-cs13

@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+
+# Entorno y credenciales (AGENTS.md: nunca comitear secretos)
+.env
+.env.*
+!.env.example
+*.pem
+*-service-account*.json
+firebase-key*.json
+
+# Cobertura y logs
+coverage/
+*.log
+npm-debug.log*
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
