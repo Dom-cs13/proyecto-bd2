@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital General · Alba Suite</title>
+  
+  <!-- Estilos modulares desacoplados -->
+  <link rel="stylesheet" href="./css/variables.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/components.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Izquierdo Modular -->
+    <aside id="sidebar-container" class="app-sidebar"></aside>
+
+    <!-- Área Principal de la Aplicación -->
+    <main class="app-main">
+      <!-- Barra Superior de Navegación Rápida -->
+      <header class="top-navbar">
+        <div class="top-nav-left">
+          <button id="topnav-btn-principal" class="btn btn-outline btn-sm">
+            <span>🩺</span> Principal
+          </button>
+          <button id="topnav-btn-buscador" class="btn btn-outline btn-sm">
+            <span>🔍</span> Buscador Clínico
+          </button>
+        </div>
+
+        <div class="top-nav-right">
+          <button id="topnav-btn-nuevo" class="btn btn-primary btn-sm">
+            <span>+</span> Nuevo Paciente
+          </button>
+        </div>
+      </header>
+
+      <!-- Viewport Dinámico donde se cargan las vistas de /pages/ -->
+      <section id="main-viewport" class="content-viewport"></section>
+    </main>
+  </div>
+
+  <!-- Contenedor del Drawer / Panel Flotante para Consultas y Edición -->
+  <div id="drawer-container"></div>
+
+  <!-- Aplicación JS Principal (Arquitectura SPA modular) -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

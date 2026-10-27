@@ -7,6 +7,7 @@ import { renderModalDrawer } from './components/modalDrawer.js';
 import { renderInicioCriticos } from './components/inicioCriticos.js';
 import { renderListaArchivar } from './components/listaArchivar.js';
 import { renderLaboratorioTable } from './components/laboratorioTable.js';
+import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
 
 let vistaActual = 'principal'; // 'principal' | 'buscador' | 'gestion' | 'laboratorio'
 const plantillasCargadas = {};
@@ -31,9 +32,7 @@ async function cargarVista(nombreVista) {
     const nombreArchivo = MAPA_ARCHIVOS_VISTAS[nombreVista] || nombreVista;
 
     if (!plantillasCargadas[nombreVista]) {
-      const resp = await fetch(`./pages/${nombreArchivo}.html`);
-      if (!resp.ok) throw new Error(`Error al cargar vista: ${nombreVista} (${nombreArchivo}.html)`);
-      plantillasCargadas[nombreVista] = await resp.text();
+      plantillasCargadas[nombreVista] = await fetchPlantillaHtml(`./pages/${nombreArchivo}.html`);
     }
 
     viewport.innerHTML = plantillasCargadas[nombreVista];
