@@ -21,3 +21,4 @@ export async function apiClient(endpoint, opciones = {}) {
   });
   return res;
 }
+
