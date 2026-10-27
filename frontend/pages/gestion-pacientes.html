@@ -1,0 +1,168 @@
+<!-- Vista: Gestión de Pacientes (Creación y Archivado/Bajas) -->
+<div class="view-gestion-pacientes">
+  <div class="section-block">
+    <div class="section-header">
+      <span class="welcome-badge">Operaciones Clínicas · Altas y Bajas</span>
+      <h1 class="page-main-title">Registro y Archivado de Pacientes</h1>
+      <p class="section-desc">
+        Registra el ingreso de nuevos expedientes hospitalarios con su póliza de seguro, o gestiona el archivado clínico con motivo legal.
+      </p>
+    </div>
+  </div>
+
+  <div class="gestion-grid-layout">
+    <!-- Tarjeta Formulario de Alta Completa según Documentación Entrega I -->
+    <div class="kpi-card" style="padding: 28px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+        <div class="kpi-icon-wrap" style="background-color: var(--primary-light); color: var(--primary); font-size: 1.3rem;">➕</div>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Alta de Expediente Clínico</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Captura de información de contacto, antecedentes y póliza de seguro.</p>
+        </div>
+      </div>
+
+      <form id="form-gestion-nuevo-paciente" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre(s) *</label>
+            <input type="text" id="g-inp-nombre" class="form-control" required placeholder="Ej. Mariana" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apellidos *</label>
+            <input type="text" id="g-inp-apellidos" class="form-control" required placeholder="Ej. Soto Hernández" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fecha de Nacimiento *</label>
+            <input type="date" id="g-inp-fecha" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Género *</label>
+            <select id="g-inp-genero" class="form-control" required>
+              <option value="Femenino">Femenino</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">CURP / DPI / Cédula *</label>
+            <input type="text" id="g-inp-curp" class="form-control" required placeholder="Identificador único" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input type="tel" id="g-inp-telefono" class="form-control" placeholder="+502 / +52 ..." />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico</label>
+            <input type="email" id="g-inp-correo" class="form-control" placeholder="paciente@correo.com" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dirección Domiciliar</label>
+            <input type="text" id="g-inp-direccion" class="form-control" placeholder="Zona, Municipio, Departamento" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Servicio Hospitalario</label>
+            <select id="g-inp-servicio" class="form-control">
+              <option value="Hospitalización">Hospitalización (Camas / Pabellón)</option>
+              <option value="Medicina General">Medicina General (Ambulatorio)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estado Inicial</label>
+            <select id="g-inp-estado" class="form-control">
+              <option value="estable">Estable</option>
+              <option value="observacion">Observación Médica</option>
+              <option value="critico">Estado Crítico</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ubicación / Pabellón</label>
+            <input type="text" id="g-inp-ubicacion" class="form-control" placeholder="Ej. Pabellón B - Cama 202" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipo de Sangre</label>
+            <select id="g-inp-sangre" class="form-control">
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sección de Póliza y Seguro Médico -->
+        <div style="background-color: var(--bg-subtle); padding: 14px; border-radius: var(--radius-md); border: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--primary);">🛡️ Póliza de Seguro Médico (Opcional)</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Aseguradora</label>
+              <input type="text" id="g-inp-aseguradora" class="form-control" placeholder="Ej. Seguros Universales" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Número de Póliza</label>
+              <input type="text" id="g-inp-poliza" class="form-control" placeholder="Ej. POL-99412" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Alergias y Antecedentes Críticos (separados por coma)</label>
+          <input type="text" id="g-inp-antecedentes" class="form-control" placeholder="Ej. Alergia a la penicilina, Asma, Hipertensión" />
+        </div>
+
+        <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">
+            <span>💾</span> Registrar Paciente en MongoDB Atlas
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Panel de Archivado Clínico Justificado -->
+    <div class="kpi-card" style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+          <div class="kpi-icon-wrap" style="background-color: #fee2e2; color: #dc2626; font-size: 1.3rem;">🗂️</div>
+          <div>
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: #dc2626;">Archivado Clínico Justificado</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              Por integridad histórica y legal, los registros no se eliminan físicamente.
+            </p>
+          </div>
+        </div>
+
+        <div style="background-color: #fef2f2; border: 1px solid #fecaca; padding: 14px; border-radius: var(--radius-md); margin-bottom: 20px;">
+          <h4 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; color: #991b1b;">Regla de Desactivación Legal</h4>
+          <p style="font-size: 0.78rem; color: #7f1d1d; line-height: 1.4;">
+            Un expediente solo se desactiva por: <strong>traslado a otra institución</strong>, <strong>fallecimiento</strong>, o <strong>baja administrativa</strong> conservando todo su historial clínico.
+          </p>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          Selecciona un paciente activo para emitir el archivado con motivo formal:
+        </p>
+
+        <div id="lista-archivar-pacientes-container">
+          <!-- Inyectado dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
