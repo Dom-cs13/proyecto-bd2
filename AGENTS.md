@@ -13,7 +13,7 @@ Proyecto Final Bases de Datos II. Una plataforma (frontend + API Express) con 4 
 
 ## Arquitectura
 
-Hexagonal. Capas: `src/domain` → `src/application` → `src/interfaces/http` y `src/infrastructure`. Un solo puerto `HistorialRepository` (`src/domain/ports/`) y un adaptador por motor (`src/infrastructure/adapters/<motor>/`).
+Hexagonal. Una API, 4 adaptadores y 4 frontends (uno por institución, sobre `frontend/shared/`). Capas: `src/domain` → `src/application` → `src/interfaces/http` y `src/infrastructure`. Un solo puerto `HistorialRepository` (`src/domain/ports/`) y un adaptador por motor (`src/infrastructure/adapters/<motor>/`).
 
 ## Reglas obligatorias
 
@@ -26,12 +26,13 @@ Hexagonal. Capas: `src/domain` → `src/application` → `src/interfaces/http` y
    - El estado de archivo vive solo en `historial.estado`.
 3. **Solo 3 patrones:** Ports & Adapters, Factory/Strategy (`RepositoryFactory`) y Data Mapper (`mapper.js`). No se agregan más.
 4. **YAGNI/KISS.** Sin ORMs ni ODMs (ni Prisma, TypeORM, Sequelize, Mongoose): solo drivers oficiales. Un puerto, un adaptador por motor. Objetos planos + Zod, sin clases con getters/setters. No programar lo extra (P2) antes de la Convergencia 2.
-5. **DRY.** Una sola suite de contrato para los 4 motores. Las validaciones de negocio viven en `application/` o `interfaces/http/validators`, nunca en los adaptadores. El `fetch` del frontend solo existe en `frontend/js/api/`.
+5. **DRY.** Una sola suite de contrato para los 4 motores. Las validaciones de negocio viven en `application/` o `interfaces/http/validators`, nunca en los adaptadores. El `fetch` del frontend solo existe en `frontend/shared/js/api/`; los 4 frontends (`frontend/<institucion>/`) importan de `frontend/shared/` sin copiar.
 6. **Zod manda.** Si el código y `contratos/API.md` difieren, manda Zod y se corrige el `.md` en el mismo PR. Tras la Convergencia 1 el contrato solo cambia con un ADR y aprobación de I3.
 7. **Seguridad.**
    - Las credenciales solo viven en `.env`. **Nunca leas ni imprimas `.env*`.**
    - El navegador nunca se conecta a una base.
-   - El `RepositoryFactory` usa solo `req.user.institucion` (del JWT).
+   - **Escritura local:** toda ruta que escribe usa `obtenerRepositorio(req.user.institucion)` (del JWT).
+   - **Lectura en red:** solo las rutas `/red/...` usan `obtenerTodos()` y únicamente llaman a `listarPacientes` y `obtenerHistorial` (sección 3.5 del plan).
    - Las IAs no escriben directo en las bases: los cambios de esquema van en `infra/database/<motor>/` y por PR.
    - Los MCP de bases de datos son de solo lectura.
 8. **Aislamiento.** Si un motor no responde, el adaptador lanza `MotorNoDisponible` y el `errorHandler` responde `503` solo para esa institución.

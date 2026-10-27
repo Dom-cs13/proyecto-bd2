@@ -6,7 +6,8 @@
 **Supuestos**
 
 - Hay 4 integrantes. Cada uno es dueño de una institución y de su motor. **Los motores ya están asignados y no se cambian.**
-- Hay una sola plataforma: un frontend, una API Express y 4 adaptadores detrás de un mismo puerto.
+- Hay una sola API Express con 4 adaptadores detrás de un mismo puerto, y **4 frontends** (uno por institución, cada uno de su dueño) construidos sobre una base compartida (`frontend/shared/`).
+- **Escritura local, lectura en red.** Al iniciar sesión como una institución (p. ej. el Hospital) solo se **escribe** en la base de esa institución. Las **consultas en red** leen de los 4 motores a la vez (MongoDB, Supabase, Firestore y MariaDB) y devuelven un resultado por institución (sección 3.5).
 - Cada tarea (`I1-XX` a `I4-XX`) cabe en una sesión de trabajo de 45 a 90 minutos.
 - El plan cubre el backend hexagonal, los 4 motores en equivalencia, las pruebas de contrato, la seguridad por motor, el **frontend funcional**, la Entrega I con correcciones y el comparativo de la Entrega II.
 
@@ -39,16 +40,18 @@ proyecto-bd2/
 │       ├── disenar-ddl-sql/SKILL.md
 │       ├── modelo-documental/SKILL.md
 │       ├── escribir-bitacora/SKILL.md
-│       └── revisar-pr/SKILL.md
+│       ├── revisar-pr/SKILL.md
+│       ├── consultar-plan/SKILL.md
+│       └── leer-datos/SKILL.md
 ├── .claude/
 │   ├── CLAUDE.md                   # "@AGENTS.md" (importa las mismas reglas) + atajos del proyecto
 │   ├── settings.json               # Permisos (p. ej. prohibir leer .env) y plugins habilitados
 │   └── skills/                     # Copia de .agents/skills generada con `npm run skills:sync`
 ├── .mcp.json                       # Servidores MCP del proyecto para Claude Code (sin secretos)
 ├── .github/
-│   ├── workflows/ci.yml            # Lint + tests unitarios + contrato contra MockAdapter + skills sincronizadas
+│   ├── workflows/ci.yml            # Revisión automática de TODO PR: título, conflictos, bitácora, secretos, lint DIP, tests y skills
 │   ├── pull_request_template.md    # Checklist de la sección 4.6
-│   └── CODEOWNERS                  # Cada adaptador y su carpeta de BD exige revisión de su dueño
+│   └── CODEOWNERS                  # Dueño por carpeta (adaptador, BD, frontend y bitácora)
 ├── contratos/
 │   ├── API.md                      # Contrato HTTP: rutas, campos, códigos y formato de error (sección 3)
 │   └── ejemplos/                   # JSON de ejemplo por endpoint (los usan el frontend y los tests)
@@ -65,13 +68,16 @@ proyecto-bd2/
 │   ├── entrega-1/                  # Fuentes de la Entrega I (y su versión corregida)
 │   └── entrega-2/                  # Comparativo por motor + PDF final
 ├── frontend/
-│   ├── index.html
-│   ├── pages/                      # login, pacientes, historial, consulta, panel-tecnico
-│   ├── css/
-│   └── js/
-│       ├── api/                    # Único lugar que hace fetch a la API
-│       ├── components/             # Tabla, formulario, alerta, layout
-│       └── modules/{hospital,odontologia,laboratorio,pediatria}/
+│   ├── index.html                  # Selector de institución: enlaza a los 4 frontends
+│   ├── shared/                     # Base común (dueño I4). Ningún frontend la copia: la importa
+│   │   ├── css/base.css            # Layout y variables; cada institución solo cambia variables
+│   │   └── js/
+│   │       ├── api/                # Único lugar que hace fetch a la API (incluye /red/...)
+│   │       └── components/         # Tabla, formulario, alerta, layout, login, vista "consulta en red"
+│   ├── hospital/                   # I1 · index.html, pages/, css/tema.css, js/ (detallesInstitucion)
+│   ├── odontologia/                # I2 · ídem
+│   ├── laboratorio/                # I3 · ídem
+│   └── pediatria/                  # I4 · ídem
 ├── infra/
 │   ├── compose.yaml                # MariaDB local (y Mongo/Postgres opcionales para pruebas offline)
 │   └── database/
@@ -79,13 +85,17 @@ proyecto-bd2/
 │       ├── mariadb/                # ddl/, indices/, seguridad/ (usuarios, GRANT), seeds/
 │       ├── mongodb/                # colecciones/ (JSON Schema), indices/, seguridad/, seeds/
 │       └── firestore/              # estructura.md, firestore.indexes.json, firestore.rules, seeds/
-├── mockups/                        # Wireframes de las pantallas comunes y módulos por institución
+├── mockups/                        # Wireframes de las pantallas comunes y de cada frontend institucional
 ├── scripts/
 │   ├── seed-all.js                 # npm run seed:all
 │   ├── check-env.js                # Verifica variables y conectividad de los 4 motores
 │   └── verificar-aislamiento.js    # Apaga/simula caída de un motor y confirma 503 aislado
+├── eslint.config.js                # DIP en domain/application, sin ORMs y fetch solo en frontend/shared/js/api
 ├── src/
+│   ├── app.js                      # crearApp() sin listen (lo usa Supertest)
+│   ├── server.js                   # npm run dev / npm start
 │   ├── domain/
+│   │   ├── errores.js              # NoEncontrado, Conflicto, Prohibido, MotorNoDisponible…
 │   │   ├── entities/               # Esquemas Zod de Paciente, Consulta, Diagnostico, Tratamiento, Receta
 │   │   ├── ports/HistorialRepository.js
 │   │   └── rules/                  # Reglas de negocio puras (p. ej. no consultar a un paciente archivado)
@@ -137,6 +147,9 @@ Cada integrante agrega una entrada **por sesión trabajada**, en el mismo PR de 
 - **Rama:** `feat/I1-06-mongo-adapter-p1`, `fix/I2-05-ddl-checks`, `docs/I4-06-entrega-1`.
 - **Título de PR y commit squash:** `[I1-06] MongoAdapter parte 1: pacientes e historial (#NN)`.
 - **Nadie hace push directo a `main`.** Todo pasa por un PR con el CI en verde y la aprobación del dueño del área tocada (según `CODEOWNERS`).
+- **Flujo de cada integrante:** `git switch main && git pull` → rama de la tarea → commits pequeños → `git rebase origin/main` antes de abrir el PR → PR con la plantilla → revisión con la skill `revisar-pr` → *squash merge*.
+- **Para no chocar:** cada quien solo toca su adaptador, su `infra/database/<motor>/`, su `frontend/<institucion>/` y su bitácora. Los archivos compartidos (`src/domain`, `src/application`, `contratos/`, `frontend/shared/`, `RepositoryFactory.js`, `package.json`) se cambian en PR propios, cortos y con aviso en el canal del grupo.
+- **Rama protegida:** en GitHub, `main` exige PR, CI en verde y 1 aprobación de *code owner*. GitHub no deja aprobar el PR propio, así que cada carpeta debe tener como dueño a su integrante real en `CODEOWNERS` y las áreas compartidas a más de una persona.
 - Las convergencias usan el prefijo de la tarea de convergencia: `[I1-04] Congelamiento del contrato v1.0`.
 
 ---
@@ -149,7 +162,7 @@ Cada integrante agrega una entrada **por sesión trabajada**, en el mismo PR de 
 |---|---|---|
 | `crearPaciente(datos)` | `PacienteNuevo` | `Paciente` |
 | `obtenerPaciente(id)` | `string` | `Paciente \| null` |
-| `listarPacientes(filtro)` | `{ texto?, estado?, pagina?, limite? }` | `{ items: Paciente[], total }` |
+| `listarPacientes(filtro)` | `{ texto?, documento?, estado?, pagina?, limite? }` | `{ items: Paciente[], total }` |
 | `obtenerHistorial(pacienteId)` | `string` | `Historial` (paciente + consultas con diagnósticos, tratamientos y recetas) |
 | `archivarHistorial(pacienteId, motivo)` | `string`, `{ tipo, detalle }` | `Historial` |
 | `crearConsulta(datos)` | `ConsultaNueva` | `Consulta` |
@@ -167,6 +180,7 @@ Cada integrante agrega una entrada **por sesión trabajada**, en el mismo PR de 
 - Las fechas se devuelven como texto **ISO-8601**: `fechaNacimiento` como `"YYYY-MM-DD"` y los instantes como `"YYYY-MM-DDTHH:mm:ss.sssZ"`. Nunca salen como `Date`, `Timestamp` de Firestore ni `datetime` crudo.
 - Los datos propios de cada institución viajan en `detallesInstitucion` (objeto), por ejemplo piezas dentales, controles de crecimiento, resultados de examen o internamiento.
 - El estado de archivo vive **solo** en el historial: `historial.estado: "activo" | "archivado"`, `fechaArchivo` y `motivoArchivo: { tipo: "traslado" | "fallecimiento" | "administrativo" | "otro", detalle }`.
+- `Paciente` lleva `documentoIdentidad` (`string`, obligatorio y único dentro de cada institución). Es la llave con la que la consulta en red encuentra al mismo paciente en las 4 bases; cada motor lo indexa.
 
 ### 3.3 Rutas HTTP (detalle completo en `contratos/API.md`)
 
@@ -183,6 +197,8 @@ Cada integrante agrega una entrada **por sesión trabajada**, en el mismo PR de 
 | `POST /diagnosticos/:id/tratamientos` | Registrar tratamiento (el tratamiento depende del diagnóstico, igual que en los ER) |
 | `POST /consultas/:id/recetas` | Receta con detalle de medicamentos |
 | `GET /system/status` | Estado de los motores para el panel técnico (sin secretos ni datos clínicos) |
+| `GET /red/pacientes?documento=&texto=` | **Consulta en red** (solo lectura): busca en los 4 motores |
+| `GET /red/:institucion/pacientes/:id/historial` | **Consulta en red** (solo lectura): historial de un paciente en otra institución |
 
 **Formato de error único:** `{ "error": { "codigo": "PACIENTE_ARCHIVADO", "mensaje": "…" } }`
 
@@ -202,12 +218,31 @@ Cada integrante agrega una entrada **por sesión trabajada**, en el mismo PR de 
    - En NoSQL lo valida el caso de uso antes de escribir.
 3. **Una sola fuente de verdad para el archivo:** `historial_clinico` (se elimina `paciente.estado`, o queda solo como dato derivado y documentado).
 4. **Login (propuesta, se confirma en I1-04):**
-   - `POST /auth/login` recibe `{ institucion, usuario, password }` y autentica contra la tabla o colección `usuario` de esa institución.
-   - A partir de ahí el JWT manda. El cliente elige dónde inicia sesión, pero **nunca** a qué base se consulta después: el `RepositoryFactory` usa solo `req.user.institucion`.
+   - `POST /auth/login` recibe `{ institucion, usuario, password }` y autentica contra la tabla o colección `usuario` de esa institución. Cada frontend institucional envía su `institucion` fija.
+   - A partir de ahí el JWT manda. El cliente elige dónde inicia sesión, pero **nunca** en qué base escribe: todas las rutas fuera de `/red/...` usan `obtenerRepositorio(req.user.institucion)`.
+   - Solo las rutas `/red/...` usan `obtenerTodos()`, y únicamente para leer (sección 3.5).
    - Si la base de una institución está caída, falla solo el login de esa institución.
 5. **`usuario.correo`** es `NOT NULL UNIQUE` si se usa para iniciar sesión.
 6. **Los estados** (`cita.estado`, `tratamiento.estado`) se limitan con `CHECK (… IN (…))` en SQL y con un enum Zod o JSON Schema en NoSQL.
 7. **Para evitar doble reserva** se usa `UNIQUE (id_usuario, fecha, hora)` en `cita`.
+8. **Escritura local, lectura en red** (ADR `000X-consulta-en-red.md`, en `I1-03`): ver sección 3.5.
+
+### 3.5 Consulta en red (lectura de los 4 motores)
+
+- **Qué es:** un usuario del Hospital (o de cualquier institución) busca a un paciente por `documentoIdentidad` o texto y ve lo que hay de él en las 4 instituciones, sin salir de su frontend.
+- **Solo lectura.** Los casos de uso `buscarEnRed` y `obtenerHistorialEnRed` solo llaman a `listarPacientes` y `obtenerHistorial`. No existe ninguna ruta `/red/...` que escriba. Se prueba en integración.
+- **Sin nuevo patrón ni nuevo puerto.** Es el mismo `HistorialRepository`; el `RepositoryFactory` agrega `obtenerTodos()`, que devuelve el mapa `institucion → adaptador`. El caso de uso recibe ese mapa inyectado (DIP) y usa `Promise.allSettled`.
+- **Aislamiento parcial.** Si un motor cae, la respuesta sigue siendo `200` y esa institución viene con `estado: "no_disponible"`. Solo hay `503` si fallan las 4.
+- **Forma de la respuesta** (Zod en `src/domain/entities/`):
+  ```json
+  { "resultados": [
+      { "institucion": "hospital",    "estado": "ok", "items": [ /* Paciente */ ], "total": 1 },
+      { "institucion": "odontologia", "estado": "ok", "items": [], "total": 0 },
+      { "institucion": "laboratorio", "estado": "no_disponible", "items": [], "total": 0 },
+      { "institucion": "pediatria",   "estado": "ok", "items": [ /* Paciente */ ], "total": 1 } ] }
+  ```
+  `GET /red/:institucion/pacientes/:id/historial` devuelve un `Historial` normal (sección 3.2); el `:institucion` de la URL solo se acepta en rutas `/red/...`.
+- **Permisos:** la consulta en red requiere sesión y el controlador filtra los campos según `req.user.rol` y la clasificación de `I4-01` (lo restringido de otra institución no se muestra). El frontend no sabe qué motor hay detrás: solo ve el nombre de la institución.
 
 ---
 
@@ -255,6 +290,10 @@ export function obtenerRepositorio(institucion) {
   if (!repo) throw new Prohibido('INSTITUCION_INVALIDA');
   return repo;
 }
+// Solo para las rutas /red/... (lectura en los 4 motores, sección 3.5)
+export function obtenerTodos() {
+  return adaptadores;
+}
 ```
 
 ### 4.3 YAGNI y KISS
@@ -279,12 +318,13 @@ export function obtenerRepositorio(institucion) {
   });
   ```
 - **Validaciones de negocio:** se escriben una sola vez, en `application/` o `interfaces/validators`, y **nunca** dentro de los adaptadores. Ejemplos: fecha válida, motivo obligatorio, paciente existente y no archivado.
-- **Llamadas a la API desde el frontend:** solo existen en `frontend/js/api/`.
+- **Llamadas a la API desde el frontend:** solo existen en `frontend/shared/js/api/`. Los 4 frontends importan de `frontend/shared/`; nada de copiar componentes entre `frontend/<institucion>/`.
 
 ### 4.5 Seguridad (se evalúa junto con el modelado y la consistencia)
 
 - Las credenciales solo viven en `.env`. El `.env.example` no lleva secretos. El navegador **nunca** se conecta directamente a una base.
-- La clasificación pública, confidencial y restringida (I4-01) se traduce en código: el controlador filtra los campos de la respuesta según `req.user.rol`.
+- La clasificación pública, confidencial y restringida (I4-01) se traduce en código: el controlador filtra los campos de la respuesta según `req.user.rol`. En la consulta en red se filtra además por si el dato es de **otra** institución.
+- Escritura solo en la base de la institución del JWT; la lectura en red no abre ninguna ruta de escritura (sección 3.5).
 - Controles por motor:
 
 | Motor | Controles |
@@ -305,6 +345,8 @@ export function obtenerRepositorio(institucion) {
 - [ ] No se agregaron secretos, datos reales ni ORMs.
 - [ ] La entrada de bitácora de esta sesión está agregada.
 - [ ] Si cambia el contrato: se actualizaron Zod, `contratos/API.md` y `contratos/ejemplos/`, y hubo aprobación de I3 (después de la Convergencia 1, solo con un ADR).
+- [ ] La rama está al día con `main` (sin conflictos) y el PR solo toca carpetas de mi tarea; si toca algo compartido, lo dice en la descripción.
+- [ ] Frontend: el `fetch` está solo en `frontend/shared/js/api/` y no se copiaron componentes compartidos dentro de `frontend/<institucion>/`.
 
 ---
 
@@ -329,16 +371,16 @@ export function obtenerRepositorio(institucion) {
 | Sesión | I1 · Hospital · MongoDB | I2 · Odontología · PostgreSQL | I3 · Laboratorio · Firestore | I4 · Pediatría · MariaDB |
 |---|---|---|---|---|
 | **S1** | **I1-01** Repo con la estructura de la sección 2, Express base, `errorHandler`, `.env.example`, `AGENTS.md`, `.agents/` con skills base, `.claude/`, CI y ESLint con reglas DIP | **I2-01** Levantamiento de entidades y atributos de **las 4 instituciones** (núcleo común + extensiones) y diccionario de datos | **I3-01** Entidades de dominio (Zod) y puerto `HistorialRepository` con firmas exactas | **I4-01** Clasificación pública/confidencial/restringida por institución y catálogo de operaciones en lenguaje sencillo |
-| **S2** | **I1-02** Casos de uso del núcleo: `registrarPaciente`, `obtenerPaciente`, `listarPacientes`, `obtenerHistorial`, `crearConsulta`, `archivarHistorial` | **I2-02** Casos de uso clínicos: `agregarDiagnostico`, `registrarTratamiento`, `recetarMedicamento` | **I3-02** `contratos/API.md` v0.9 con ejemplos JSON, esquemas Zod de salida y formato de error único | **I4-02** `compose.yaml` de MariaDB y `MockAdapter` que pasa el borrador de la suite de contrato |
-| **S3** | **I1-03** JWT (`auth.js`), `RepositoryFactory`, middleware `resolverRepositorio` y decisión de login (ADR) | **I2-03** Rutas y controladores de pacientes, historial y archivado | **I3-03** Rutas y controladores de consultas, diagnósticos, `/diagnosticos/:id/tratamientos` y recetas | **I4-03** Mockups de pantallas comunes + frontend base (layout, `js/api/`, página de login) |
+| **S2** | **I1-02** Casos de uso del núcleo: `registrarPaciente`, `obtenerPaciente`, `listarPacientes`, `obtenerHistorial`, `crearConsulta`, `archivarHistorial` | **I2-02** Casos de uso clínicos: `agregarDiagnostico`, `registrarTratamiento`, `recetarMedicamento` + lectura en red: `buscarEnRed`, `obtenerHistorialEnRed` (sección 3.5) | **I3-02** `contratos/API.md` v0.9 con ejemplos JSON (incluye `/red/...`), esquemas Zod de salida y formato de error único | **I4-02** `compose.yaml` de MariaDB y `MockAdapter` que pasa el borrador de la suite de contrato |
+| **S3** | **I1-03** JWT (`auth.js`), `RepositoryFactory` (`obtenerRepositorio` + `obtenerTodos`), middleware `resolverRepositorio` y ADR de login y consulta en red | **I2-03** Rutas y controladores de pacientes, historial, archivado y `/red/...` (solo lectura) | **I3-03** Rutas y controladores de consultas, diagnósticos, `/diagnosticos/:id/tratamientos` y recetas | **I4-03** Mockups de pantallas comunes + `frontend/shared/` (layout, `js/api/`, componente de login parametrizado) + `frontend/index.html` selector |
 | **S4** | **I1-04** **Convergencia 1:** merge, guion de Fase 1 con Mock y **contrato v1.0 congelado** | **I2-04** ER y relacional **corregido** de Odontología (checklist 7.2) | **I3-04** Diseño documental del Laboratorio: colecciones/subcolecciones, qué se embebe o referencia, índices compuestos | **I4-04** ER y relacional **corregido** de Pediatría (checklist 7.3) |
 | **S5** | **I1-05** Diseño documental del Hospital: colecciones, JSON Schema, índices, qué se embebe o referencia | **I2-05** DDL en Supabase: tablas, FKs, `CHECK`, índices, `timestamptz` e identity | **I3-05** `firestore.indexes.json` y `firestore.rules` deny-all | **I4-05** DDL en MariaDB: tablas, FKs, `CHECK`, índices y trigger de tutor principal |
 | **S6** | **I1-06** `MongoAdapter` p1: pacientes, historial y archivo + `mapper.js` | **I2-06** `PostgresAdapter` p1: pacientes, historial y archivo + `mapper.js` | **I3-06** `FirestoreAdapter` p1: pacientes, historial y exámenes polimórficos + `mapper.js` | **I4-06** **Hito Entrega I:** compilación del PDF (cada dueño entrega su sección en `docs/entrega-1/`) |
 | **S7** | **I1-07** `MongoAdapter` p2: consulta, diagnóstico, tratamiento y receta con `session.withTransaction()` | **I2-07** `PostgresAdapter` p2: lo mismo con `BEGIN/COMMIT/ROLLBACK` | **I3-07** `FirestoreAdapter` p2: lo mismo con `runTransaction` y `writeBatch` | **I4-07** `MariaDbAdapter` p1: pacientes, historial, archivo, crecimiento y vacunas + `mapper.js` |
 | **S8** | **I1-08** Seeds del Hospital, `/system/status` y 503 aislado por motor | **I2-08** Seeds de Odontología + **seguridad Supabase** (rol mínimo y RLS) | **I3-08** Suite de contrato completa (`describe.each`) sobre Mock y los adaptadores listos | **I4-08** `MariaDbAdapter` p2: consulta, diagnóstico, tratamiento y receta con transacciones SQL |
-| **S9** | **I1-09** **Convergencia 2:** suite de contrato en verde en los 4 motores + **seguridad Atlas** | **I2-09** Frontend: búsqueda, registro y detalle de pacientes | **I3-09** Seeds del Laboratorio (hematología, orina, cultivo), **seguridad Firestore (IAM)** y prueba de no-fuga entre instituciones | **I4-09** Seeds de Pediatría, `npm run seed:all`, **seguridad MariaDB** (usuario y `GRANT`) y `verificar-aislamiento.js` |
-| **S10** | **I1-10** Frontend: vista de historial consolidado y panel técnico comparativo | **I2-10** Integración con Supertest cambiando entre los 4 usuarios institucionales | **I3-10** Frontend: formularios de consulta, diagnóstico, tratamiento y receta | **I4-10** Frontend: archivado con motivo, navegación por rol y mensajes de 401/403/409/503 |
-| **S11** | **I1-11** Correcciones de la retroalimentación en Mongo + módulo Hospital (antecedentes/internamiento) | **I2-11** Correcciones de la retroalimentación en Postgres + módulo Odontología (piezas dentales) | **I3-11** Correcciones de la retroalimentación en Firestore + módulo Laboratorio (resultados por tipo) | **I4-11** Correcciones de la retroalimentación en MariaDB + módulo Pediatría (crecimiento y vacunas) |
+| **S9** | **I1-09** **Convergencia 2:** suite de contrato en verde en los 4 motores + **seguridad Atlas** | **I2-09** `frontend/shared/`: componentes de búsqueda, registro y detalle de pacientes + arranque de `frontend/odontologia/` | **I3-09** Seeds del Laboratorio (hematología, orina, cultivo), **seguridad Firestore (IAM)** y prueba de no-fuga entre instituciones | **I4-09** Seeds de Pediatría, `npm run seed:all`, **seguridad MariaDB** (usuario y `GRANT`) y `verificar-aislamiento.js` |
+| **S10** | **I1-10** `frontend/shared/`: historial consolidado, **vista de consulta en red** y panel técnico + arranque de `frontend/hospital/` | **I2-10** Integración con Supertest cambiando entre los 4 usuarios: escritura solo local y lectura en red con un motor caído | **I3-10** `frontend/shared/`: formularios de consulta, diagnóstico, tratamiento y receta + arranque de `frontend/laboratorio/` | **I4-10** `frontend/shared/`: archivado con motivo, navegación por rol y mensajes de 401/403/409/503 + arranque de `frontend/pediatria/` |
+| **S11** | **I1-11** Correcciones de la retroalimentación en Mongo + **frontend del Hospital** completo (antecedentes/internamiento) | **I2-11** Correcciones de la retroalimentación en Postgres + **frontend de Odontología** completo (piezas dentales) | **I3-11** Correcciones de la retroalimentación en Firestore + **frontend del Laboratorio** completo (resultados por tipo) | **I4-11** Correcciones de la retroalimentación en MariaDB + **frontend de Pediatría** completo (crecimiento y vacunas) |
 | **S12** | **I1-12** Comparativo: MongoDB en el Hospital | **I2-12** Comparativo: PostgreSQL en Odontología | **I3-12** Comparativo: Firestore en el Laboratorio | **I4-12** Comparativo: MariaDB en Pediatría |
 | **S13** | **I1-13** **Convergencia final:** cierre de código, 4 usuarios de demo y ensayo del guion | **I2-13** Revisión cruzada: cada afirmación del comparativo tiene respaldo en código o DDL | **I3-13** Corrida final: contrato + integración + aislamiento, con capturas para el PDF | **I4-13** PDF final (Entrega I corregida + comparativo + diagramas de arquitectura) |
 
@@ -356,7 +398,9 @@ export function obtenerRepositorio(institucion) {
 | Adaptadores p1 (`I1-06`, `I2-06`, `I3-06`, `I4-07`) | DDL o diseño documental del mismo motor | El adaptador escribe sobre el esquema ya definido |
 | `I4-06` Entrega I | `I1-05`, `I2-04`, `I3-04`, `I4-04`, `I4-01` | Necesita todos los modelos |
 | `I1-09` Convergencia 2 | `I3-08` y los 4 adaptadores p2 (`I4-08` incluido) | Prueba completa de equivalencia |
-| Frontend (`I2-09`, `I1-10`, `I3-10`, `I4-10`) | `I4-03`, `I1-04` | Usa `js/api/` y `contratos/ejemplos/`. Puede apuntar al Mock mientras tanto |
+| Frontend (`I2-09`, `I1-10`, `I3-10`, `I4-10`) | `I4-03`, `I1-04` | Usa `frontend/shared/js/api/` y `contratos/ejemplos/`. Puede apuntar al Mock mientras tanto |
+| Frontend propio (`I#-11`) | Los 4 de S9–S10 | Solo arma páginas y `detallesInstitucion` con los componentes de `frontend/shared/` |
+| Consulta en red real | `I1-09` | Con Mock se prueba antes; con los 4 motores, solo cuando los 4 adaptadores pasan el contrato |
 | `I#-11` | Retroalimentación de la Entrega I | Se corrigen PDF, DDL, adaptador y seeds, no solo el documento |
 | `I#-12` | `I1-09`, `I#-11` | Solo se afirma lo que ya funciona |
 
@@ -375,9 +419,9 @@ export function obtenerRepositorio(institucion) {
 | **I1-02 / I2-02** | Cada caso de uso tiene una prueba unitaria con `MockAdapter` y cero imports de drivers |
 | **I3-02** | `contratos/API.md` describe todas las rutas de la sección 3.3 y hay un JSON por endpoint en `contratos/ejemplos/` que pasa su esquema Zod (hay test) |
 | **I4-02** | `docker compose up -d` deja MariaDB lista y el `MockAdapter` pasa la suite de contrato |
-| **I1-03** | El token lleva `institucion` y `rol`, y una petición con el token de Pediatría jamás llega a otro adaptador (hay test) |
+| **I1-03** | El token lleva `institucion` y `rol`. Una escritura con el token de Pediatría jamás llega a otro adaptador, y las rutas `/red/...` solo leen (hay tests) |
 | **I2-03 / I3-03** | Los controladores son delgados: validan, llaman al caso de uso y responden con el formato de error único |
-| **I4-03** | Wireframes en `mockups/`, layout común y login funcionando contra el Mock |
+| **I4-03** | Wireframes en `mockups/`, `frontend/shared/` con layout y login funcionando contra el Mock, y `frontend/index.html` enlazando a los 4 frontends |
 | **I1-04** | Se ejecuta el guion de verificación de la Fase 1 y se publica el tag `contrato-v1.0` |
 
 **Guion de verificación de la Fase 1**
@@ -386,6 +430,7 @@ export function obtenerRepositorio(institucion) {
 2. Se inicia sesión y el JWT trae la institución.
 3. Se registra un paciente, se abre una consulta, se agrega un diagnóstico, luego un tratamiento (desde el diagnóstico), luego una receta, y se archiva el paciente. Todo responde `200/201` con la forma del contrato.
 4. Crear una consulta para el paciente archivado responde `409 PACIENTE_ARCHIVADO`.
+5. Con el token del Hospital, `GET /red/pacientes?documento=…` devuelve 4 resultados (uno por institución), y si se simula la caída de uno, ese viene `no_disponible` y la respuesta sigue en `200`.
 
 ### 7.2 Checklist del modelo corregido · Odontología (`I2-04`, `I2-05`)
 
@@ -432,14 +477,18 @@ export function obtenerRepositorio(institucion) {
 
 ### 7.6 Frontend (Fase 4)
 
-- HTML, CSS y JavaScript Vanilla. **La misma interfaz para los 4 motores.** Lo único que cambia por institución es la sección de `detallesInstitucion`.
+- HTML, CSS y JavaScript Vanilla. **Cada institución tiene su propio frontend** en `frontend/<institucion>/` (dueño: el integrante de esa institución), con su `index.html`, sus páginas, su tema (`css/tema.css`) y su sección de `detallesInstitucion`.
+- **Base compartida, sin copias.** Los 4 frontends importan de `frontend/shared/` el cliente de la API, los componentes y el layout. Lo que sirve a más de una institución se sube a `shared/` por PR, no se duplica.
+- El login de cada frontend envía su `institucion` fija; el usuario no la elige ahí. `frontend/index.html` solo enlaza a los 4.
+- **Escritura local, lectura en red:** los formularios escriben solo en la institución de la sesión; la pantalla "Consulta en red" muestra una tarjeta por institución (con aviso si viene `no_disponible`).
 - La interfaz no sabe qué motor hay detrás. Solo el panel técnico muestra el motor, y lo toma de `/system/status`.
-- Pantallas mínimas:
+- Pantallas mínimas de **cada** frontend:
   - Login
   - Pacientes (buscar, registrar)
   - Historial consolidado
   - Nueva consulta (diagnóstico, tratamiento, receta)
   - Archivar
+  - **Consulta en red** (buscar por documento en las 4 instituciones y abrir su historial en solo lectura)
   - Panel técnico
 
 ---
@@ -477,7 +526,7 @@ Cada sección cubre lo mismo: **por qué este motor** (volumen, estructura, tran
    - El enrutamiento (`I1-03`)
    - Las operaciones obligatorias en los 4 adaptadores
    - La seguridad mínima por motor
-   - Las pantallas mínimas del frontend
+   - Las pantallas mínimas de los 4 frontends, incluida la consulta en red
    - El comparativo y el PDF
 2. **P2 (se recorta si falta tiempo):**
    - Citas (contrato v1.1)
