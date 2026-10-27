@@ -1,28 +1,43 @@
 # ==============================================================================
 # CODEOWNERS - Dueños por motor y componente (ver AGENTS.md y PLANIFICACION.md)
 # ==============================================================================
-# Cada adaptador y su carpeta de base de datos exige revisión de su dueño.
-# Integrantes pueden actualizar sus usuarios de GitHub conforme se sumen.
+# @Dom-cs13 es dueño único del repositorio. La revisión automática de cada PR
+# (incluidos los suyos) la hace el CI (.github/workflows/ci.yml), que es
+# obligatorio en la protección de `main`.
+# Si se suman integrantes como revisores, se agregan junto a su carpeta.
 
 # Configuración global
 * @Dom-cs13
 
+# Áreas compartidas (cambios en PR propios, cortos y avisados)
+/src/domain/ @Dom-cs13
+/src/application/ @Dom-cs13
+/src/infrastructure/config/ @Dom-cs13
+/contratos/ @Dom-cs13
+/frontend/shared/ @Dom-cs13
+/package.json @Dom-cs13
+/package-lock.json @Dom-cs13
+
 # I1: Hospital General · MongoDB Atlas
 /src/infrastructure/adapters/mongodb/ @Dom-cs13
 /infra/database/mongodb/ @Dom-cs13
+/frontend/hospital/ @Dom-cs13
 /docs/bitacoras/I1-hospital-mongodb/ @Dom-cs13
 
 # I2: Clínica Odontológica · PostgreSQL (Supabase)
 /src/infrastructure/adapters/postgresql/ @Dom-cs13
 /infra/database/postgresql/ @Dom-cs13
+/frontend/odontologia/ @Dom-cs13
 /docs/bitacoras/I2-odontologia-postgresql/ @Dom-cs13
 
 # I3: Laboratorio Clínico · Firebase Firestore
 /src/infrastructure/adapters/firestore/ @Dom-cs13
 /infra/database/firestore/ @Dom-cs13
+/frontend/laboratorio/ @Dom-cs13
 /docs/bitacoras/I3-laboratorio-firestore/ @Dom-cs13
 
 # I4: Centro Pediátrico · MariaDB local (Docker)
 /src/infrastructure/adapters/mariadb/ @Dom-cs13
 /infra/database/mariadb/ @Dom-cs13
+/frontend/pediatria/ @Dom-cs13
 /docs/bitacoras/I4-pediatria-mariadb/ @Dom-cs13

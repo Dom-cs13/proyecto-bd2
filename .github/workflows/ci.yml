@@ -1,0 +1,83 @@
+# Revisión automática de TODOS los PR a main (incluidos los del dueño del repositorio).
+# En la protección de `main` se marcan como obligatorios los checks de este workflow.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  reglas-pr:
+    name: Reglas del PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Título [I#-XX] o [PLAN]
+        env:
+          TITULO: ${{ github.event.pull_request.title }}
+        run: |
+          echo "$TITULO" | grep -Eq '^\[(I[1-4]-[0-9]{2}|PLAN)\] .+' \
+            || { echo "::error::El título debe empezar con [I#-XX] o [PLAN]"; exit 1; }
+      - name: Sin conflictos con main
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git config user.email ci@local && git config user.name ci
+          git checkout -q "$HEAD"
+          git merge --no-commit --no-ff "$BASE" \
+            || { echo "::error::La rama tiene conflictos con main: haz git rebase origin/main"; exit 1; }
+      - name: Entrada de bitácora
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only "$BASE...$HEAD" | grep -q '^docs/bitacoras/' \
+            || { echo "::error::Falta la entrada de bitácora en docs/bitacoras/ (AGENTS.md)"; exit 1; }
+      - name: Sin archivos de credenciales
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --name-only --diff-filter=AM "$BASE...$HEAD" \
+              | grep -E '(^|/)\.env($|\.)|service-account.*\.json$|firebase-key.*\.json$|\.pem$' \
+              | grep -v '\.env\.example$'; then
+            echo "::error::No se suben credenciales al repositorio"; exit 1
+          fi
+
+  secretos:
+    name: Búsqueda de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  calidad:
+    name: Lint, pruebas y skills
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: ESLint (DIP, sin ORMs, fetch solo en frontend/shared/js/api)
+        run: npm run lint
+      - name: Pruebas (unitarias, contrato contra MockAdapter e integración)
+        run: npm test
+      - name: Skills sincronizadas
+        run: npm run skills:check
