@@ -15,6 +15,7 @@ Plataforma clínica con 4 frontends (uno por institución), una API Express y 4 
 - Reglas para IAs: [AGENTS.md](AGENTS.md)
 - Contrato HTTP: [contratos/API.md](contratos/API.md)
 
+
 ## Cómo levantar todo
 
 ```bash
