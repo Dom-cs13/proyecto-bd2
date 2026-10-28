@@ -1,0 +1,35 @@
+<!-- Vista: Laboratorios Clínicos y Exámenes (Hospital General) -->
+<div class="view-laboratorio">
+  <div class="section-block">
+    <div class="section-header">
+      <span class="welcome-badge">Unidad Diagnóstica · Hospital General</span>
+      <h1 class="page-main-title">Laboratorio Clínico y Procesamiento de Muestras</h1>
+      <p class="section-desc">
+        Consulta de órdenes de análisis, valores biométricos (glucosa, hemoglobina, tiempos de coagulación) y registro de resultados.
+      </p>
+    </div>
+  </div>
+
+  <!-- Barra de Filtro de Laboratorio y Nueva Orden -->
+  <div class="search-filter-card">
+    <div style="display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+      <div class="search-input-wrapper" style="flex: 1; min-width: 280px;">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          id="lab-search-input" 
+          class="search-input" 
+          placeholder="Buscar orden por código (#ORD), paciente, expediente, tipo de examen o médico..."
+        />
+      </div>
+
+      <button id="btn-nueva-orden-lab" class="btn btn-primary" style="padding: 11px 20px;">
+        <span>🔬</span> Generar Orden de Examen
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabla de Exámenes de Laboratorio -->
+  <div id="laboratorio-table-container"></div>
+</div>
+

@@ -14,6 +14,8 @@ Plataforma clínica con 4 frontends (uno por institución), una API Express y 4 
 - Plan, calendario y reglas: [docs/planificacion/PLANIFICACION.md](docs/planificacion/PLANIFICACION.md)
 - Reglas para IAs: [AGENTS.md](AGENTS.md)
 - Contrato HTTP: [contratos/API.md](contratos/API.md)
+- Mockups y diseño UI (Figma): [mockups/README.md](mockups/README.md)
+
 
 ## Cómo levantar todo
 

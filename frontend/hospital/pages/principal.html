@@ -1,0 +1,39 @@
+<!-- Vista: Panel Principal / Inicio del Hospital General -->
+<div class="view-panel-inicio">
+  <!-- Bienvenida con nombre de usuario en grande -->
+  <div class="welcome-banner">
+    <div class="welcome-text-group">
+      <span class="welcome-badge">Sesión Activa · Hospital General</span>
+      <h1 class="welcome-title">Bienvenido, Dr. Rodrigo Palma</h1>
+      <p class="welcome-subtitle">
+        Médico Especialista Adscrito & Administrador Clínico · Turno Matutino
+      </p>
+    </div>
+    <div class="welcome-stats-pill">
+      <div class="pill-dot"></div>
+      <span>MongoDB Atlas Conectado</span>
+    </div>
+  </div>
+
+  <!-- Resumen Métrico Rápido -->
+  <div class="section-block">
+    <div class="section-header">
+      <h2 class="section-title">Resumen de Carga Hospitalaria</h2>
+      <p class="section-desc">Estado general de pacientes y disponibilidad en pabellones hoy.</p>
+    </div>
+    <div id="inicio-kpi-container"></div>
+  </div>
+
+  <!-- Pacientes en Estado de Observación / Delicados -->
+  <div class="section-block">
+    <div class="section-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.2rem;">⚠️</span>
+        <h2 class="section-title">Pacientes Prioritarios (Observación y Estado Crítico)</h2>
+      </div>
+      <p class="section-desc">Atención médica prioritaria requerida en camas o consultorios.</p>
+    </div>
+    <div id="inicio-criticos-container"></div>
+  </div>
+</div>
+
