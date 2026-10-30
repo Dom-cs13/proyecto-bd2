@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratorio Clínico · Red de Salud</title>
+  <link rel="stylesheet" href="../shared/css/fuentes.css">
+  <link rel="stylesheet" href="css/laboratorio.css">
+</head>
+<body>
+  <script type="module">
+    import { exigirSesion } from '../shared/js/api/auth.js';
+    exigirSesion('laboratorio');
+  </script>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="marca">
+        <svg viewBox="0 0 40 40" width="38" height="38" aria-hidden="true">
+          <rect x="2" y="2" width="36" height="36" rx="10" fill="#fff"/>
+          <path d="M16 10h8v6h6v8h-6v6h-8v-6h-6v-8h6z" fill="#5b4a9e"/>
+        </svg>
+        <div>
+          <strong>Laboratorio Clínico</strong>
+          <span>Red de Salud</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-title">MÓDULOS DEL SISTEMA</div>
+        <nav class="nav" id="nav" aria-label="Navegación principal">
+          <a href="#principal">📊 Panel General</a>
+          <a href="#expedientes">📁 Base de Datos <span class="nav-badge" id="badge-pacientes">0</span></a>
+          <a href="#pacientes">👤 Registro Pacientes</a>
+          <a href="#examenes">🔬 Órdenes Exámenes <span class="nav-badge" id="badge-ordenes">0</span></a>
+        </nav>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-title">PALETA APLICADA</div>
+        <div class="palette-box">
+          <div class="palette-header">JERARQUÍA VISUAL <span>10 TONOS</span></div>
+          <div class="palette-bar">
+            <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-pie">
+        <div class="status-pill">
+          <span class="dot"></span> BD Activa <span class="version">v1.0 Local</span>
+        </div>
+        <a href="#" id="btn-reset" style="display:block; text-align:center; margin-top:12px; font-size:0.8rem; opacity:0.8; text-decoration:none; color:#fff;">🔄 Reiniciar demo</a>
+        <a href="../index.html" style="display:block; text-align:center; margin-top:6px; font-size:0.75rem; opacity:0.6; text-decoration:none; color:#fff;">Cambiar institución</a>
+      </div>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <a href="#expedientes" class="topbar-tab">📋 Tabla y Búsqueda de BD</a>
+          <a href="#principal" class="topbar-tab">📊 Panel General</a>
+        </div>
+        <div class="topbar-right">
+          <div class="quick-filter">
+            <span class="icon">🔍</span>
+            <span class="text">Filtro rápido: Global</span>
+          </div>
+          <button class="btn btn-primary" id="btn-top-action">➕ Nuevo Registro</button>
+        </div>
+      </header>
+
+      <!-- VISTA DINÁMICA -->
+      <main id="vista" class="contenido" aria-live="polite"></main>
+    </div>
+  </div>
+
+  <dialog id="modal" aria-labelledby="dialog-title"></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

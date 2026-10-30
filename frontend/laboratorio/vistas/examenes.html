@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+  </head>
+  <body>
+    <div class="view-laboratorio">
+      <div>
+        <span class="welcome-badge">Unidad Diagnóstica · Laboratorio</span>
+        <h1 class="page-main-title">Órdenes y Resultados de Exámenes</h1>
+        <p class="section-desc">Cada examen guarda sus resultados en un único campo JSON, sin importar si es hematología, orina, heces o cultivo.</p>
+      </div>
+      <div class="search-filter-card" role="search">
+        <div class="fila-filtros">
+          <div class="search-input-wrapper">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input id="lab-buscar" class="search-input" type="search" placeholder="Buscar por orden, paciente, CUI, tipo de examen o médico..." aria-label="Buscar orden">
+          </div>
+          <button id="btn-nueva-orden" class="btn btn-primary" type="button">🔬 Generar Orden de Examen</button>
+        </div>
+        <div class="chips" id="lab-chips" role="tablist" aria-label="Filtrar por estado">
+          <button type="button" class="chip activo" data-f="todos" role="tab" aria-selected="true">Todos</button>
+          <button type="button" class="chip" data-f="pendiente" role="tab" aria-selected="false">Pendientes</button>
+          <button type="button" class="chip" data-f="en_proceso" role="tab" aria-selected="false">En proceso</button>
+          <button type="button" class="chip" data-f="completado" role="tab" aria-selected="false">Completados</button>
+        </div>
+      </div>
+      <div id="laboratorio-table-container"></div>
+    </div>
+  </body>
+</html>

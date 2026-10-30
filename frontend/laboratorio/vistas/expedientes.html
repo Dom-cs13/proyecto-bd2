@@ -1,0 +1,69 @@
+<div class="view-dashboard">
+  <div class="view-header">
+    <div>
+      <span class="view-breadcrumb">CONSULTA Y EDICIÓN INTERNA</span>
+      <h1 class="page-main-title">Base de Datos Clínica · Pacientes</h1>
+      <p class="section-desc">Consulta en tiempo real sobre los registros del hospital, clínicas odontológicas y medicina general. Haz clic en "Editar datos" para abrir el panel flotante de modificación.</p>
+    </div>
+    <button class="btn btn-primary" onclick="window.location.hash='#pacientes'">➕ Nuevo Registro en BD</button>
+  </div>
+
+  <div class="kpi-dashboard-grid">
+    <div class="kpi-card-light">
+      <div class="kpi-top">
+        <div class="kpi-icon-wrap">👥</div>
+        <span class="kpi-badge">Total BD</span>
+      </div>
+      <div class="kpi-label">Pacientes indexados</div>
+      <div class="kpi-value" id="kpi-total-pacientes">0 <span>expedientes</span></div>
+    </div>
+
+    <div class="kpi-card-light">
+      <div class="kpi-top">
+        <div class="kpi-icon-wrap">✅</div>
+        <span class="kpi-badge">Completados</span>
+      </div>
+      <div class="kpi-label">Exámenes finalizados</div>
+      <div class="kpi-value" id="kpi-completados">0 <span>órdenes</span></div>
+    </div>
+
+    <div class="kpi-card-light">
+      <div class="kpi-top">
+        <div class="kpi-icon-wrap">⏳</div>
+        <span class="kpi-badge">En proceso</span>
+      </div>
+      <div class="kpi-label">Órdenes activas</div>
+      <div class="kpi-value" id="kpi-en-proceso">0 <span>en curso</span></div>
+    </div>
+
+    <div class="kpi-card-dark">
+      <div class="kpi-top">
+        <div class="kpi-icon-wrap dark">🚨</div>
+        <span class="kpi-label white">Pendientes</span>
+      </div>
+      <div class="kpi-label white">Órdenes por procesar</div>
+      <div class="kpi-value white" id="kpi-pendientes">0 <span>en cola</span></div>
+      <button class="btn-kpi-dark" onclick="window.location.hash='#examenes'">Filtrar pendientes</button>
+    </div>
+  </div>
+
+  <div class="search-section">
+    <div class="search-input-wrapper">
+      <span class="search-icon">🔍</span>
+      <input id="exp-buscar" class="search-input" placeholder="Buscar por nombre, expediente (#EXP), diagnóstico, médico asignado o DNI/CURP...">
+    </div>
+    <div class="filters-row">
+      <div class="chips" id="exp-chips">
+        <button class="chip activo" data-f="activos">Todos <span class="chip-count" id="count-activos">0</span></button>
+        <button class="chip" data-f="archivados">Archivados <span class="chip-count" id="count-archivados">0</span></button>
+      </div>
+      <div class="status-text">Estado: <span class="live-dot"></span> Base de datos en vivo</div>
+    </div>
+  </div>
+
+  <div class="table-header-info" id="table-info">
+    Mostrando todos los registros
+  </div>
+  
+  <div id="table-container"></div>
+</div>
