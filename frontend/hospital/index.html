@@ -6,11 +6,16 @@
   <title>Hospital General · Alba Suite</title>
   
   <!-- Estilos modulares desacoplados -->
+  <link rel="stylesheet" href="../shared/css/fuentes.css">
   <link rel="stylesheet" href="./css/variables.css">
   <link rel="stylesheet" href="./css/layout.css">
   <link rel="stylesheet" href="./css/components.css">
 </head>
 <body>
+  <script type="module">
+    import { exigirSesion } from '../shared/js/api/auth.js';
+    exigirSesion('hospital');
+  </script>
 
   <div class="app-container">
     <!-- Sidebar Izquierdo Modular -->

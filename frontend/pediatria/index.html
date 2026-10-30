@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centro Pediátrico · Red de Salud</title>
+  <link rel="stylesheet" href="../shared/css/fuentes.css">
+</head>
+<body hidden>
+  <header>
+    <h1>Centro Pediátrico</h1>
+    <span id="sesion-rol"></span>
+    <button id="btn-salir" type="button">Cerrar sesión</button>
+  </header>
+
+  <main id="main-viewport">
+    <!-- Aquí se montan las vistas pediátricas: pacientes, tutores, crecimiento y vacunas -->
+  </main>
+
+  <script type="module">
+    import { exigirSesion, cerrarSesion } from '../shared/js/api/auth.js';
+
+    const sesion = exigirSesion('pediatria');
+    if (sesion) {
+      document.getElementById('sesion-rol').textContent = `Rol: ${sesion.rol}`;
+      document.body.hidden = false;
+    }
+
+    document.getElementById('btn-salir').addEventListener('click', () => {
+      cerrarSesion();
+      location.replace('../index.html');
+    });
+  </script>
+</body>
+</html>

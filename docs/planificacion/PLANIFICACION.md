@@ -218,7 +218,7 @@ Cada integrante agrega una entrada **por sesión trabajada**, en el mismo PR de 
    - En NoSQL lo valida el caso de uso antes de escribir.
 3. **Una sola fuente de verdad para el archivo:** `historial_clinico` (se elimina `paciente.estado`, o queda solo como dato derivado y documentado).
 4. **Login (propuesta, se confirma en I1-04):**
-   - `POST /auth/login` recibe `{ institucion, usuario, password }` y autentica contra la tabla o colección `usuario` de esa institución. Cada frontend institucional envía su `institucion` fija.
+   - `POST /auth/login` recibe `{ institucion, usuario, password }` y autentica contra la tabla o colección `usuario` de esa institución. El login general (`frontend/index.html`) envía la `institucion` que elige el usuario y responde `{ token }`; el frontend redirige al portal que indica el JWT, no al que se eligió en el formulario.
    - A partir de ahí el JWT manda. El cliente elige dónde inicia sesión, pero **nunca** en qué base escribe: todas las rutas fuera de `/red/...` usan `obtenerRepositorio(req.user.institucion)`.
    - Solo las rutas `/red/...` usan `obtenerTodos()`, y únicamente para leer (sección 3.5).
    - Si la base de una institución está caída, falla solo el login de esa institución.
@@ -372,7 +372,7 @@ export function obtenerTodos() {
 |---|---|---|---|---|
 | **S1** | **I1-01** Repo con la estructura de la sección 2, Express base, `errorHandler`, `.env.example`, `AGENTS.md`, `.agents/` con skills base, `.claude/`, CI y ESLint con reglas DIP | **I2-01** Levantamiento de entidades y atributos de **las 4 instituciones** (núcleo común + extensiones) y diccionario de datos | **I3-01** Entidades de dominio (Zod) y puerto `HistorialRepository` con firmas exactas | **I4-01** Clasificación pública/confidencial/restringida por institución y catálogo de operaciones en lenguaje sencillo |
 | **S2** | **I1-02** Casos de uso del núcleo: `registrarPaciente`, `obtenerPaciente`, `listarPacientes`, `obtenerHistorial`, `crearConsulta`, `archivarHistorial` | **I2-02** Casos de uso clínicos: `agregarDiagnostico`, `registrarTratamiento`, `recetarMedicamento` + lectura en red: `buscarEnRed`, `obtenerHistorialEnRed` (sección 3.5) | **I3-02** `contratos/API.md` v0.9 con ejemplos JSON (incluye `/red/...`), esquemas Zod de salida y formato de error único | **I4-02** `compose.yaml` de MariaDB y `MockAdapter` que pasa el borrador de la suite de contrato |
-| **S3** | **I1-03** JWT (`auth.js`), `RepositoryFactory` (`obtenerRepositorio` + `obtenerTodos`), middleware `resolverRepositorio` y ADR de login y consulta en red | **I2-03** Rutas y controladores de pacientes, historial, archivado y `/red/...` (solo lectura) | **I3-03** Rutas y controladores de consultas, diagnósticos, `/diagnosticos/:id/tratamientos` y recetas | **I4-03** Mockups de pantallas comunes + `frontend/shared/` (layout, `js/api/`, componente de login parametrizado) + `frontend/index.html` selector |
+| **S3** | **I1-03** JWT (`auth.js`), `RepositoryFactory` (`obtenerRepositorio` + `obtenerTodos`), middleware `resolverRepositorio` y ADR de login y consulta en red | **I2-03** Rutas y controladores de pacientes, historial, archivado y `/red/...` (solo lectura) | **I3-03** Rutas y controladores de consultas, diagnósticos, `/diagnosticos/:id/tratamientos` y recetas | **I4-03** Mockups de pantallas comunes + `frontend/shared/` (layout, `js/api/`, `auth.js` de sesión, `css/fuentes.css`) + `frontend/index.html` login general que redirige al portal de la institución del JWT |
 | **S4** | **I1-04** **Convergencia 1:** merge, guion de Fase 1 con Mock y **contrato v1.0 congelado** | **I2-04** ER y relacional **corregido** de Odontología (checklist 7.2) | **I3-04** Diseño documental del Laboratorio: colecciones/subcolecciones, qué se embebe o referencia, índices compuestos | **I4-04** ER y relacional **corregido** de Pediatría (checklist 7.3) |
 | **S5** | **I1-05** Diseño documental del Hospital: colecciones, JSON Schema, índices, qué se embebe o referencia | **I2-05** DDL en Supabase: tablas, FKs, `CHECK`, índices, `timestamptz` e identity | **I3-05** `firestore.indexes.json` y `firestore.rules` deny-all | **I4-05** DDL en MariaDB: tablas, FKs, `CHECK`, índices y trigger de tutor principal |
 | **S6** | **I1-06** `MongoAdapter` p1: pacientes, historial y archivo + `mapper.js` | **I2-06** `PostgresAdapter` p1: pacientes, historial y archivo + `mapper.js` | **I3-06** `FirestoreAdapter` p1: pacientes, historial y exámenes polimórficos + `mapper.js` | **I4-06** **Hito Entrega I:** compilación del PDF (cada dueño entrega su sección en `docs/entrega-1/`) |
@@ -421,7 +421,7 @@ export function obtenerTodos() {
 | **I4-02** | `docker compose up -d` deja MariaDB lista y el `MockAdapter` pasa la suite de contrato |
 | **I1-03** | El token lleva `institucion` y `rol`. Una escritura con el token de Pediatría jamás llega a otro adaptador, y las rutas `/red/...` solo leen (hay tests) |
 | **I2-03 / I3-03** | Los controladores son delgados: validan, llaman al caso de uso y responden con el formato de error único |
-| **I4-03** | Wireframes en `mockups/`, `frontend/shared/` con layout y login funcionando contra el Mock, y `frontend/index.html` enlazando a los 4 frontends |
+| **I4-03** | Wireframes en `mockups/`, `frontend/shared/` con layout y login funcionando contra el Mock, `frontend/index.html` con el login general redirigiendo al frontend de la institución del JWT y cada portal protegido con `exigirSesion('<institucion>')` |
 | **I1-04** | Se ejecuta el guion de verificación de la Fase 1 y se publica el tag `contrato-v1.0` |
 
 **Guion de verificación de la Fase 1**
@@ -479,7 +479,8 @@ export function obtenerTodos() {
 
 - HTML, CSS y JavaScript Vanilla. **Cada institución tiene su propio frontend** en `frontend/<institucion>/` (dueño: el integrante de esa institución), con su `index.html`, sus páginas, su tema (`css/tema.css`) y su sección de `detallesInstitucion`.
 - **Base compartida, sin copias.** Los 4 frontends importan de `frontend/shared/` el cliente de la API, los componentes y el layout. Lo que sirve a más de una institución se sube a `shared/` por PR, no se duplica.
-- El login de cada frontend envía su `institucion` fija; el usuario no la elige ahí. `frontend/index.html` solo enlaza a los 4.
+- **Login general único** en `frontend/index.html`: el usuario elige su institución, usuario y contraseña; al entrar se le envía al portal que indica su JWT. Cada portal llama al cargar a `exigirSesion('<institucion>')` (`frontend/shared/js/api/auth.js`): sin sesión vuelve al login y con sesión de otra institución va a la suya. Los portales no tienen login propio.
+- **Concordancia visual:** fuente Schibsted Grotesk desde `frontend/shared/css/fuentes.css`, tonos por institución y sin emojis (guía en `mockups/README.md`).
 - **Escritura local, lectura en red:** los formularios escriben solo en la institución de la sesión; la pantalla "Consulta en red" muestra una tarjeta por institución (con aviso si viene `no_disponible`).
 - La interfaz no sabe qué motor hay detrás. Solo el panel técnico muestra el motor, y lo toma de `/system/status`.
 - Pantallas mínimas de **cada** frontend:
