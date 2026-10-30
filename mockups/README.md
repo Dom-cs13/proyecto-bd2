@@ -18,8 +18,9 @@ El diseño se basa en el sistema visual **Alba Suite** (paleta profesional de sa
    - Todos los frontends importan el cliente de API (`shared/js/api/`), los componentes modulares y el layout base (`shared/css/`).
 2. **Personalización por institución (`frontend/<institucion>/`):**
    - Cada institución define su propio tema (`css/tema.css`) alterando las variables CSS de acento si corresponde, y renderiza sus campos propios en la sección `detallesInstitucion`.
-3. **Selector Global (`frontend/index.html`):**
-   - Punto de entrada que enlaza a los portales de las 4 instituciones.
+3. **Login general (`frontend/index.html`):**
+   - Punto de entrada único. El usuario elige su institución, inicia sesión y el sistema lo envía al portal que indica su JWT.
+   - Cada portal llama a `exigirSesion('<institucion>')` de `shared/js/api/auth.js`: sin sesión vuelve al login; con sesión de otra institución, va a la suya.
 
 ---
 
@@ -27,7 +28,7 @@ El diseño se basa en el sistema visual **Alba Suite** (paleta profesional de sa
 
 | Vista / Componente | Descripción | Archivo de Referencia |
 |---|---|---|
-| **Selector de Plataforma** | Landing page con tarjetas de acceso directo a cada institución y estado de motor. | `frontend/index.html` |
+| **Login general** | Pantalla completa: panel gráfico a la izquierda (ruleta de ilustraciones que gira y cambia de tono según la institución, con burbujas que suben despacio), onda de separación y formulario a la derecha. | `frontend/index.html` |
 | **Sidebar Lateral** | Menú fijo de navegación con branding institucional, avatar médico y enlaces de sección. | `components/sidebar.js` |
 | **Header de Navegación** | Barra superior con botones de sección rápida y botón de acción principal (+ Nuevo Paciente). | `index.html` |
 | **Dashboard Principal** | Bienvenida médica, KPI cards de ocupación/camas y lista de pacientes prioritarios en observación. | `pages/principal.html`, `kpiCards.js` |
@@ -36,6 +37,26 @@ El diseño se basa en el sistema visual **Alba Suite** (paleta profesional de sa
 | **Drawer Flotante Lateral** | Panel deslizable 360° para detalle de expediente, notas clínicas, nueva consulta y archivado justificado. | `components/modalDrawer.js` |
 | **Unidad de Laboratorio** | Grilla y tabla de órdenes analíticas, valores biométricos y estado de procesamiento. | `pages/laboratorio.html`, `laboratorioTable.js` |
 | **Archivado Justificado** | Flujo de desactivación legal sin borrado físico (conforme al contrato). | `components/listaArchivar.js` |
+
+---
+
+## Tipografía
+
+Todo el proyecto usa **Schibsted Grotesk** (Google Fonts). Se carga una sola vez desde `frontend/shared/css/fuentes.css`, que define `--font-family`.
+
+- Cada página la enlaza antes de sus propios estilos: `<link rel="stylesheet" href="../shared/css/fuentes.css">` (en `frontend/index.html`, la ruta es `./shared/css/fuentes.css`).
+- Ningún frontend declara otra fuente; los estilos usan `font-family: var(--font-family)`.
+- Pesos de referencia: 400 texto, 600 etiquetas y botones secundarios, 700 botones y títulos.
+- No se usan emojis en la interfaz; los íconos son SVG.
+
+## Tonos por institución
+
+| Institución | `--tono` | `--tono-claro` |
+|---|---|---|
+| Hospital General | `#00595d` | `#e0f7f6` |
+| Clínica Odontológica | `#1e5a8a` | `#e3eefa` |
+| Laboratorio Clínico | `#5b4a9e` | `#ece9f7` |
+| Centro Pediátrico | `#b4562a` | `#fbece4` |
 
 ---
 

@@ -24,6 +24,19 @@
 | `POST /consultas/:id/recetas` | Receta con detalle de medicamentos |
 | `GET /system/status` | Estado de los motores (sin secretos ni datos clínicos) |
 
+## Login
+
+`POST /auth/login` (lo usa el login general `frontend/index.html`):
+
+```json
+// Petición
+{ "institucion": "pediatria", "usuario": "dra.perez", "password": "…" }
+// Respuesta 200
+{ "token": "<JWT con { institucion, rol, exp }>" }
+```
+
+`institucion` es `hospital` | `odontologia` | `laboratorio` | `pediatria`. Credenciales inválidas → `401`; motor de esa institución caído → `503`. El frontend toma la institución de destino del JWT, no del formulario.
+
 ## Formato de error único
 
 ```json
