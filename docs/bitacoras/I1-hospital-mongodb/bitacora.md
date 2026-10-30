@@ -28,3 +28,17 @@
 - **Evidencia:** Rama `hopital_general`, commits de frontend hospitalario y CI en verde.
 - **Tiempo invertido:** 75 min
 - **Siguiente paso:** Integración de la suite de contrato y conexión con `MongoAdapter`.
+
+## Sesión 3 · 2026-10-30 · CI y Diagnóstico Automático (I1-01)
+
+- **Objetivo de la sesión:** Implementar automensajes de diagnóstico en los Pull Requests para explicar a los colaboradores de forma clara y directa cualquier fallo en los checks del CI.
+- **Qué hice:**
+  - Diseñé el script `scripts/notificar-pr.js` que evalúa título reglamentario, conflictos con `main`, bitácora de sesión, credenciales, secretos (Gitleaks) y calidad de código (ESLint y tests).
+  - Configuré el job `diagnostico` en `.github/workflows/ci.yml` para ejecutarse en eventos `pull_request` con permisos de escritura de comentarios.
+  - El sistema detecta y comenta de forma automática en el PR con un checklist detallado de los problemas encontrados y la guía paso a paso para que el colaborador los resuelva en su máquina local.
+- **Decisiones tomadas (y por qué):**
+  - Mantener un marcador único `<!-- CI-DIAGNOSTICO -->` para actualizar el comentario en lugar de generar spam en el historial del PR con cada commit.
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** `scripts/notificar-pr.js`, `.github/workflows/ci.yml`.
+- **Tiempo invertido:** 40 min
+- **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).

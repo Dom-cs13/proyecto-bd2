@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   reglas-pr:
@@ -81,3 +83,29 @@ jobs:
         run: npm test
       - name: Skills sincronizadas
         run: npm run skills:check
+
+  diagnostico:
+    name: Diagnóstico y automensaje al PR
+    if: always() && github.event_name == 'pull_request'
+    needs: [reglas-pr, secretos, calidad]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Evaluar y comentar en PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RESULT_REGLAS: ${{ needs.reglas-pr.result }}
+          RESULT_SECRETOS: ${{ needs.secretos.result }}
+          RESULT_CALIDAD: ${{ needs.calidad.result }}
+        run: node scripts/notificar-pr.js
