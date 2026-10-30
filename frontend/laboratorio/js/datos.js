@@ -176,7 +176,11 @@ export function guardarEstado() {
 /** Borra localStorage y restaura los datos semilla (sin recargar). */
 export function reiniciarDemo() {
   if (hayStorage()) {
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignorar si el almacenamiento local no está disponible */
+    }
   }
   hydrate({ pacientes: SEED_PACIENTES, examenes: SEED_EXAMENES });
 }

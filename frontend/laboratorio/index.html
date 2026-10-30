@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="css/laboratorio.css">
 </head>
 <body>
+  <script type="module">
+    import { exigirSesion } from '../shared/js/api/auth.js';
+    exigirSesion('laboratorio');
+  </script>
   <div class="app">
     <!-- SIDEBAR -->
     <aside class="sidebar">
