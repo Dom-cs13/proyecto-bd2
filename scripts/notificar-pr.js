@@ -105,7 +105,7 @@ if (fallas.length > 0) {
   });
   markdown += `*Corrige estos puntos en tu rama local y haz \`git push\`. El CI volverá a evaluar automáticamente tu PR.*`;
 } else if (resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
-  markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n*El PR está listo para ser revisado y fusionado a \`main\`.*`;
+  markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n🚀 **Auto-merge 100% autónomo:** Este PR ha cumplido todas las reglas y está siendo fusionado automáticamente a \`main\` mediante squash commit.`;
 } else {
   process.exit(0);
 }
@@ -141,6 +141,29 @@ async function publicarComentario() {
       });
       if (!postResp.ok) throw new Error(`HTTP ${postResp.status} al crear comentario`);
       console.log('[notificar-pr] Nuevo comentario de diagnóstico publicado.');
+    }
+
+    // Auto-merge autónomo si todo pasó en verde
+    if (fallas.length === 0 && resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
+      try {
+        console.log(`[notificar-pr] CI 100% verde. Ejecutando auto-merge para PR #${prNumero}...`);
+        execSync(`gh pr merge ${prNumero} --squash --delete-branch`, {
+          env: { ...process.env, GH_TOKEN: token },
+          stdio: 'inherit'
+        });
+        console.log(`[notificar-pr] PR #${prNumero} fusionado automáticamente.`);
+      } catch (errMerge) {
+        console.log(`[notificar-pr] Merge directo falló (${errMerge.message}), programando auto-merge...`);
+        try {
+          execSync(`gh pr merge ${prNumero} --auto --squash --delete-branch`, {
+            env: { ...process.env, GH_TOKEN: token },
+            stdio: 'inherit'
+          });
+          console.log(`[notificar-pr] Auto-merge programado exitosamente para PR #${prNumero}.`);
+        } catch (errAuto) {
+          console.error('[notificar-pr] Error al programar auto-merge:', errAuto.message);
+        }
+      }
     }
   } catch (err) {
     console.error('[notificar-pr] Error al publicar comentario:', err.message);
