@@ -6,6 +6,7 @@ const repo = process.env.GITHUB_REPOSITORY;
 const prNumero = process.env.PR_NUMBER;
 const prTitulo = process.env.PR_TITLE || '';
 const prAutor = process.env.PR_AUTHOR || 'colaborador';
+const prHeadRef = process.env.PR_HEAD_REF || process.env.GITHUB_HEAD_REF || '';
 const baseSha = process.env.BASE_SHA;
 const headSha = process.env.HEAD_SHA;
 const resReglas = process.env.RESULT_REGLAS || 'success';
@@ -169,6 +170,23 @@ async function publicarComentario() {
         if (mergeResp.ok && mergeData.merged) {
           console.log(`[notificar-pr] PR #${prNumero} fusionado exitosamente vía REST API: ${mergeData.sha}`);
           mergeExitoso = true;
+
+          // Eliminar la rama remota tras la fusión exitosa
+          if (prHeadRef && prHeadRef !== 'main') {
+            try {
+              const delResp = await fetch(`https://api.github.com/repos/${repo}/git/refs/heads/${prHeadRef}`, {
+                method: 'DELETE',
+                headers
+              });
+              if (delResp.ok || delResp.status === 204) {
+                console.log(`[notificar-pr] Rama remota '${prHeadRef}' eliminada exitosamente.`);
+              } else {
+                console.log(`[notificar-pr] No se pudo eliminar rama '${prHeadRef}': HTTP ${delResp.status}`);
+              }
+            } catch (errDel) {
+              console.log(`[notificar-pr] Error al borrar rama remota: ${errDel.message}`);
+            }
+          }
         } else {
           console.log(`[notificar-pr] REST API merge devolvió ${mergeResp.status}: ${mergeData.message || JSON.stringify(mergeData)}`);
         }
