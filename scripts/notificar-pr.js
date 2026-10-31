@@ -39,8 +39,18 @@ if (!tituloValido) {
 
 // 2. Verificar conflictos con main
 if (baseSha && headSha) {
-  const mergeTree = run(`git merge-tree $(git merge-base ${baseSha} ${headSha}) ${baseSha} ${headSha}`);
-  if (mergeTree && (mergeTree.includes('<<<<<<<') || mergeTree.includes('conflict'))) {
+  let hayConflictos = false;
+  try {
+    execSync(`git merge-tree --write-tree ${baseSha} ${headSha}`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+  } catch (err) {
+    if (err.status === 1) {
+      hayConflictos = true;
+    }
+  }
+  if (hayConflictos) {
     fallas.push({
       titulo: 'Conflictos de fusión con main',
       detalle: 'Tu rama contiene modificaciones que colisionan directamente con la versión actual de `main`.',
@@ -133,7 +143,7 @@ async function publicarComentario() {
       });
       if (!patchResp.ok) throw new Error(`HTTP ${patchResp.status} al actualizar comentario`);
       console.log(`[notificar-pr] Comentario ${previo.id} actualizado.`);
-    } else if (fallas.length > 0) {
+    } else {
       const postResp = await fetch(`${urlBase}/${prNumero}/comments`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
@@ -145,23 +155,47 @@ async function publicarComentario() {
 
     // Auto-merge autónomo si todo pasó en verde
     if (fallas.length === 0 && resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
+      console.log(`[notificar-pr] CI 100% verde. Intentando auto-merge para PR #${prNumero}...`);
+      let mergeExitoso = false;
+
+      // Intento 1: API REST de GitHub (fusión squash directa)
       try {
-        console.log(`[notificar-pr] CI 100% verde. Ejecutando auto-merge para PR #${prNumero}...`);
-        execSync(`gh pr merge ${prNumero} --squash --delete-branch`, {
-          env: { ...process.env, GH_TOKEN: token },
-          stdio: 'inherit'
+        const mergeResp = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumero}/merge`, {
+          method: 'PUT',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ merge_method: 'squash' })
         });
-        console.log(`[notificar-pr] PR #${prNumero} fusionado automáticamente.`);
-      } catch (errMerge) {
-        console.log(`[notificar-pr] Merge directo falló (${errMerge.message}), programando auto-merge...`);
+        const mergeData = await mergeResp.json();
+        if (mergeResp.ok && mergeData.merged) {
+          console.log(`[notificar-pr] PR #${prNumero} fusionado exitosamente vía REST API: ${mergeData.sha}`);
+          mergeExitoso = true;
+        } else {
+          console.log(`[notificar-pr] REST API merge devolvió ${mergeResp.status}: ${mergeData.message || JSON.stringify(mergeData)}`);
+        }
+      } catch (errApi) {
+        console.log(`[notificar-pr] Error al invocar REST API merge: ${errApi.message}`);
+      }
+
+      // Intento 2: gh CLI squash directo si la API REST no lo cerró
+      if (!mergeExitoso) {
         try {
-          execSync(`gh pr merge ${prNumero} --auto --squash --delete-branch`, {
+          execSync(`gh pr merge ${prNumero} --squash --delete-branch -R ${repo}`, {
             env: { ...process.env, GH_TOKEN: token },
             stdio: 'inherit'
           });
-          console.log(`[notificar-pr] Auto-merge programado exitosamente para PR #${prNumero}.`);
-        } catch (errAuto) {
-          console.error('[notificar-pr] Error al programar auto-merge:', errAuto.message);
+          console.log(`[notificar-pr] PR #${prNumero} fusionado exitosamente vía gh CLI.`);
+          mergeExitoso = true;
+        } catch (errGh) {
+          console.log(`[notificar-pr] gh pr merge directo falló (${errGh.message}), programando --auto...`);
+          try {
+            execSync(`gh pr merge ${prNumero} --auto --squash --delete-branch -R ${repo}`, {
+              env: { ...process.env, GH_TOKEN: token },
+              stdio: 'inherit'
+            });
+            console.log(`[notificar-pr] Auto-merge programado exitosamente para PR #${prNumero}.`);
+          } catch (errAuto) {
+            console.error('[notificar-pr] Error al programar auto-merge:', errAuto.message);
+          }
         }
       }
     }

@@ -39,7 +39,8 @@
 - **Decisiones tomadas (y por qué):**
   - Mantener un marcador único `<!-- CI-DIAGNOSTICO -->` para actualizar el comentario en lugar de generar spam en el historial del PR con cada commit.
   - Habilitar auto-merge autónomo para acelerar la integración continua sin requerir aprobaciones manuales repetitivas.
-- **Problemas / bloqueos:** Ninguno.
+  - Migrar la detección de colisiones de `git merge-tree` a `--write-tree` para evitar falsos positivos por coincidencia de subcadenas ("conflictos" en textos de commit o bitácora).
+- **Problemas / bloqueos:** Falso positivo en el filtro de colisiones de git resuelto mediante `--write-tree`.
 - **Evidencia:** `scripts/notificar-pr.js`, `.github/workflows/ci.yml`.
-- **Tiempo invertido:** 50 min
+- **Tiempo invertido:** 60 min
 - **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
