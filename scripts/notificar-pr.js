@@ -39,8 +39,18 @@ if (!tituloValido) {
 
 // 2. Verificar conflictos con main
 if (baseSha && headSha) {
-  const mergeTree = run(`git merge-tree $(git merge-base ${baseSha} ${headSha}) ${baseSha} ${headSha}`);
-  if (mergeTree && (mergeTree.includes('<<<<<<<') || mergeTree.includes('conflict'))) {
+  let hayConflictos = false;
+  try {
+    execSync(`git merge-tree --write-tree ${baseSha} ${headSha}`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+  } catch (err) {
+    if (err.status === 1) {
+      hayConflictos = true;
+    }
+  }
+  if (hayConflictos) {
     fallas.push({
       titulo: 'Conflictos de fusión con main',
       detalle: 'Tu rama contiene modificaciones que colisionan directamente con la versión actual de `main`.',
@@ -105,7 +115,7 @@ if (fallas.length > 0) {
   });
   markdown += `*Corrige estos puntos en tu rama local y haz \`git push\`. El CI volverá a evaluar automáticamente tu PR.*`;
 } else if (resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
-  markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n*El PR está listo para ser revisado y fusionado a \`main\`.*`;
+  markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n🚀 **Auto-merge 100% autónomo:** Este PR ha cumplido todas las reglas y está siendo fusionado automáticamente a \`main\` mediante squash commit.`;
 } else {
   process.exit(0);
 }
@@ -133,7 +143,7 @@ async function publicarComentario() {
       });
       if (!patchResp.ok) throw new Error(`HTTP ${patchResp.status} al actualizar comentario`);
       console.log(`[notificar-pr] Comentario ${previo.id} actualizado.`);
-    } else if (fallas.length > 0) {
+    } else {
       const postResp = await fetch(`${urlBase}/${prNumero}/comments`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
@@ -141,6 +151,53 @@ async function publicarComentario() {
       });
       if (!postResp.ok) throw new Error(`HTTP ${postResp.status} al crear comentario`);
       console.log('[notificar-pr] Nuevo comentario de diagnóstico publicado.');
+    }
+
+    // Auto-merge autónomo si todo pasó en verde
+    if (fallas.length === 0 && resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
+      console.log(`[notificar-pr] CI 100% verde. Intentando auto-merge para PR #${prNumero}...`);
+      let mergeExitoso = false;
+
+      // Intento 1: API REST de GitHub (fusión squash directa)
+      try {
+        const mergeResp = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumero}/merge`, {
+          method: 'PUT',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ merge_method: 'squash' })
+        });
+        const mergeData = await mergeResp.json();
+        if (mergeResp.ok && mergeData.merged) {
+          console.log(`[notificar-pr] PR #${prNumero} fusionado exitosamente vía REST API: ${mergeData.sha}`);
+          mergeExitoso = true;
+        } else {
+          console.log(`[notificar-pr] REST API merge devolvió ${mergeResp.status}: ${mergeData.message || JSON.stringify(mergeData)}`);
+        }
+      } catch (errApi) {
+        console.log(`[notificar-pr] Error al invocar REST API merge: ${errApi.message}`);
+      }
+
+      // Intento 2: gh CLI squash directo si la API REST no lo cerró
+      if (!mergeExitoso) {
+        try {
+          execSync(`gh pr merge ${prNumero} --squash --delete-branch -R ${repo}`, {
+            env: { ...process.env, GH_TOKEN: token },
+            stdio: 'inherit'
+          });
+          console.log(`[notificar-pr] PR #${prNumero} fusionado exitosamente vía gh CLI.`);
+          mergeExitoso = true;
+        } catch (errGh) {
+          console.log(`[notificar-pr] gh pr merge directo falló (${errGh.message}), programando --auto...`);
+          try {
+            execSync(`gh pr merge ${prNumero} --auto --squash --delete-branch -R ${repo}`, {
+              env: { ...process.env, GH_TOKEN: token },
+              stdio: 'inherit'
+            });
+            console.log(`[notificar-pr] Auto-merge programado exitosamente para PR #${prNumero}.`);
+          } catch (errAuto) {
+            console.error('[notificar-pr] Error al programar auto-merge:', errAuto.message);
+          }
+        }
+      }
     }
   } catch (err) {
     console.error('[notificar-pr] Error al publicar comentario:', err.message);

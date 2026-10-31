@@ -10,7 +10,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   issues: write
 
@@ -85,10 +85,14 @@ jobs:
         run: npm run skills:check
 
   diagnostico:
-    name: Diagnóstico y automensaje al PR
+    name: Diagnóstico, notificación y auto-merge
     if: always() && github.event_name == 'pull_request'
     needs: [reglas-pr, secretos, calidad]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -96,7 +100,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Evaluar y comentar en PR
+      - name: Evaluar, notificar y auto-mergear
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}

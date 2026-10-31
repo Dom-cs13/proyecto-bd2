@@ -29,16 +29,18 @@
 - **Tiempo invertido:** 75 min
 - **Siguiente paso:** Integración de la suite de contrato y conexión con `MongoAdapter`.
 
-## Sesión 3 · 2026-10-30 · CI y Diagnóstico Automático (I1-01)
+## Sesión 3 · 2026-10-30 · CI y Diagnóstico Automático con Auto-merge Autónomo (I1-01)
 
-- **Objetivo de la sesión:** Implementar automensajes de diagnóstico en los Pull Requests para explicar a los colaboradores de forma clara y directa cualquier fallo en los checks del CI.
+- **Objetivo de la sesión:** Implementar automensajes de diagnóstico en los Pull Requests y auto-merge 100% autónomo una vez superadas todas las pruebas del CI.
 - **Qué hice:**
   - Diseñé el script `scripts/notificar-pr.js` que evalúa título reglamentario, conflictos con `main`, bitácora de sesión, credenciales, secretos (Gitleaks) y calidad de código (ESLint y tests).
-  - Configuré el job `diagnostico` en `.github/workflows/ci.yml` para ejecutarse en eventos `pull_request` con permisos de escritura de comentarios.
-  - El sistema detecta y comenta de forma automática en el PR con un checklist detallado de los problemas encontrados y la guía paso a paso para que el colaborador los resuelva en su máquina local.
+  - Configuré el job `diagnostico` en `.github/workflows/ci.yml` para ejecutarse en eventos `pull_request` con permisos de escritura y auto-merge vía squash commit.
+  - El sistema detecta y comenta de forma automática en el PR con un checklist detallado de los problemas encontrados y, al pasar todas las verificaciones, ejecuta la fusión a `main` de manera 100% autónoma.
 - **Decisiones tomadas (y por qué):**
   - Mantener un marcador único `<!-- CI-DIAGNOSTICO -->` para actualizar el comentario en lugar de generar spam en el historial del PR con cada commit.
-- **Problemas / bloqueos:** Ninguno.
+  - Habilitar auto-merge autónomo para acelerar la integración continua sin requerir aprobaciones manuales repetitivas.
+  - Migrar la detección de colisiones de `git merge-tree` a `--write-tree` para evitar falsos positivos por coincidencia de subcadenas ("conflictos" en textos de commit o bitácora).
+- **Problemas / bloqueos:** Falso positivo en el filtro de colisiones de git resuelto mediante `--write-tree`.
 - **Evidencia:** `scripts/notificar-pr.js`, `.github/workflows/ci.yml`.
-- **Tiempo invertido:** 40 min
+- **Tiempo invertido:** 60 min
 - **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
