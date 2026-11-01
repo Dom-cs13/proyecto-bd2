@@ -3,6 +3,7 @@ import {
   pacientes, examenes,
   cargarEstado, guardarEstado, reiniciarDemo, generarIdOrden,
 } from './datos.js';
+import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
 
 /* ---------- Utilidades ---------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -478,9 +479,7 @@ async function navegar() {
   if (badgeOrd) badgeOrd.textContent = examenes.length;
 
   try {
-    const res = await fetch(`./vistas/${nombre}.html`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(res.statusText);
-    $('#vista').innerHTML = await res.text();
+    $('#vista').innerHTML = await fetchPlantillaHtml(`./vistas/${nombre}.html`);
     vistas[nombre]();
     window.__labboot = true;
   } catch (err) {
@@ -503,15 +502,9 @@ function wireTopAction() {
   };
 }
 
-// Añade wireTopAction() justo después de wireReset() en la parte de bootstrap:
-// cargarEstado();
-// wireReset();
-// wireTopAction();  <--- Añade esto
-// window.addEventListener('hashchange', navegar);
-// navegar();
-
 /* ---------- Bootstrap ---------- */
 cargarEstado();                   // ← pobla los arrays (storage o semilla)
 wireReset();
+wireTopAction();
 window.addEventListener('hashchange', navegar);
 navegar();
