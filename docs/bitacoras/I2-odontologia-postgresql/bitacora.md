@@ -32,3 +32,16 @@
 - **Evidencia:** Rama feat/I2-06-postgres-adapter-p1, pruebas unitarias en tests/unit/postgresql/ y pruebas locales con Docker.
 - **Tiempo invertido:** No registrado.
 - **Siguiente paso:** Revisar las pruebas y el contrato, publicar PR de I2-06 y continuar posteriormente con I2-07. No se realizaron cambios en Supabase.
+
+## Sesion 3 - 2026-11-01 - Tarea I2-07
+
+- **Objetivo:** Implementar las operaciones clinicas del adaptador PostgreSQL de Odontologia.
+- **Trabajo realizado:** Se implementaron crearConsulta(), crearDiagnostico(), crearTratamiento(), crearReceta() y registrarAtencionCompleta().
+- **Validaciones:** Las consultas requieren un historial activo. Los diagnosticos, tratamientos y recetas comprueban que los registros correspondientes esten disponibles.
+- **Transacciones:** La receta guarda sus medicamentos en una sola transaccion. registrarAtencionCompleta() registra consulta, diagnosticos, tratamientos y receta dentro de una transaccion conjunta.
+- **Pruebas realizadas:** PostgreSQL 16 local mediante Docker. Se verificaron registros individuales, atencion completa, COMMIT y ROLLBACK por error de clave foranea. Vitest: 15/15 pruebas aprobadas. ESLint sin errores.
+- **Archivos modificados:** PostgresAdapter.js y tres archivos nuevos de pruebas unitarias.
+- **Pendientes:** Validar compatibilidad con el contrato compartido, revisar integracion HTTP y seguridad de Supabase.
+- **Decisiones:** No modificar otros motores, interfaces compartidas ni la base de datos de Supabase.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar los cambios y publicar el PR de I2-07 en Draft, dependiente de I2-06.
