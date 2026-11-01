@@ -94,8 +94,6 @@ CREATE TABLE public.cita (
   observaciones varchar(500),
   CONSTRAINT ck_cita_estado
     CHECK (estado IN ('programada', 'confirmada', 'cancelada', 'completada', 'no_asistio')),
-  CONSTRAINT uq_cita_usuario_fecha_hora
-    UNIQUE (id_usuario, fecha, hora),
   CONSTRAINT uq_cita_id_paciente
     UNIQUE (id_cita, id_paciente),
   CONSTRAINT fk_cita_paciente
@@ -111,6 +109,7 @@ CREATE TABLE public.aseguradora (
 
 CREATE TABLE public.poliza_seguro (
   id_poliza integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_paciente integer NOT NULL,
   id_aseguradora integer NOT NULL,
   numero_poliza varchar(100) NOT NULL,
   porcentaje_cobertura numeric(5, 2) NOT NULL,
@@ -122,6 +121,10 @@ CREATE TABLE public.poliza_seguro (
     CHECK (porcentaje_cobertura BETWEEN 0 AND 100),
   CONSTRAINT ck_poliza_fechas
     CHECK (fecha_vencimiento >= fecha_inicio),
+  CONSTRAINT uq_poliza_id_paciente
+    UNIQUE (id_poliza, id_paciente),
+  CONSTRAINT fk_poliza_paciente
+    FOREIGN KEY (id_paciente) REFERENCES public.paciente (id_paciente) ON DELETE RESTRICT,
   CONSTRAINT fk_poliza_aseguradora
     FOREIGN KEY (id_aseguradora) REFERENCES public.aseguradora (id_aseguradora) ON DELETE RESTRICT
 );
@@ -149,8 +152,9 @@ CREATE TABLE public.consulta (
     FOREIGN KEY (id_paciente) REFERENCES public.paciente (id_paciente) ON DELETE RESTRICT,
   CONSTRAINT fk_consulta_usuario
     FOREIGN KEY (id_usuario) REFERENCES public.usuario (id_usuario) ON DELETE RESTRICT,
-  CONSTRAINT fk_consulta_poliza
-    FOREIGN KEY (id_poliza) REFERENCES public.poliza_seguro (id_poliza) ON DELETE RESTRICT
+  CONSTRAINT fk_consulta_poliza_paciente
+    FOREIGN KEY (id_poliza, id_paciente)
+    REFERENCES public.poliza_seguro (id_poliza, id_paciente) ON DELETE RESTRICT
 );
 
 CREATE TABLE public.diagnostico (
@@ -295,10 +299,16 @@ CREATE UNIQUE INDEX ux_paciente_responsable_principal
 CREATE INDEX ix_usuario_rol ON public.usuario (id_rol);
 CREATE INDEX ix_paciente_apellidos_nombres ON public.paciente (apellidos, nombres);
 CREATE INDEX ix_paciente_responsable_responsable ON public.paciente_responsable (id_responsable);
+-- Las citas canceladas no bloquean el horario.
+CREATE UNIQUE INDEX ux_cita_horario_no_cancelado
+  ON public.cita (id_usuario, fecha, hora)
+  WHERE estado <> 'cancelada';
+
 CREATE INDEX ix_cita_paciente_fecha ON public.cita (id_paciente, fecha);
 CREATE INDEX ix_consulta_paciente_fecha ON public.consulta (id_paciente, fecha);
 CREATE INDEX ix_consulta_usuario_fecha ON public.consulta (id_usuario, fecha);
 CREATE INDEX ix_consulta_poliza ON public.consulta (id_poliza);
+CREATE INDEX ix_poliza_paciente ON public.poliza_seguro (id_paciente);
 CREATE INDEX ix_diagnostico_consulta ON public.diagnostico (id_consulta);
 CREATE INDEX ix_tratamiento_diagnostico ON public.tratamiento (id_diagnostico);
 CREATE INDEX ix_receta_consulta ON public.receta (id_consulta);

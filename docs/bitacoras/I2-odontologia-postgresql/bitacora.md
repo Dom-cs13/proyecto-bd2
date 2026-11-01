@@ -41,3 +41,11 @@
 - **Evidencia:** Resultados comunicados por el equipo para PostgreSQL 16 local: 20 tablas, 21 FKs, 18 columnas identity, 15 `CHECK`, 20 tablas con RLS y 17 índices explícitos. Integridad: cuatro rondas (4/4, 4/4, 4/4, 3/3), total 15 comprobaciones exitosas; todas finalizaron con `ROLLBACK`. Los resultados no se presentan como una ejecución propia de esta sesión. Rama reportada: `feat/I2-05-ddl-odontologia`; sin commit, push ni merge.
 - **Tiempo invertido:** No registrado.
 - **Siguiente paso:** Confirmar los resultados en el estado local de la rama y aprobar las reglas funcionales/seguridad antes de editar el DDL o preparar la versión final para Supabase.
+
+### Ajustes del modelo odontologico - I2-05
+
+- Se modifico la restriccion de horarios para permitir reutilizar citas canceladas.
+- Se vincularon las polizas directamente con los pacientes.
+- Se agrego una FK compuesta para validar la poliza de cada consulta.
+- Se realizaron cuatro pruebas adicionales de integridad en PostgreSQL 16 mediante Docker; todas fueron exitosas y finalizaron con ROLLBACK.
+- No se realizaron modificaciones en Supabase ni en los modulos de otras instituciones.

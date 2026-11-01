@@ -28,7 +28,7 @@ Las 15 pruebas se reportaron en cuatro rondas (4/4, 4/4, 4/4 y 3/3). Todas final
 
 ## Resultado relacional propuesto
 
-Se conservan las 18 tablas del SQL original y se añaden `aseguradora` y `poliza_seguro`, requeridas por el checklist 7.2 y no presentes en los documentos originales: **20 tablas**. La relación de seguro queda conectada a `consulta.id_poliza` nullable. Se propone que el equipo confirme si una póliza pertenece a una persona o puede cubrir a varios pacientes; el DDL actual no atribuye la póliza a un paciente.
+Se conservan las 18 tablas originales y se agregan aseguradora y poliza_seguro: 20 tablas. Cada poliza pertenece a un paciente mediante poliza_seguro.id_paciente. La consulta puede usar una poliza opcional.
 
 Las relaciones de núcleo conservadas son:
 
@@ -49,6 +49,7 @@ erDiagram
   CITA o|--o| CONSULTA : origina
   PACIENTE ||--o{ CONSULTA : recibe
   USUARIO ||--o{ CONSULTA : registra
+  PACIENTE ||--o{ POLIZA_SEGURO : posee
   ASEGURADORA ||--o{ POLIZA_SEGURO : emite
   POLIZA_SEGURO o|--o{ CONSULTA : cubre
   CONSULTA ||--o{ DIAGNOSTICO : documenta
@@ -63,7 +64,7 @@ erDiagram
   ALERGIA ||--o{ PACIENTE_ALERGIA : registra
 ```
 
-La FK compuesta `(consulta.id_cita, consulta.id_paciente)` es intencional: evita enlazar una cita de otro paciente. La relación póliza-consulta no valida todavía que la póliza corresponda al paciente; la política puede ser individual o familiar y requiere decisión clínica/administrativa.
+La FK compuesta de cita y paciente evita asociar citas de otros pacientes. La FK compuesta (consulta.id_poliza, consulta.id_paciente) impide usar una poliza de otro paciente.
 
 ## Diferencias y correcciones respecto al SQL original y al borrador
 
@@ -71,7 +72,7 @@ La FK compuesta `(consulta.id_cita, consulta.id_paciente)` es intencional: evita
 2. Los campos con hora (`fecha_creacion`, consulta, auditoría, receta, actualización/finalización y archivo) usan `timestamptz`. La cita mantiene `date` + `time without time zone` hasta que el equipo defina zona horaria y contrato.
 3. La fuente de verdad del archivo es `historial_clinico.estado`, con `activo | archivado`. Se quita `paciente.estado` para no duplicar el estado de archivo. El motivo se separa en tipo y detalle y se valida junto con `fecha_archivo`.
 4. Se añaden los CHECK de estado propuestos, fechas de tratamiento/consulta, cantidad positiva, importes no negativos y cobertura/fechas de póliza. Las listas de estados siguen pendientes de aprobación y sincronización futura con Zod; no se modificó ningún contrato compartido.
-5. Se añade `UNIQUE (id_usuario, fecha, hora)` a cita según la decisión común de 3.4. Tal como está definido, también reserva el horario de citas canceladas; confirmar si se permite reusar esos espacios.
+5. Las citas canceladas liberan el horario mediante el indice unico parcial ux_cita_horario_no_cancelado. Solo se bloquean reservas no canceladas con el mismo usuario, fecha y hora.
 6. El borrador añadía `consulta_servicio_pieza` y admitía FDI permanente y temporal (11–48 y 51–85), con superficie obligatoria. El checklist 7.2 especifica `consulta_servicio.pieza_dental` (FDI 11–48) y superficie opcional. El DDL sigue el checklist con columnas opcionales en `consulta_servicio`, sin tabla adicional. Confirmar con odontología si se necesita dentición temporal, varias piezas/superficies por servicio y un catálogo clínico de superficies.
 7. El borrador carecía de las tablas de aseguradora/póliza del checklist. El DDL agrega ambas con `UNIQUE (id_aseguradora, numero_poliza)`, cobertura entre 0 y 100, fechas válidas y `consulta.id_poliza` nullable.
 8. Se agregan índices de FKs y búsquedas, además del índice parcial para responsable principal. Se preserva `ON DELETE RESTRICT` para datos clínicos.
@@ -79,9 +80,9 @@ La FK compuesta `(consulta.id_cita, consulta.id_paciente)` es intencional: evita
 
 ## Decisiones que requieren aprobación
 
-- Confirmar las entidades y campos de seguro añadidos, si las pólizas pueden ser compartidas y si una consulta debe impedir usar una póliza de otro paciente.
+- Las polizas pertenecen a un paciente y no pueden utilizarse en consultas de otros pacientes.
 - Aprobar los valores exactos de `cita.estado`, `consulta.estado` y `tratamiento.estado`; el contrato actual no los define.
-- Citas canceladas: el `UNIQUE (id_usuario, fecha, hora)` actual mantiene el horario reservado aunque la cita quede cancelada. Aprobar si ese comportamiento es intencional o si una cancelación debe liberar el espacio. El constraint también bloquea solo coincidencias exactas de fecha y hora; no calcula solapamientos por duración.
+- Citas canceladas: liberan el horario. El indice bloquea coincidencias exactas, pero no valida solapamientos por duracion.
 - Piezas dentales: el DDL admite una sola pieza FDI permanente (11–48) y una superficie opcional por fila de `consulta_servicio`. Para varios dientes/superficies se necesitarían varias filas; aprobar si representa el flujo clínico y si se requieren piezas temporales. Las superficies aceptadas (`O`, `M`, `D`, `V`, `L`, `P`, `I`) se validan como catálogo general, no según la anatomía específica de cada diente.
 - Definir zona horaria de cita y semántica de `id_usuario` (odontólogo o registrador).
 - Confirmar el vocabulario de `paciente_alergia.nivel_severidad` y el uso de `usuario.password_hash` frente al flujo de autenticación del backend.
@@ -91,3 +92,11 @@ La FK compuesta `(consulta.id_cita, consulta.id_paciente)` es intencional: evita
 ## Límites
 
 El script se dirige a un esquema vacío; no es idempotente ni incluye migración o rollback de datos. No define reglas de negocio para alergias, identidad Supabase Auth, autorizaciones clínicas ni no-solapamiento de citas. No se conectó a ninguna base. La revisión de sintaxis/creación requiere PostgreSQL local temporal y aprobación del equipo antes de cualquier uso en Supabase.
+
+## Ajustes posteriores a la revision del equipo
+
+- **Citas canceladas:** liberan el horario. Se reemplaza la restriccion UNIQUE anterior por el indice parcial `ux_cita_horario_no_cancelado`, que excluye citas canceladas.
+- **Piezas y superficies:** se conserva el modelo simple, con una pieza FDI y una superficie opcional por fila de `consulta_servicio`. Se pueden registrar varias filas cuando sea necesario.
+- **Polizas:** cada poliza pertenece a un paciente mediante `poliza_seguro.id_paciente`. La FK compuesta de `consulta` impide utilizar una poliza de otro paciente.
+- **Pruebas adicionales:** 4/4 exitosas en PostgreSQL 16 local, usando transacciones con `ROLLBACK`.
+- **Pendiente:** revision del PR, definicion de politicas RLS y despliegue aprobado en Supabase.
