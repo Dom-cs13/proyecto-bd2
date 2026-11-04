@@ -85,7 +85,9 @@ export function renderInicioObservacion(containerId = 'inicio-observacion-contai
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const observacion = store.pacientes.filter(p => p.estadoArchivo === 'activo' && (p.estadoClinico === 'observacion' || p.estadoClinico === 'critico'));
+  const observacion = store.pacientes.filter(
+    p => p.historial?.estado === 'activo' && (p.estadoClinico === 'observacion' || p.estadoClinico === 'critico')
+  );
 
   if (observacion.length === 0) {
     container.innerHTML = `
@@ -145,7 +147,7 @@ export function renderInicioObservacion(containerId = 'inicio-observacion-contai
                     </span>
                   </td>
                   <td style="text-align: right;">
-                    <button class="btn btn-outline btn-sm btn-abrir-drawer" data-id="${p.id}">
+                    <button class="btn btn-outline btn-sm btn-abrir-drawer" data-id="${p.id}" type="button">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       <span>Abrir Expediente</span>
                     </button>

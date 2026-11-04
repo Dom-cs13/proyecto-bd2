@@ -1,6 +1,11 @@
 /**
- * Estado Reactivo Pediátrico - Centro Pediátrico (I4 · MariaDB)
- * Simula el modelo canónico pediátrico conforme a la sección 7.3 de PLANIFICACION.md
+ * Estado Reactivo Pediátrico - Centro Pediátrico (I4)
+ * Cumple la Regla #2 (LSP):
+ * - id siempre string
+ * - camelCase estricto
+ * - fechas ISO-8601
+ * - datos propios en detallesInstitucion
+ * - estado de archivo vive SOLO en historial.estado
  */
 
 const PACIENTES_INICIALES = [
@@ -16,7 +21,6 @@ const PACIENTES_INICIALES = [
     correo: "madre.mateo@correo.com",
     direccion: "Zona 11, Colonia Mariscal, Ciudad de Guatemala",
     estadoClinico: "estable",
-    estadoArchivo: "activo",
     detallesInstitucion: {
       institucionId: "I4",
       nombreInstitucion: "Centro Pediátrico",
@@ -104,7 +108,6 @@ const PACIENTES_INICIALES = [
     correo: "padre.camila@correo.com",
     direccion: "Zona 7, Kaminal Juyú, Ciudad de Guatemala",
     estadoClinico: "observacion",
-    estadoArchivo: "activo",
     detallesInstitucion: {
       institucionId: "I4",
       nombreInstitucion: "Centro Pediátrico",
@@ -172,7 +175,6 @@ const PACIENTES_INICIALES = [
     correo: "madre.emiliano@correo.com",
     direccion: "Mixco, Zona 4, Condado Naranjo",
     estadoClinico: "estable",
-    estadoArchivo: "activo",
     detallesInstitucion: {
       institucionId: "I4",
       nombreInstitucion: "Centro Pediátrico",
@@ -282,7 +284,6 @@ class PediatriaStore {
   archivarPaciente(id, { tipo, detalle }) {
     const p = this.pacientes.find(item => item.id === id);
     if (!p) return;
-    p.estadoArchivo = "archivado";
     p.historial.estado = "archivado";
     p.historial.fechaArchivo = new Date().toISOString();
     p.historial.motivoArchivo = { tipo, detalle };
@@ -317,7 +318,7 @@ class PediatriaStore {
   }
 
   getKPIs() {
-    const activos = this.pacientes.filter(p => p.estadoArchivo === "activo");
+    const activos = this.pacientes.filter(p => p.historial?.estado === "activo");
     const enObservacion = activos.filter(p => p.estadoClinico === "observacion" || p.estadoClinico === "critico").length;
 
     let totalControles = 0;
