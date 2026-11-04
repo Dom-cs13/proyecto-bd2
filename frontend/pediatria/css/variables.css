@@ -1,0 +1,59 @@
+/* Variables del Sistema - Centro Pediátrico · Alba Suite (I4) */
+:root {
+  /* Paleta Pediátrica Específica */
+  --color-pacific: #2e6987;    /* Texto principal, H1, H2, navbar, footer */
+  --color-treehouse: #4d978c;  /* Botones secundarios, iconos médicos, bordes activos, badges */
+  --color-sunkissed: #fa5c60;  /* Botones CTA principales, alertas críticas, llamadas de urgencia */
+  --color-bubblegum: #ffccc4;  /* Fondos de tarjetas suaves, alertas amigables, detalles sutiles */
+  --color-daydream: #aad8db;   /* Fondos hero, secciones alternas, hover botones claros */
+  
+  /* Superficies y Fondos */
+  --bg-app: #f4f7f8;
+  --bg-subtle: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --border-color: #dbe7ec;
+  --border-focus: #4d978c;
+
+  /* Aliases Semánticos */
+  --primary: #2e6987;
+  --primary-hover: #225169;
+  --primary-light: #ebf4f7;
+  --secondary: #4d978c;
+  --secondary-hover: #3d7e74;
+  --secondary-light: #e8f5f3;
+  --cta: #fa5c60;
+  --cta-hover: #e4484c;
+  --cta-light: #fee7e8;
+
+  /* Textos y Contraste WCAG */
+  --text-main: #2e6987;
+  --text-dark: #1b3d50;
+  --text-muted: #58798c;
+  --text-light: #89a9b9;
+  --text-inverse: #ffffff;
+
+  /* Badges y Estados Pediátricos */
+  --status-stable: #4d978c;
+  --status-warning: #f59e0b;
+  --status-critical: #fa5c60;
+  --status-archived: #89a9b9;
+
+  --badge-vacuna-bg: #e8f5f3;
+  --badge-vacuna-text: #2a665d;
+  --badge-alerta-bg: #ffccc4;
+  --badge-alerta-text: #8a2428;
+
+  /* Formas y Elevaciones */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 9999px;
+  
+  --shadow-sm: 0 1px 3px rgba(46, 105, 135, 0.08);
+  --shadow-card: 0 4px 16px -2px rgba(46, 105, 135, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  --shadow-drawer: -6px 0 28px rgba(46, 105, 135, 0.16);
+
+  --transition: all 0.2s ease-in-out;
+}

@@ -1,0 +1,174 @@
+<!-- Vista 4: Gestión de Pacientes (Alta con Tutor Principal y Archivado Justificado) -->
+<div class="view-gestion-pacientes">
+  <div class="section-block">
+    <div class="section-header">
+      <span class="welcome-badge">Operaciones Clínicas · Altas y Archivado</span>
+      <h1 class="welcome-title">Registro Pediátrico y Desactivación Legal</h1>
+      <p class="section-desc">
+        Alta de expediente con vinculación estricta a su Tutor Principal Único (regla MariaDB I4-05), y proceso de archivado legal con motivo formal.
+      </p>
+    </div>
+  </div>
+
+  <div class="gestion-grid-layout">
+    <!-- Formulario de Alta Pediátrica -->
+    <div class="kpi-card" style="padding: 26px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+        <div class="kpi-icon-wrap" style="background-color: var(--secondary-light); color: var(--color-treehouse); font-size: 1.2rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 800; color: var(--color-pacific);">Alta de Expediente Pediátrico</h2>
+          <p style="font-size: 0.78rem; color: var(--text-muted);">Información del menor y datos requeridos del tutor responsable.</p>
+        </div>
+      </div>
+
+      <form id="form-gestion-nuevo-paciente" style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Datos del Menor -->
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-pacific); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+          1. Datos del Menor
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="g-inp-nombre">Nombre(s) del Paciente *</label>
+            <input type="text" id="g-inp-nombre" class="form-control" required placeholder="Ej. Lucas Daniel" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="g-inp-apellidos">Apellidos *</label>
+            <input type="text" id="g-inp-apellidos" class="form-control" required placeholder="Ej. Méndez Cifuentes" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="g-inp-fecha">Fecha de Nacimiento *</label>
+            <input type="date" id="g-inp-fecha" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="g-inp-genero">Sexo Biológico *</label>
+            <select id="g-inp-genero" class="form-control" required>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="g-inp-curp">Documento Identidad / CUI / Cédula *</label>
+            <input type="text" id="g-inp-curp" class="form-control" required placeholder="Identificador único del menor" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="g-inp-sangre">Tipo de Sangre</label>
+            <select id="g-inp-sangre" class="form-control">
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="g-inp-estado">Estado Clínico Inicial</label>
+            <select id="g-inp-estado" class="form-control">
+              <option value="estable">Estable (Control Preventivo)</option>
+              <option value="observacion">Observación Médica (Seguimiento)</option>
+              <option value="critico">Estado Delicado / Urgencia</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="g-inp-alergias">Alergias Pediátricas</label>
+            <input type="text" id="g-inp-alergias" class="form-control" placeholder="Ej. APLV, Penicilina (o Ninguna)" />
+          </div>
+        </div>
+
+        <!-- Tutor Principal Único (Regla Checklist 7.3) -->
+        <div style="background-color: var(--color-daydream); padding: 16px; border-radius: var(--radius-md); border: 1px solid #95c8cb; display: flex; flex-direction: column; gap: 12px; margin-top: 6px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 0.82rem; font-weight: 800; color: var(--color-pacific);">
+              2. Tutor Principal Único (Responsable Legal)
+            </div>
+            <span style="font-size: 0.7rem; font-weight: 700; background-color: #ffffff; color: var(--color-pacific); padding: 2px 8px; border-radius: var(--radius-full);">MariaDB Trigger Activo</span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="g-inp-tutor-nombre">Nombre Completo del Tutor *</label>
+              <input type="text" id="g-inp-tutor-nombre" class="form-control" required placeholder="Ej. Carmen Cifuentes de Méndez" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="g-inp-tutor-parentesco">Parentesco *</label>
+              <select id="g-inp-tutor-parentesco" class="form-control" required>
+                <option value="Madre">Madre</option>
+                <option value="Padre">Padre</option>
+                <option value="Tutor Legal">Tutor Legal / Custodio</option>
+                <option value="Abuelo/a">Abuelo / Abuela</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="g-inp-tutor-doc">Documento del Tutor *</label>
+              <input type="text" id="g-inp-tutor-doc" class="form-control" required placeholder="DPI / Identificación del responsable" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="g-inp-tutor-tel">Teléfono de Emergencia *</label>
+              <input type="tel" id="g-inp-tutor-tel" class="form-control" required placeholder="+502 4433-2211" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="g-inp-direccion">Dirección Domiciliar</label>
+            <input type="text" id="g-inp-direccion" class="form-control" placeholder="Zona, Municipio, Departamento" />
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-cta" style="padding: 12px 24px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Guardar Paciente Pediátrico en MariaDB</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Panel de Archivado Clínico Justificado -->
+    <div class="kpi-card" style="padding: 26px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+          <div class="kpi-icon-wrap alert" style="background-color: var(--color-bubblegum); color: #8a2428;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+          </div>
+          <div>
+            <h2 style="font-size: 1.15rem; font-weight: 800; color: #8a2428;">Archivado Clínico Justificado</h2>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">
+              Por integridad médica y legal, los historiales nunca se eliminan físicamente (Regla 3.2).
+            </p>
+          </div>
+        </div>
+
+        <div style="background-color: var(--color-bubblegum); border: 1px solid #f8aba0; padding: 14px; border-radius: var(--radius-md); margin-bottom: 20px;">
+          <h4 style="font-size: 0.8rem; font-weight: 800; color: #7a1f22; margin-bottom: 4px;">Protección Legal del Historial Infantil</h4>
+          <p style="font-size: 0.75rem; color: #8a2428; line-height: 1.45;">
+            Un expediente solo se desactiva mediante: <strong>traslado a otra institución</strong>, <strong>fallecimiento</strong> o <strong>motivo administrativo</strong>, conservando todas las vacunas y consultas registradas.
+          </p>
+        </div>
+
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 600;">
+          Selecciona un paciente activo para emitir el archivado con motivo formal:
+        </p>
+
+        <div id="lista-archivar-pacientes-container">
+          <!-- Inyectado dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
