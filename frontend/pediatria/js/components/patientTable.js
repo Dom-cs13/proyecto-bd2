@@ -51,7 +51,7 @@ export function renderPatientTable(containerId = 'table-container') {
             <th>Tutor Principal (Responsable)</th>
             <th>Último Control Antropométrico</th>
             <th>Vacunas Aplicadas</th>
-            <th>Estado</th>
+            <th>Estado (historial.estado)</th>
             <th style="text-align: right;">Acciones</th>
           </tr>
         </thead>
@@ -61,7 +61,7 @@ export function renderPatientTable(containerId = 'table-container') {
             const controles = p.detallesInstitucion?.controlesCrecimiento || [];
             const ultimoControl = controles[0];
             const vacunas = p.detallesInstitucion?.vacunasAplicadas || [];
-            const esActivo = p.estadoArchivo === 'activo';
+            const esActivo = p.historial?.estado === 'activo';
 
             return `
               <tr style="${!esActivo ? 'opacity: 0.65; background-color: #fafbfc;' : ''}">
@@ -104,11 +104,11 @@ export function renderPatientTable(containerId = 'table-container') {
                       ● ${p.estadoClinico.toUpperCase()}
                     </span>
                   ` : `
-                    <span class="badge badge-archived">ARCHIVADO</span>
+                    <span class="badge badge-archived">ARCHIVADO (${p.historial?.motivoArchivo?.tipo || 'cerrado'})</span>
                   `}
                 </td>
                 <td style="text-align: right;">
-                  <button class="btn btn-outline btn-sm btn-abrir-drawer-paciente" data-id="${p.id}">
+                  <button class="btn btn-outline btn-sm btn-abrir-drawer-paciente" data-id="${p.id}" type="button">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     <span>Expediente</span>
                   </button>

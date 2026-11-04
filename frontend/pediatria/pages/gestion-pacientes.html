@@ -5,7 +5,7 @@
       <span class="welcome-badge">Operaciones Clínicas · Altas y Archivado</span>
       <h1 class="welcome-title">Registro Pediátrico y Desactivación Legal</h1>
       <p class="section-desc">
-        Alta de expediente con vinculación estricta a su Tutor Principal Único (regla MariaDB I4-05), y proceso de archivado legal con motivo formal.
+        Alta de expediente con vinculación estricta a su Tutor Principal Único y proceso de archivado legal con motivo formal.
       </p>
     </div>
   </div>
@@ -94,7 +94,7 @@
             <div style="font-size: 0.82rem; font-weight: 800; color: var(--color-pacific);">
               2. Tutor Principal Único (Responsable Legal)
             </div>
-            <span style="font-size: 0.7rem; font-weight: 700; background-color: #ffffff; color: var(--color-pacific); padding: 2px 8px; border-radius: var(--radius-full);">MariaDB Trigger Activo</span>
+            <span style="font-size: 0.7rem; font-weight: 700; background-color: #ffffff; color: var(--color-pacific); padding: 2px 8px; border-radius: var(--radius-full);">Requisito Obligatorio</span>
           </div>
 
           <div class="form-row">
@@ -133,7 +133,7 @@
         <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
           <button type="submit" class="btn btn-cta" style="padding: 12px 24px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            <span>Guardar Paciente Pediátrico en MariaDB</span>
+            <span>Registrar Paciente Pediátrico</span>
           </button>
         </div>
       </form>
@@ -149,7 +149,7 @@
           <div>
             <h2 style="font-size: 1.15rem; font-weight: 800; color: #8a2428;">Archivado Clínico Justificado</h2>
             <p style="font-size: 0.78rem; color: var(--text-muted);">
-              Por integridad médica y legal, los historiales nunca se eliminan físicamente (Regla 3.2).
+              Por integridad médica y legal, los historiales nunca se eliminan físicamente.
             </p>
           </div>
         </div>
@@ -157,7 +157,7 @@
         <div style="background-color: var(--color-bubblegum); border: 1px solid #f8aba0; padding: 14px; border-radius: var(--radius-md); margin-bottom: 20px;">
           <h4 style="font-size: 0.8rem; font-weight: 800; color: #7a1f22; margin-bottom: 4px;">Protección Legal del Historial Infantil</h4>
           <p style="font-size: 0.75rem; color: #8a2428; line-height: 1.45;">
-            Un expediente solo se desactiva mediante: <strong>traslado a otra institución</strong>, <strong>fallecimiento</strong> o <strong>motivo administrativo</strong>, conservando todas las vacunas y consultas registradas.
+            Un expediente solo se desactiva mediante: <strong>traslado a otra institución</strong>, <strong>fallecimiento</strong> o <strong>motivo administrativo</strong>, conservando todas las vacunas y consultas registradas en <code>historial.estado</code>.
           </p>
         </div>
 

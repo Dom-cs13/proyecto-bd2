@@ -1,10 +1,13 @@
 import { store } from '../state.js';
+import { abrirModalArchivado } from '../../../shared/js/components/archivadoMotivo.js';
+import { mostrarErrorHttp, mostrarNotificacionExito } from '../../../shared/js/components/mensajesError.js';
+import { puedeEjecutarAccion, obtenerConfiguracionRol } from '../../../shared/js/components/navegacionRol.js';
 
 export function renderListaArchivar(containerId = 'lista-archivar-pacientes-container') {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const activos = store.pacientes.filter(p => p.estadoArchivo === 'activo');
+  const activos = store.pacientes.filter(p => p.historial?.estado === 'activo');
 
   if (activos.length === 0) {
     container.innerHTML = `
@@ -30,7 +33,7 @@ export function renderListaArchivar(containerId = 'lista-archivar-pacientes-cont
                 Tutor: ${tutor?.nombre || 'Sin tutor'} (${tutor?.parentesco || 'Tutor'}) · Nac: ${p.fechaNacimiento}
               </p>
             </div>
-            <button class="btn btn-outline btn-sm btn-archivar-paciente" data-id="${p.id}" style="color: #8a2428; border-color: #f8aba0;">
+            <button class="btn btn-outline btn-sm btn-archivar-paciente" data-id="${p.id}" type="button" style="color: #8a2428; border-color: #f8aba0;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
               <span>Archivar</span>
             </button>
@@ -42,25 +45,32 @@ export function renderListaArchivar(containerId = 'lista-archivar-pacientes-cont
 
   container.querySelectorAll('.btn-archivar-paciente').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!puedeEjecutarAccion('archivar_paciente')) {
+        const cfg = obtenerConfiguracionRol();
+        mostrarErrorHttp({
+          status: 403,
+          error: {
+            codigo: 'ACCESO_DENEGADO',
+            mensaje: `El rol ${cfg.etiqueta} no tiene autorización para archivar expedientes clínicos.`
+          }
+        });
+        return;
+      }
+
       const id = btn.getAttribute('data-id');
       const paciente = store.pacientes.find(p => p.id === id);
       if (!paciente) return;
 
-      const motivosValidos = ['traslado', 'fallecimiento', 'administrativo', 'otro'];
-      const tipo = prompt(`Motivo de desactivación para ${paciente.nombre} ${paciente.apellidos}:\nOpciones válidas: traslado, fallecimiento, administrativo, otro`, "traslado");
-      if (!tipo || !motivosValidos.includes(tipo.toLowerCase())) {
-        alert("Motivo inválido. El contrato exige uno de: traslado, fallecimiento, administrativo, otro.");
-        return;
-      }
-
-      const detalle = prompt("Justificación clínica o legal detallada:", "Paciente trasladado a Centro de Salud Departamental.");
-      if (!detalle) {
-        alert("La justificación es obligatoria.");
-        return;
-      }
-
-      store.archivarPaciente(id, { tipo: tipo.toLowerCase(), detalle });
-      alert(`Expediente ${paciente.expediente} archivado bajo causal '${tipo}'.`);
+      abrirModalArchivado({
+        paciente,
+        onConfirmar: ({ tipo, detalle }) => {
+          store.archivarPaciente(id, { tipo, detalle });
+          mostrarNotificacionExito(
+            `Expediente ${paciente.expediente} archivado`,
+            `Estado actualizado en historial.estado = "archivado" bajo causal "${tipo}".`
+          );
+        }
+      });
     });
   });
 }

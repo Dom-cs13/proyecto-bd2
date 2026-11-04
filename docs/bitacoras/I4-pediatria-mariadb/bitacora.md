@@ -49,6 +49,28 @@
   - Iconos 100% vectoriales SVG sin emojis según lineamientos de diseño.
   - Se habilitó soporte de demo en localhost si no hay sesión activa para facilitar la revisión visual de las pantallas.
 - **Problemas / bloqueos:** Ninguno.
-- **Evidencia:** `frontend/pediatria/`, rama `feat/I4-10-frontend-pediatria`.
+- **Evidencia:** `frontend/pediatria/`, rama `feat/I4-10-frontend-pediatria`, PR #15.
 - **Tiempo invertido:** 85 min
-- **Siguiente paso:** I4-11 Correcciones de MariaDB y persistencia real del adaptador de crecimiento y vacunas.
+- **Siguiente paso:** Auditoría de cumplimiento normativo de I4-10 y componentes compartidos en `frontend/shared/`.
+
+## Sesión 3 · 2026-11-03 · Tarea I4-10 (Auditoría y Correcciones)
+
+- **Objetivo de la sesión:** Auditar el cumplimiento estricto de `AGENTS.md`, `PLANIFICACION.md` (secciones 3.2, 3.5, 7.6) y los entregables de `I4-10` en `frontend/shared/` y `frontend/pediatria/`, corrigiendo las desviaciones encontradas.
+- **Qué hice:**
+  - **Cero Emojis:** Eliminé los 2 emojis residuales en `frontend/pediatria/js/components/modalDrawer.js` reemplazándolos por iconos SVG vectoriales.
+  - **Regla #2 LSP (`historial.estado`):** Eliminé la propiedad duplicada `estadoArchivo` en la raíz de `Paciente` (`state.js`, `app.js`, `kpiCards.js`, `patientTable.js`, `crecimientoVacunas.js`, `listaArchivar.js`), garantizando que el estado de archivo viva exclusivamente en `paciente.historial.estado`.
+  - **Abstracción del Motor (Sección 3.5 y 7.6):** Retiré toda mención a nombres de motores (`MariaDB`, `MongoDB`, `PostgreSQL`, `Firestore`) de las pantallas clínicas y de las tarjetas de Consulta en Red; ahora solo el Panel Técnico muestra el motor consultando `GET /system/status` mediante `apiClient`.
+  - **Componentes Compartidos (`frontend/shared/js/components/`):**
+    - `mensajesError.js`: Notificaciones con formato único `{ error: { codigo, mensaje } }` para códigos `400`, `401`, `403`, `404`, `409` (`PACIENTE_ARCHIVADO`) y `503` (`MOTOR_NO_DISPONIBLE`).
+    - `navegacionRol.js`: Gestión de roles (`pediatra`, `enfermeria`, `recepcion`) y validación de permisos por vista y acción.
+    - `archivadoMotivo.js`: Modal accesible de archivado con causal (`traslado`, `fallecimiento`, `administrativo`, `otro`) y detalle obligatorio.
+  - **Mejoras en `frontend/pediatria/`:**
+    - Agregué `frontend/pediatria/css/tema.css`, selector de rol en el Topbar y footer en Pacific (`#2E6987`).
+    - Reemplacé `prompt()` y `alert()` por diálogos modales y notificaciones integradas.
+    - Agregué la pestaña de *Crecimiento y Vacunas* y el modo de *Solo Lectura* para expedientes externos en el Drawer 360°.
+- **Decisiones tomadas (y por qué):**
+  - Centralizar errores HTTP, permisos por rol y modal de archivado en `frontend/shared/js/components/` cumple con la definición exacta de la tarea `I4-10` y la regla DRY.
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** rama `fix/I4-10-auditoria-frontend-pediatria`, PR a `main`.
+- **Tiempo invertido:** 45 min
+- **Siguiente paso:** Continuar con las tareas pendientes de I4 en el plan (`I4-01`, `I4-02`, `I4-04`, `I4-05`).
