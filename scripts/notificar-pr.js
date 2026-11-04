@@ -7,6 +7,7 @@ const prNumero = process.env.PR_NUMBER;
 const prTitulo = process.env.PR_TITLE || '';
 const prAutor = process.env.PR_AUTHOR || 'colaborador';
 const prHeadRef = process.env.PR_HEAD_REF || process.env.GITHUB_HEAD_REF || '';
+const esDraft = process.env.PR_IS_DRAFT === 'true';
 const baseSha = process.env.BASE_SHA;
 const headSha = process.env.HEAD_SHA;
 const resReglas = process.env.RESULT_REGLAS || 'success';
@@ -116,7 +117,11 @@ if (fallas.length > 0) {
   });
   markdown += `*Corrige estos puntos en tu rama local y haz \`git push\`. El CI volverá a evaluar automáticamente tu PR.*`;
 } else if (resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
-  markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n🚀 **Auto-merge 100% autónomo:** Este PR ha cumplido todas las reglas y está siendo fusionado automáticamente a \`main\` mediante squash commit.`;
+  if (esDraft) {
+    markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente (Borrador)\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n⏳ **En espera de revisión:** Este PR está marcado como **Draft (Borrador)**. En cuanto el autor o el dueño del repositorio hagan clic en el botón **'Ready for review'**, el CI se activará automáticamente y ejecutará el auto-merge a \`main\` mediante squash commit.`;
+  } else {
+    markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n🚀 **Auto-merge 100% autónomo:** Este PR ha cumplido todas las reglas y está siendo fusionado automáticamente a \`main\` mediante squash commit.`;
+  }
 } else {
   process.exit(0);
 }
@@ -154,8 +159,8 @@ async function publicarComentario() {
       console.log('[notificar-pr] Nuevo comentario de diagnóstico publicado.');
     }
 
-    // Auto-merge autónomo si todo pasó en verde
-    if (fallas.length === 0 && resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
+    // Auto-merge autónomo si todo pasó en verde y NO es borrador
+    if (!esDraft && fallas.length === 0 && resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
       console.log(`[notificar-pr] CI 100% verde. Intentando auto-merge para PR #${prNumero}...`);
       let mergeExitoso = false;
 

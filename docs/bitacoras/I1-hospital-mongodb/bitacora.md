@@ -45,3 +45,17 @@
 - **Evidencia:** `scripts/notificar-pr.js`, `.github/workflows/ci.yml`.
 - **Tiempo invertido:** 70 min
 - **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
+
+## Sesión 4 · 2026-11-03 · Trigger `ready_for_review` y soporte de Drafts en CI (I1-01)
+
+- **Objetivo de la sesión:** Configurar el CI para que detecte de forma automática cuando un Pull Request pasa de Borrador (Draft) a Listo para revisión (`ready_for_review`) y ejecute el auto-merge en el acto.
+- **Qué hice:**
+  - Añadí `ready_for_review` a la lista de eventos `types:` en `.github/workflows/ci.yml`.
+  - Pasé la variable `PR_IS_DRAFT` al job de diagnóstico para diferenciar los PRs en borrador.
+  - Modifiqué `scripts/notificar-pr.js` para que los PRs en borrador reciban una notificación amigable de espera y solo se auto-fusionen una vez que se desactive el estado Draft.
+- **Decisiones tomadas (y por qué):**
+  - Manejar el estado Draft explícitamente evita errores HTTP 405 de la API de GitHub al intentar fusionar borradores.
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** `.github/workflows/ci.yml`, `scripts/notificar-pr.js`.
+- **Tiempo invertido:** 25 min
+- **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
