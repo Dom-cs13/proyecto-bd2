@@ -351,7 +351,12 @@
   </main>
 
   <script type="module">
-    import { login, obtenerSesion, rutaInstitucion, INSTITUCIONES } from './shared/js/api/auth.js';
+    import { login, obtenerSesion, rutaInstitucion, INSTITUCIONES, cerrarSesion } from './shared/js/api/auth.js';
+
+    if (new URLSearchParams(location.search).has('logout')) {
+      cerrarSesion();
+      history.replaceState(null, '', location.pathname);
+    }
 
     const sesion = obtenerSesion();
     if (sesion) location.replace(rutaInstitucion(sesion.institucion));

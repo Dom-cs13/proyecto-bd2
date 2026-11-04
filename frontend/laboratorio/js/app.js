@@ -168,7 +168,7 @@ function leerResultados(form, tipo) {
   return out;
 }
 
-function formOrden(onGuardar, existente = null, preseCui = null) {
+function formOrden(onGuardar, existente = null, preseCui = null, preseTipo = null) {
   const esEdicion = !!existente;
 
   if (!esEdicion && !pacientes.some((p) => p.activo)) {
@@ -180,8 +180,9 @@ function formOrden(onGuardar, existente = null, preseCui = null) {
     `<option value="${esc(p.cui)}" ${selCui === p.cui ? 'selected' : ''}>${esc(p.nombre)} ${esc(p.apellidos)} · ${esc(p.cui)}</option>`
   ).join('');
 
+  const tipoSeleccionado = existente?.tipo || preseTipo || 'hematologia';
   const tiposOpts = Object.entries(TIPOS).map(([k, t]) =>
-    `<option value="${k}" ${existente?.tipo === k ? 'selected' : ''}>${t.icono} ${esc(t.nombre)}</option>`
+    `<option value="${k}" ${tipoSeleccionado === k ? 'selected' : ''}>${t.icono} ${esc(t.nombre)}</option>`
   ).join('');
 
   const m = abrirModal(esEdicion ? `✏️ Editar Orden #${esc(existente.id)}` : '🔬 Generar Orden de Examen', `
@@ -293,15 +294,34 @@ const vistas = {
         { ico: '✅', label: 'Completados',       val: n('completado'), bg: '#dcfce7', color: '#15803d' },
         { ico: '👥', label: 'Pacientes activos', val: pacientes.filter((p) => p.activo).length, bg: 'var(--primary-light)', color: 'var(--primary)' },
       ];
-      $('#inicio-kpi-container').innerHTML = `<div class="kpi-grid">${kpis.map((k) => `
-        <div class="kpi-card kpi-row">
-          <div class="kpi-icon-wrap" style="background:${k.bg};color:${k.color}">${k.ico}</div>
-          <div><div class="kpi-num" style="color:${k.color}">${k.val}</div><div class="kpi-label">${k.label}</div></div>
-        </div>`).join('')}</div>`;
+      const kpiContainer = $('#inicio-kpi-container');
+      if (kpiContainer) {
+        kpiContainer.innerHTML = `<div class="kpi-grid">${kpis.map((k) => `
+          <div class="kpi-card kpi-row">
+            <div class="kpi-icon-wrap" style="background:${k.bg};color:${k.color}">${k.ico}</div>
+            <div><div class="kpi-num" style="color:${k.color}">${k.val}</div><div class="kpi-label">${k.label}</div></div>
+          </div>`).join('')}</div>`;
+      }
 
       const pend = examenes.filter((e) => e.estado !== 'completado').sort((a, b) => a.fechaSolicitud.localeCompare(b.fechaSolicitud));
-      $('#inicio-pendientes-container').innerHTML = tablaExamenes(pend);
+      const pendContainer = $('#inicio-pendientes-container');
+      if (pendContainer) {
+        pendContainer.innerHTML = tablaExamenes(pend);
+      }
     };
+
+    const btnNuevoInicio = $('#btn-nuevo-estudio-inicio');
+    if (btnNuevoInicio) {
+      btnNuevoInicio.onclick = () => formOrden(render);
+    }
+    const btnAgregarGeneral = $('#btn-agregar-estudio-general');
+    if (btnAgregarGeneral) {
+      btnAgregarGeneral.onclick = () => formOrden(render);
+    }
+    document.querySelectorAll('[data-nuevo-tipo]').forEach((btn) => {
+      btn.onclick = () => formOrden(render, null, null, btn.dataset.nuevoTipo);
+    });
+
     render();
     refreshView = render;
   },
@@ -495,6 +515,8 @@ function wireTopAction() {
     if (location.hash === '#examenes') {
       // Si estamos en exámenes, abre el modal de nueva orden
       document.getElementById('btn-nueva-orden')?.click();
+    } else if (location.hash === '#principal' || !location.hash) {
+      formOrden(() => refreshView());
     } else {
       // Si no, manda a la vista de registro de pacientes
       window.location.hash = '#pacientes';
