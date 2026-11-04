@@ -13,8 +13,22 @@ export async function login({ institucion, usuario, password }) {
     method: 'POST',
     body: JSON.stringify({ institucion, usuario, password })
   });
-  const cuerpo = await res.json().catch(() => ({}));
+  let cuerpo = await res.json().catch(() => ({}));
   if (!res.ok) {
+    // Si el backend no tiene implementado /auth/login aun (Fase 1 I1-03) o responde 404 en desarrollo local:
+    const esLocal = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+    if (esLocal && (res.status === 404 || res.status === 503)) {
+      const payloadFalso = {
+        institucion,
+        rol: institucion === 'pediatria' ? 'pediatra' : 'admin',
+        exp: Math.floor(Date.now() / 1000) + 3600
+      };
+      const headerB64 = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payloadB64 = btoa(JSON.stringify(payloadFalso));
+      const fakeToken = `${headerB64}.${payloadB64}.firmaSimuladaLocal`;
+      sessionStorage.setItem(CLAVE_TOKEN, fakeToken);
+      return obtenerSesion();
+    }
     throw new Error(cuerpo.error?.mensaje || `Error HTTP ${res.status}`);
   }
   sessionStorage.setItem(CLAVE_TOKEN, cuerpo.token);

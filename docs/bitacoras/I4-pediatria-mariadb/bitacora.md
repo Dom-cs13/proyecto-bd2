@@ -71,6 +71,18 @@
 - **Decisiones tomadas (y por qué):**
   - Centralizar errores HTTP, permisos por rol y modal de archivado en `frontend/shared/js/components/` cumple con la definición exacta de la tarea `I4-10` y la regla DRY.
 - **Problemas / bloqueos:** Ninguno.
-- **Evidencia:** rama `fix/I4-10-auditoria-frontend-pediatria`, PR a `main`.
+- **Evidencia:** rama `fix/I4-10-auditoria-frontend-pediatria`, PR #16 fusionado a `main`.
 - **Tiempo invertido:** 45 min
-- **Siguiente paso:** Continuar con las tareas pendientes de I4 en el plan (`I4-01`, `I4-02`, `I4-04`, `I4-05`).
+- **Siguiente paso:** Ajustes finos de UI y pruebas del login multi-institucional.
+
+## Sesión 4 · 2026-11-03 · Tarea I4-10 (Limpieza de UI y simulación de login local)
+
+- **Objetivo de la sesión:** Corregir redundancia visual de signos `+` en botones con icono vectorial y habilitar fallback de autenticación en desarrollo local para navegar entre los portales institucionales.
+- **Qué hice:**
+  - Se eliminó el caracter `+` textual en los botones de acción (`Nuevo Paciente`, `Nuevo Registro`, `Registrar Control`, `Aplicar Vacuna`, `Nueva Atención`), dejando únicamente el icono SVG para evitar `+ +`.
+  - Se añadió fallback local en `frontend/shared/js/api/auth.js` para simular JWT cuando `POST /auth/login` responda 404/503 en localhost, permitiendo el ingreso directo a cualquiera de las 4 instituciones desde el login unificado.
+- **Decisiones tomadas (y por qué):**
+  - Mantener limpia la interfaz sin signos duplicados y permitir al usuario auditar los demás frontends locales sin requerir el endpoint final del backend de autenticación.
+- **Evidencia:** rama `fix/I4-10-ui-text-plus-icons`, PR a `main`.
+- **Tiempo invertido:** 15 min
+- **Siguiente paso:** Continuar con I4-01 o I4-04 / I4-05 según el cronograma.
