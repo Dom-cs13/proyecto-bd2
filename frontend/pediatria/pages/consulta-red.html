@@ -1,0 +1,99 @@
+<!-- Vista 5: Consulta en Red Federada y Panel Técnico -->
+<div class="view-consulta-red">
+  <div class="section-block">
+    <div class="section-header">
+      <span class="welcome-badge">Interoperabilidad · Red de Salud</span>
+      <h1 class="welcome-title">Consulta Federada en Red</h1>
+      <p class="section-desc">
+        Búsqueda de expedientes en las 4 instituciones clínicas mediante Documento de Identidad en modo de solo lectura. La interfaz clínica solo muestra el nombre de la institución (sección 3.5 y 7.6).
+      </p>
+    </div>
+
+    <!-- Buscador en Red -->
+    <div style="background-color: var(--bg-card); padding: 22px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-bottom: 24px;">
+      <div style="display: flex; gap: 12px; align-items: center; max-width: 720px; flex-wrap: wrap;">
+        <div class="search-bar-wrap" style="flex: 1; min-width: 260px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="inp-buscar-red" class="search-input" value="3051498210101" placeholder="Ingresa documento único (Ej. 3051498210101)..." />
+        </div>
+        <button id="btn-ejecutar-consulta-red" class="btn btn-secondary" type="button">
+          <span>Consultar en Red</span>
+        </button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.76rem;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="chk-simular-caida-red" />
+          <span>Simular caída de institución (503 / no_disponible)</span>
+        </label>
+      </div>
+      <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 8px;">
+        Consulta de solo lectura (<code>GET /red/pacientes?documento=...</code>). Si una institución no responde, se reporta aislada como <code>no_disponible</code> sin afectar a las demás.
+      </p>
+    </div>
+
+    <!-- Grid de Resultados en las 4 Instituciones (Sin exponer el motor detrás, regla 3.5 y 7.6) -->
+    <div id="resultado-red-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 32px;">
+      <!-- I1: Hospital General -->
+      <div class="kpi-card" style="border-top: 4px solid #00595d;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <strong style="color: #00595d; font-size: 0.95rem;">Hospital General</strong>
+          <span class="badge" style="background-color: #e0f7f6; color: #00595d;">Institución I1</span>
+        </div>
+        <div id="red-res-i1" style="font-size: 0.8rem; color: var(--text-muted);">
+          <p>Presiona "Consultar en Red" para buscar.</p>
+        </div>
+      </div>
+
+      <!-- I2: Clínica Odontológica -->
+      <div class="kpi-card" style="border-top: 4px solid #1e5a8a;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <strong style="color: #1e5a8a; font-size: 0.95rem;">Clínica Odontológica</strong>
+          <span class="badge" style="background-color: #e3eefa; color: #1e5a8a;">Institución I2</span>
+        </div>
+        <div id="red-res-i2" style="font-size: 0.8rem; color: var(--text-muted);">
+          <p>Presiona "Consultar en Red" para buscar.</p>
+        </div>
+      </div>
+
+      <!-- I3: Laboratorio Clínico -->
+      <div class="kpi-card" style="border-top: 4px solid #5b4a9e;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <strong style="color: #5b4a9e; font-size: 0.95rem;">Laboratorio Clínico</strong>
+          <span class="badge" style="background-color: #ece9f7; color: #5b4a9e;">Institución I3</span>
+        </div>
+        <div id="red-res-i3" style="font-size: 0.8rem; color: var(--text-muted);">
+          <p>Presiona "Consultar en Red" para buscar.</p>
+        </div>
+      </div>
+
+      <!-- I4: Centro Pediátrico -->
+      <div class="kpi-card" style="border-top: 4px solid var(--color-pacific);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <strong style="color: var(--color-pacific); font-size: 0.95rem;">Centro Pediátrico</strong>
+          <span class="badge" style="background-color: var(--color-daydream); color: var(--color-pacific);">Institución I4</span>
+        </div>
+        <div id="red-res-i4" style="font-size: 0.8rem; color: var(--text-muted);">
+          <p>Expediente local disponible.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel Técnico del Motor (Único lugar autorizado para mostrar el motor, tomado de GET /system/status, sección 7.6) -->
+  <div class="section-block">
+    <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;flex-direction:row;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          <span>Panel Técnico (GET /system/status)</span>
+        </h2>
+        <p class="section-desc">Único panel donde se expone el motor de base de datos, consultado desde <code>/system/status</code> sin credenciales.</p>
+      </div>
+      <button id="btn-refrescar-system-status" class="btn btn-outline btn-sm" type="button">
+        <span>Actualizar /system/status</span>
+      </button>
+    </div>
+
+    <div id="panel-tecnico-status-container" class="table-container" style="padding: 22px;">
+      <!-- Renderizado dinámicamente desde GET /system/status -->
+    </div>
+  </div>
+</div>

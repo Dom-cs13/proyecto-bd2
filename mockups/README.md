@@ -99,6 +99,8 @@ Los frontends deben basarse en las variables definidas en `css/variables.css`:
 
 ## 🚀 Implementación de Referencia
 
-La primera implementación que adopta este mockup se encuentra en:
-👉 **[`frontend/hospital/`](../frontend/hospital/)** (Hospital General · I1).
-Las instituciones I2 (Odontología), I3 (Laboratorio) e I4 (Pediatría) deben usar esta misma guía para sus interfaces.
+Las implementaciones que adoptan este mockup son:
+- 👉 **[`frontend/hospital/`](../frontend/hospital/)** (Hospital General · I1).
+- 👉 **[`frontend/odontologia/`](../frontend/odontologia/)** (Clínica Odontológica · I2).
+- 👉 **[`frontend/laboratorio/`](../frontend/laboratorio/)** (Laboratorio Clínico · I3).
+- 👉 **[`frontend/pediatria/`](../frontend/pediatria/)** (Centro Pediátrico · I4, con paleta pediátrica especializada: Pacific `#2E6987`, Treehouse `#4D978C`, Sunkissed `#FA5C60`, Bubblegum `#FFCCC4`, Daydream `#AAD8DB`).

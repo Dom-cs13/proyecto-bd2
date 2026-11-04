@@ -32,7 +32,7 @@ export async function login({ institucion, usuario, password }) {
   const payloadObj = {
     institucion,
     usuario: usuario || 'dra.ruiz',
-    rol: usuario === 'admin' ? 'admin' : (institucion === 'laboratorio' ? 'laboratorista' : 'profesional'),
+    rol: usuario === 'admin' ? 'admin' : (institucion === 'laboratorio' ? 'laboratorista' : institucion === 'pediatria' ? 'pediatra' : 'profesional'),
     exp: Math.floor(Date.now() / 1000) + 8 * 3600
   };
   const token = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify(payloadObj))}.demo-signature`;

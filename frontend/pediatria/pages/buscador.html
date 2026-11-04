@@ -1,0 +1,30 @@
+<!-- Vista 2: Buscador Clínico de Pacientes y Tutores -->
+<div class="view-buscador-pacientes">
+  <div class="section-block">
+    <div class="section-header">
+      <span class="welcome-badge">Expedientes Pediátricos</span>
+      <h1 class="welcome-title">Búsqueda y Directorio de Menores</h1>
+      <p class="section-desc">
+        Localiza expedientes infantiles por nombre del niño, número de expediente, documento de identidad o nombre del tutor legal.
+      </p>
+    </div>
+
+    <!-- Barra de Búsqueda Predictiva -->
+    <div id="search-container" style="margin-bottom: 24px;"></div>
+  </div>
+
+  <!-- Tabla de Pacientes -->
+  <div class="section-block">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-direction: row;">
+      <div>
+        <h2 class="section-title">Expedientes del Centro Pediátrico</h2>
+        <p class="section-desc">Información consolidada de menores, tutores principales y alertas médicas.</p>
+      </div>
+      <button id="btn-ir-crear-desde-buscador" class="btn btn-cta btn-sm" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Nuevo Registro</span>
+      </button>
+    </div>
+    <div id="table-container" class="table-container"></div>
+  </div>
+</div>

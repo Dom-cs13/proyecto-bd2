@@ -3,33 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Centro Pediátrico · Red de Salud</title>
+  <title>Centro Pediátrico · Alba Suite</title>
+  
+  <!-- Estilos modulares desacoplados -->
   <link rel="stylesheet" href="../shared/css/fuentes.css">
+  <link rel="stylesheet" href="./css/tema.css">
 </head>
-<body hidden>
-  <header>
-    <h1>Centro Pediátrico</h1>
-    <span id="sesion-rol"></span>
-    <button id="btn-salir" type="button">Cerrar sesión</button>
-  </header>
+<body>
+  <a class="skip-link" href="#main-viewport">Saltar al contenido principal</a>
 
-  <main id="main-viewport">
-    <!-- Aquí se montan las vistas pediátricas: pacientes, tutores, crecimiento y vacunas -->
-  </main>
+  <div class="app-container">
+    <!-- Sidebar Izquierdo Modular Pediátrico -->
+    <aside id="sidebar-container" class="app-sidebar" aria-label="Navegación institucional"></aside>
 
-  <script type="module">
-    import { exigirSesion, cerrarSesion } from '../shared/js/api/auth.js';
+    <!-- Área Principal de la Aplicación -->
+    <main class="app-main">
+      <!-- Barra Superior de Navegación Rápida -->
+      <header class="top-navbar">
+        <div class="top-nav-left">
+          <div class="top-nav-breadcrumb">
+            <span>Centro Pediátrico</span>
+            <span>/</span>
+            <strong id="seccion-actual">Panel Principal</strong>
+          </div>
+        </div>
 
-    const sesion = exigirSesion('pediatria');
-    if (sesion) {
-      document.getElementById('sesion-rol').textContent = `Rol: ${sesion.rol}`;
-      document.body.hidden = false;
-    }
+        <div class="top-nav-right">
+          <label for="selector-rol-demo" style="display:flex;align-items:center;gap:6px;font-size:0.76rem;font-weight:700;color:var(--color-pacific);background:var(--primary-light);padding:4px 10px;border-radius:var(--radius-full);border:1px solid var(--border-color);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Rol:</span>
+            <select id="selector-rol-demo" style="border:0;background:transparent;font:inherit;font-weight:800;color:var(--color-pacific);cursor:pointer;outline:none;">
+              <option value="pediatra">Pediatra / Médico</option>
+              <option value="enfermeria">Enfermería Pediátrica</option>
+              <option value="recepcion">Recepción / Admisión</option>
+            </select>
+          </label>
 
-    document.getElementById('btn-salir').addEventListener('click', () => {
-      cerrarSesion();
-      location.replace('../index.html');
-    });
-  </script>
+          <button id="topnav-btn-principal" class="btn btn-outline btn-sm" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span>Principal</span>
+          </button>
+          <button id="topnav-btn-buscador" class="btn btn-outline btn-sm" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Buscador</span>
+          </button>
+          <button id="topnav-btn-nuevo" class="btn btn-cta btn-sm" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Nuevo Paciente</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Viewport Dinámico donde se cargan las vistas de /pages/ -->
+      <section id="main-viewport" class="content-viewport" tabindex="-1"></section>
+
+      <!-- Footer Institucional en Pacific (#2E6987) -->
+      <footer style="background-color: var(--color-pacific); color: #ffffff; padding: 14px 36px; display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <strong>Centro Pediátrico · Alba Suite (I4)</strong>
+          <span style="opacity: 0.8;">· Atención integral del niño sano, inmunizaciones y desarrollo infantil</span>
+        </div>
+        <span style="opacity: 0.85;">Escritura local aislada · Consulta federada en red de solo lectura</span>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Contenedor del Drawer / Panel Flotante para Consultas y Edición -->
+  <div id="drawer-container"></div>
+
+  <!-- Aplicación JS Principal (Arquitectura SPA modular) -->
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
