@@ -32,7 +32,7 @@ export function renderModalDrawer(containerId = 'drawer-container') {
 
       <div class="drawer-tabs">
         <button class="drawer-tab ${pestanaActiva === 'consultas' ? 'active' : ''}" data-tab="consultas" type="button">Historial Consultas</button>
-        ${!esSoloLectura ? `<button class="drawer-tab ${pestanaActiva === 'nueva-consulta' ? 'active' : ''}" data-tab="nueva-consulta" type="button">+ Nueva Atención</button>` : ''}
+        ${!esSoloLectura ? `<button class="drawer-tab ${pestanaActiva === 'nueva-consulta' ? 'active' : ''}" data-tab="nueva-consulta" type="button">Nueva Atención</button>` : ''}
         <button class="drawer-tab ${pestanaActiva === 'crecimiento' ? 'active' : ''}" data-tab="crecimiento" type="button">Crecimiento y Vacunas</button>
         <button class="drawer-tab ${pestanaActiva === 'tutor' ? 'active' : ''}" data-tab="tutor" type="button">Tutor y Datos</button>
       </div>
