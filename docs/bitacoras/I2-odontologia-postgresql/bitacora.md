@@ -49,3 +49,26 @@
 - Se agrego una FK compuesta para validar la poliza de cada consulta.
 - Se realizaron cuatro pruebas adicionales de integridad en PostgreSQL 16 mediante Docker; todas fueron exitosas y finalizaron con ROLLBACK.
 - No se realizaron modificaciones en Supabase ni en los modulos de otras instituciones.
+## Sesion 2 - 2026-11-01 - Tarea I2-06
+
+- **Objetivo de la sesion:** Implementar la primera parte del adaptador PostgreSQL para Odontologia.
+- **Que hice:** Cree connection.js, mapper.js y PostgresAdapter.js. Implemente registro, busqueda y consulta de pacientes, lectura basica del historial y archivado con motivo. El registro crea el historial inicial dentro de una transaccion.
+- **Decisiones tomadas:** Utilizar el driver oficial pg, consultas parametrizadas y transacciones SQL. Mantener el codigo dentro del adaptador de Odontologia, sin modificar los contratos compartidos ni otros motores.
+- **Pruebas realizadas:** Conexion real mediante pg.Pool, registro y consulta de pacientes, archivado persistente y recuperacion de consultas basicas en PostgreSQL 16 local. Vitest: 8/8 pruebas aprobadas. ESLint sin errores.
+- **Problemas o bloqueos:** El puerto HistorialRepository y los esquemas Zod definitivos todavia no estan implementados en esta copia del repositorio. Falta comprobar compatibilidad contractual e integracion HTTP. El historial aun no incluye los detalles completos de diagnosticos, tratamientos y recetas; corresponden a I2-07.
+- **Evidencia:** Rama feat/I2-06-postgres-adapter-p1, pruebas unitarias en tests/unit/postgresql/ y pruebas locales con Docker.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar las pruebas y el contrato, publicar PR de I2-06 y continuar posteriormente con I2-07. No se realizaron cambios en Supabase.
+
+## Sesion 3 - 2026-11-01 - Tarea I2-07
+
+- **Objetivo:** Implementar las operaciones clinicas del adaptador PostgreSQL de Odontologia.
+- **Trabajo realizado:** Se implementaron crearConsulta(), crearDiagnostico(), crearTratamiento(), crearReceta() y registrarAtencionCompleta().
+- **Validaciones:** Las consultas requieren un historial activo. Los diagnosticos, tratamientos y recetas comprueban que los registros correspondientes esten disponibles.
+- **Transacciones:** La receta guarda sus medicamentos en una sola transaccion. registrarAtencionCompleta() registra consulta, diagnosticos, tratamientos y receta dentro de una transaccion conjunta.
+- **Pruebas realizadas:** PostgreSQL 16 local mediante Docker. Se verificaron registros individuales, atencion completa, COMMIT y ROLLBACK por error de clave foranea. Vitest: 15/15 pruebas aprobadas. ESLint sin errores.
+- **Archivos modificados:** PostgresAdapter.js y tres archivos nuevos de pruebas unitarias.
+- **Pendientes:** Validar compatibilidad con el contrato compartido, revisar integracion HTTP y seguridad de Supabase.
+- **Decisiones:** No modificar otros motores, interfaces compartidas ni la base de datos de Supabase.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar los cambios y publicar el PR de I2-07 en Draft, dependiente de I2-06.
