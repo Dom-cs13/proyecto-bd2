@@ -1,4 +1,4 @@
-# Bitácora · I2 · Clínica Odontológica · PostgreSQL (Supabase)
+﻿# Bitácora · I2 · Clínica Odontológica · PostgreSQL (Supabase)
 
 <!-- Agrega una entrada por sesión, en el mismo PR de la tarea. -->
 
