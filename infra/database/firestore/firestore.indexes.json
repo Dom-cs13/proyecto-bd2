@@ -1,0 +1,45 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "pacientes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "documentoIdentidad", "order": "ASCENDING" },
+        { "fieldPath": "activo", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ordenes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pacienteId", "order": "ASCENDING" },
+        { "fieldPath": "fechaSolicitud", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ordenes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tipoLaboratorio", "order": "ASCENDING" },
+        { "fieldPath": "estadoOrden", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "muestras",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ordenId", "order": "ASCENDING" },
+        { "fieldPath": "codigoBarras", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "resultados",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ordenId", "order": "ASCENDING" },
+        { "fieldPath": "fechaResultado", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
