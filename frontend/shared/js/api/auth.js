@@ -23,10 +23,16 @@ export async function login({ institucion, usuario, password }) {
       throw new Error(cuerpo.error?.mensaje || `Error HTTP ${res.status}`);
     }
   } catch (err) {
+    if (institucion === 'odontologia') throw err;
     if (err.message && !err.message.includes('404') && !err.message.includes('conectar') && !err.message.includes('fetch') && !err.message.includes('405')) {
       throw err;
     }
   }
+  if (institucion === 'odontologia') {
+    throw new Error('El login de Odontologia requiere el backend');
+  }
+
+
 
   // Fallback para funcionamiento autónomo del frontend sin backend activo
   const payloadObj = {
