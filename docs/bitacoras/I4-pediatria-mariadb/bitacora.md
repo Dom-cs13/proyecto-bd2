@@ -146,3 +146,21 @@
 - **Evidencia:** rama `feat/I4-07-mariadb-adapter-p1`, PR a `main`.
 - **Tiempo invertido:** 65 min
 - **Siguiente paso:** Pruebas de integración de extremo a extremo con MariaDB Cloud / Docker local y cierre de ciclo del Centro Pediátrico.
+
+## Sesión 7 · 2026-11-04 · Tarea I4-08 (Compatibilidad en vivo con MariaDB Cloud SkySQL y siembra de catálogos)
+
+- **Objetivo de la sesión:** Conectar el backend del Centro Pediátrico (`I4`) a la instancia real en la nube de MariaDB Cloud (SkySQL), asegurar compatibilidad bidireccional de esquemas entre el DDL local y la base en la nube (`sistema_pediatria`), sembrar catálogos y usuarios demo, y verificar operaciones clínicas reales y autenticación JWT.
+- **Qué hice:**
+  - Se configuró la conexión segura con SSL a MariaDB Cloud (`serverless-eastus.sysp0000.db3.skysql.com:4014 / sistema_pediatria`) en variables de entorno locales protegidas (`.env`, nunca rastreado en Git).
+  - Se adaptó `MariaDbAdapter.js` y `mapper.js` con manejo de fallback a nivel de consulta SQL ante pequeñas variantes de nombres de columnas/tablas existentes en la nube (`tutor_legal` / `tutor`, `peso` / `peso_kg`, `fecha_medicion` / `fecha`), garantizando compatibilidad 100% tanto con la base viva en SkySQL como con la suite de pruebas unitarias y DDL estricto.
+  - Se adaptó `pediatriaAuth.js` para admitir estados de usuario textuales (`'activo'`) y numéricos (`1`).
+  - Se sembraron los catálogos base en la nube: roles (`pediatra`, `enfermeria`, `recepcion`), usuarios demo (`pediatra.demo@example.invalid` con hash SHA-256 de `Pediatria2026!`), catálogo de vacunas infantiles, medicamentos y alergias.
+  - Se ejecutaron pruebas en vivo contra MariaDB Cloud: inserción de paciente con tutor, registro de control antropométrico de crecimiento, archivado formal de expediente clínico y autenticación vía `POST /auth/login` con emisión válida de JWT institucional.
+- **Decisiones tomadas (y por qué):**
+  - Utilizar try-catch por consulta en lugar de sondeos previos (`DESCRIBE`) para evitar consumir llamadas en mocks de pruebas unitarias y mantener las 36 pruebas en verde.
+  - Mantener estricto cumplimiento de la Regla #7 de `AGENTS.md` (no registrar ni imprimir credenciales en archivos rastreados).
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** rama `feat/I4-08-mariadb-cloud-compatibility`, PR a `main`.
+- **Tiempo invertido:** 40 min
+- **Siguiente paso:** Conectar vistas y formularios de `frontend/pediatria/` con los endpoints reales del backend en la nube.
+
