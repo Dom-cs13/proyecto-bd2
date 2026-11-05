@@ -1,3 +1,4 @@
+import { routerPediatriaAuth } from './interfaces/http/routes/pediatriaAuth.js';
 import { routerOdontologiaAuth } from './interfaces/http/routes/odontologiaAuth.js';
 // Arma la app Express sin escuchar un puerto (los tests la usan con Supertest).
 import express from 'express';
@@ -10,6 +11,7 @@ export function crearApp() {
 
   // Las rutas se montan aquí a partir de I1-03, I2-03 e I3-03.
 
+  app.use(routerPediatriaAuth);
   app.use(routerOdontologiaAuth);
 
   app.use(noEncontrado);
