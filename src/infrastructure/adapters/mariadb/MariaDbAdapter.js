@@ -33,22 +33,44 @@ export class MariaDbAdapter {
     try {
       await conn.query("BEGIN");
 
-      const resultado = await conn.query(
-        `INSERT INTO paciente
-          (documento, nombres, apellidos, fecha_nacimiento, sexo, grupo_sanguineo, telefono, correo, direccion)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          datos.documento ?? null,
-          datos.nombres,
-          datos.apellidos,
-          datos.fechaNacimiento,
-          datos.sexo ?? null,
-          datos.detallesInstitucion?.grupoSanguineo ?? null,
-          datos.telefono ?? null,
-          datos.correo ?? null,
-          datos.direccion ?? null,
-        ]
-      );
+      let resultado;
+      try {
+        resultado = await conn.query(
+          `INSERT INTO paciente
+            (documento, nombres, apellidos, fecha_nacimiento, sexo, grupo_sanguineo, telefono, correo, direccion)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            datos.documento ?? null,
+            datos.nombres,
+            datos.apellidos,
+            datos.fechaNacimiento,
+            datos.sexo ?? null,
+            datos.detallesInstitucion?.grupoSanguineo ?? null,
+            datos.telefono ?? null,
+            datos.correo ?? null,
+            datos.direccion ?? null,
+          ]
+        );
+      } catch (errPac) {
+        if (errPac.code === "ER_BAD_FIELD_ERROR" || errPac.message?.includes("Unknown column")) {
+          resultado = await conn.query(
+            `INSERT INTO paciente
+              (nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, direccion)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              datos.nombres,
+              datos.apellidos,
+              datos.fechaNacimiento,
+              datos.sexo ?? "M",
+              datos.telefono ?? null,
+              datos.correo ?? null,
+              datos.direccion ?? null,
+            ]
+          );
+        } else {
+          throw errPac;
+        }
+      }
 
       const pacienteId = resultado.insertId ?? resultado[0]?.insertId;
 
@@ -60,28 +82,56 @@ export class MariaDbAdapter {
       const tutorDatos = datos.detallesInstitucion?.tutorPrincipal;
       if (tutorDatos?.dpi && tutorDatos?.nombres && tutorDatos?.apellidos) {
         let tutorId;
-        const tutorExistente = await conn.query(
-          "SELECT id_tutor FROM tutor WHERE dpi = ? LIMIT 1",
-          [tutorDatos.dpi]
-        );
-
-        const filasTutor = Array.isArray(tutorExistente) ? tutorExistente : tutorExistente.rows ?? [];
-        if (filasTutor.length > 0) {
-          tutorId = filasTutor[0].id_tutor;
-        } else {
-          const resTutor = await conn.query(
-            `INSERT INTO tutor (dpi, nombres, apellidos, telefono, correo, direccion)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-              tutorDatos.dpi,
-              tutorDatos.nombres,
-              tutorDatos.apellidos,
-              tutorDatos.telefono ?? "",
-              tutorDatos.correo ?? null,
-              tutorDatos.direccion ?? null,
-            ]
+        try {
+          const tutorExistente = await conn.query(
+            "SELECT id_tutor FROM tutor WHERE dpi = ? LIMIT 1",
+            [tutorDatos.dpi]
           );
-          tutorId = resTutor.insertId ?? resTutor[0]?.insertId;
+          const filasTutor = Array.isArray(tutorExistente) ? tutorExistente : tutorExistente.rows ?? [];
+          if (filasTutor.length > 0) {
+            tutorId = filasTutor[0].id_tutor;
+          } else {
+            const resTutor = await conn.query(
+              `INSERT INTO tutor (dpi, nombres, apellidos, telefono, correo, direccion)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [
+                tutorDatos.dpi,
+                tutorDatos.nombres,
+                tutorDatos.apellidos,
+                tutorDatos.telefono ?? "",
+                tutorDatos.correo ?? null,
+                tutorDatos.direccion ?? null,
+              ]
+            );
+            tutorId = resTutor.insertId ?? resTutor[0]?.insertId;
+          }
+        } catch (errTutor) {
+          if (errTutor.code === "ER_NO_SUCH_TABLE" || errTutor.message?.includes("doesn't exist")) {
+            const tutorExistente = await conn.query(
+              "SELECT id_tutor FROM tutor_legal WHERE dpi = ? LIMIT 1",
+              [tutorDatos.dpi]
+            );
+            const filasTutor = Array.isArray(tutorExistente) ? tutorExistente : tutorExistente.rows ?? [];
+            if (filasTutor.length > 0) {
+              tutorId = filasTutor[0].id_tutor;
+            } else {
+              const resTutor = await conn.query(
+                `INSERT INTO tutor_legal (dpi, nombres, apellidos, telefono, correo, direccion)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                  tutorDatos.dpi,
+                  tutorDatos.nombres,
+                  tutorDatos.apellidos,
+                  tutorDatos.telefono ?? "",
+                  tutorDatos.correo ?? null,
+                  tutorDatos.direccion ?? null,
+                ]
+              );
+              tutorId = resTutor.insertId ?? resTutor[0]?.insertId;
+            }
+          } else {
+            throw errTutor;
+          }
         }
 
         await conn.query(
@@ -135,15 +185,32 @@ export class MariaDbAdapter {
       const pacienteFila = filasPac[0];
 
       // Tutor principal
-      const resTutor = await conn.query(
-        `SELECT t.*, pt.parentesco, pt.es_principal
-         FROM paciente_tutor pt
-         JOIN tutor t ON t.id_tutor = pt.id_tutor
-         WHERE pt.id_paciente = ? AND pt.es_principal = 1
-         LIMIT 1`,
-        [id]
-      );
-      const filasTutor = Array.isArray(resTutor) ? resTutor : resTutor.rows ?? [];
+      let filasTutor = [];
+      try {
+        const resTutor = await conn.query(
+          `SELECT t.*, pt.parentesco, pt.es_principal
+           FROM paciente_tutor pt
+           JOIN tutor t ON t.id_tutor = pt.id_tutor
+           WHERE pt.id_paciente = ? AND pt.es_principal = 1
+           LIMIT 1`,
+          [id]
+        );
+        filasTutor = Array.isArray(resTutor) ? resTutor : resTutor.rows ?? [];
+      } catch (errTutor) {
+        if (errTutor.code === "ER_NO_SUCH_TABLE" || errTutor.message?.includes("doesn't exist")) {
+          const resTutor = await conn.query(
+            `SELECT t.*, pt.parentesco, pt.es_principal
+             FROM paciente_tutor pt
+             JOIN tutor_legal t ON t.id_tutor = pt.id_tutor
+             WHERE pt.id_paciente = ? AND pt.es_principal = 1
+             LIMIT 1`,
+            [id]
+          );
+          filasTutor = Array.isArray(resTutor) ? resTutor : resTutor.rows ?? [];
+        } else {
+          throw errTutor;
+        }
+      }
       const tutorPrincipal = filasTutor.length > 0
         ? {
             id: String(filasTutor[0].id_tutor),
@@ -158,40 +225,77 @@ export class MariaDbAdapter {
         : null;
 
       // Alergias
-      const resAlergias = await conn.query(
-        `SELECT a.id_alergia, a.nombre, pa.nivel_severidad, pa.reaccion, pa.fecha_deteccion
-         FROM paciente_alergia pa
-         JOIN alergia a ON a.id_alergia = pa.id_alergia
-         WHERE pa.id_paciente = ?`,
-        [id]
-      );
-      const filasAlergias = Array.isArray(resAlergias) ? resAlergias : resAlergias.rows ?? [];
-      const alergias = filasAlergias.map((a) => ({
-        id: String(a.id_alergia),
-        nombre: a.nombre,
-        severidad: a.nivel_severidad,
-        reaccion: a.reaccion ?? null,
-        fechaDeteccion: a.fecha_deteccion ? String(a.fecha_deteccion).slice(0, 10) : null,
-      }));
+      let filasAlergias = [];
+      try {
+        const resAlergias = await conn.query(
+          `SELECT a.id_alergia, a.nombre, pa.nivel_severidad, pa.reaccion, pa.fecha_deteccion
+           FROM paciente_alergia pa
+           JOIN alergia a ON a.id_alergia = pa.id_alergia
+           WHERE pa.id_paciente = ?`,
+          [id]
+        );
+        filasAlergias = Array.isArray(resAlergias) ? resAlergias : resAlergias.rows ?? [];
+      } catch (errAlergia) {
+        if (errAlergia.code === "ER_BAD_FIELD_ERROR" || errAlergia.message?.includes("Unknown column")) {
+          const resAlergias = await conn.query(
+            `SELECT a.id_alergia, a.nombre, pa.nivel_severidad, pa.reaccion, pa.fecha_registro
+             FROM paciente_alergia pa
+             JOIN alergia a ON a.id_alergia = pa.id_alergia
+             WHERE pa.id_paciente = ?`,
+            [id]
+          );
+          filasAlergias = Array.isArray(resAlergias) ? resAlergias : resAlergias.rows ?? [];
+        } else {
+          throw errAlergia;
+        }
+      }
+
+      const alergias = filasAlergias.map((a) => {
+        const fechaDet = a.fecha_deteccion ?? a.fecha_registro;
+        return {
+          id: String(a.id_alergia),
+          nombre: a.nombre,
+          severidad: a.nivel_severidad,
+          reaccion: a.reaccion ?? null,
+          fechaDeteccion: fechaDet ? String(fechaDet).slice(0, 10) : null,
+        };
+      });
 
       // Controles de crecimiento
       const resControles = await conn.query(
-        "SELECT * FROM control_crecimiento WHERE id_paciente = ? ORDER BY fecha DESC, id_control DESC",
+        "SELECT * FROM control_crecimiento WHERE id_paciente = ? ORDER BY id_control DESC",
         [id]
       );
       const filasControles = Array.isArray(resControles) ? resControles : resControles.rows ?? [];
       const controlesCrecimiento = filasControles.map(controlCrecimientoDesdeFila);
 
       // Vacunas aplicadas
-      const resVacunas = await conn.query(
-        `SELECT va.*, v.nombre AS nombre_vacuna
-         FROM vacuna_aplicada va
-         JOIN vacuna v ON v.id_vacuna = va.id_vacuna
-         WHERE va.id_paciente = ?
-         ORDER BY va.fecha_aplicacion DESC`,
-        [id]
-      );
-      const filasVacunas = Array.isArray(resVacunas) ? resVacunas : resVacunas.rows ?? [];
+      let filasVacunas = [];
+      try {
+        const resVacunas = await conn.query(
+          `SELECT va.*, v.nombre AS nombre_vacuna
+           FROM vacuna_aplicada va
+           JOIN vacuna v ON v.id_vacuna = va.id_vacuna
+           WHERE va.id_paciente = ?
+           ORDER BY va.id_paciente`,
+          [id]
+        );
+        filasVacunas = Array.isArray(resVacunas) ? resVacunas : resVacunas.rows ?? [];
+      } catch (errVac) {
+        if (errVac.code === "ER_NO_SUCH_TABLE" || errVac.message?.includes("doesn't exist")) {
+          const resVacunas = await conn.query(
+            `SELECT va.*, v.nombre AS nombre_vacuna
+             FROM esquema_vacunacion va
+             JOIN vacuna v ON v.id_vacuna = va.id_vacuna
+             WHERE va.id_paciente = ?
+             ORDER BY va.id_paciente`,
+            [id]
+          );
+          filasVacunas = Array.isArray(resVacunas) ? resVacunas : resVacunas.rows ?? [];
+        } else {
+          throw errVac;
+        }
+      }
       const vacunasAplicadas = filasVacunas.map(vacunaAplicadaDesdeFila);
 
       return pacienteDesdeFila(pacienteFila, {
@@ -377,15 +481,32 @@ export class MariaDbAdapter {
     try {
       await conn.query("BEGIN");
 
-      const resultado = await conn.query(
-        `UPDATE historial_clinico
-         SET estado = 'archivado',
-             fecha_archivo = NOW(),
-             motivo_archivo_tipo = ?,
-             motivo_archivo_detalle = ?
-         WHERE id_paciente = ? AND estado = 'activo'`,
-        [motivo.tipo, motivo.detalle, pacienteId]
-      );
+      let resultado;
+      try {
+        resultado = await conn.query(
+          `UPDATE historial_clinico
+           SET estado = 'archivado',
+               fecha_archivo = NOW(),
+               motivo_archivo_tipo = ?,
+               motivo_archivo_detalle = ?
+           WHERE id_paciente = ? AND estado = 'activo'`,
+          [motivo.tipo, motivo.detalle, pacienteId]
+        );
+      } catch (errCol) {
+        if (errCol.code === "ER_BAD_FIELD_ERROR" || errCol.message?.includes("Unknown column")) {
+          const detalleCompuesto = `${motivo.tipo}: ${motivo.detalle}`;
+          resultado = await conn.query(
+            `UPDATE historial_clinico
+             SET estado = 'archivado',
+                 fecha_archivo = NOW(),
+                 motivo_archivo = ?
+             WHERE id_paciente = ? AND (estado = 'activo' OR estado = '1')`,
+            [detalleCompuesto, pacienteId]
+          );
+        } else {
+          throw errCol;
+        }
+      }
 
       const affected = resultado.affectedRows ?? resultado[0]?.affectedRows ?? 0;
       if (affected === 0) {
@@ -436,22 +557,44 @@ export class MariaDbAdapter {
         throw error;
       }
 
-      const resultado = await conn.query(
-        `INSERT INTO control_crecimiento
-          (id_paciente, id_consulta, fecha, edad_meses, peso_kg, talla_cm, perimetro_cefalico_cm, imc, percentil_oms)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          pacienteId,
-          datos.consultaId ?? null,
-          datos.fecha ?? new Date().toISOString().slice(0, 10),
-          datos.edadMeses,
-          datos.pesoKg,
-          datos.tallaCm,
-          datos.perimetroCefalicoCm ?? null,
-          datos.imc ?? null,
-          datos.percentilOms ?? null,
-        ]
-      );
+      let resultado;
+      try {
+        resultado = await conn.query(
+          `INSERT INTO control_crecimiento
+            (id_paciente, id_consulta, fecha, edad_meses, peso_kg, talla_cm, perimetro_cefalico_cm, imc, percentil_oms)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            pacienteId,
+            datos.consultaId ?? null,
+            datos.fecha ?? new Date().toISOString().slice(0, 10),
+            datos.edadMeses,
+            datos.pesoKg,
+            datos.tallaCm,
+            datos.perimetroCefalicoCm ?? null,
+            datos.imc ?? null,
+            datos.percentilOms ?? null,
+          ]
+        );
+      } catch (errControl) {
+        if (errControl.code === "ER_BAD_FIELD_ERROR" || errControl.message?.includes("Unknown column")) {
+          resultado = await conn.query(
+            `INSERT INTO control_crecimiento
+              (id_paciente, id_consulta, fecha_medicion, edad_meses, peso, talla, perimetro_cefalico)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              pacienteId,
+              datos.consultaId ?? null,
+              datos.fecha ?? new Date().toISOString().slice(0, 10),
+              datos.edadMeses,
+              datos.pesoKg,
+              datos.tallaCm,
+              datos.perimetroCefalicoCm ?? null,
+            ]
+          );
+        } else {
+          throw errControl;
+        }
+      }
 
       const controlId = resultado.insertId ?? resultado[0]?.insertId;
 
@@ -498,21 +641,44 @@ export class MariaDbAdapter {
         throw error;
       }
 
-      const resultado = await conn.query(
-        `INSERT INTO vacuna_aplicada
-          (id_paciente, id_vacuna, numero_dosis, id_consulta, id_usuario, fecha_aplicacion, lote, reaccion_adversa)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          pacienteId,
-          datos.vacunaId,
-          datos.numeroDosis,
-          datos.consultaId ?? null,
-          datos.usuarioId ?? null,
-          datos.fechaAplicacion ?? new Date().toISOString().slice(0, 10),
-          datos.lote,
-          datos.reaccionAdversa ?? null,
-        ]
-      );
+      let resultado;
+      try {
+        resultado = await conn.query(
+          `INSERT INTO vacuna_aplicada
+            (id_paciente, id_vacuna, numero_dosis, id_consulta, id_usuario, fecha_aplicacion, lote, reaccion_adversa)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            pacienteId,
+            datos.vacunaId,
+            datos.numeroDosis,
+            datos.consultaId ?? null,
+            datos.usuarioId ?? null,
+            datos.fechaAplicacion ?? new Date().toISOString().slice(0, 10),
+            datos.lote,
+            datos.reaccionAdversa ?? null,
+          ]
+        );
+      } catch (errVac) {
+        if (errVac.code === "ER_NO_SUCH_TABLE" || errVac.message?.includes("doesn't exist")) {
+          const fechaApp = datos.fechaAplicacion ?? new Date().toISOString().slice(0, 10);
+          resultado = await conn.query(
+            `INSERT INTO esquema_vacunacion
+              (id_paciente, id_vacuna, numero_dosis, fecha_programada, fecha_aplicacion, estado_dosis, lote, id_usuario_aplica)
+             VALUES (?, ?, ?, ?, ?, 'aplicada', ?, ?)`,
+            [
+              pacienteId,
+              datos.vacunaId,
+              datos.numeroDosis,
+              fechaApp,
+              fechaApp,
+              datos.lote,
+              datos.usuarioId ?? null,
+            ]
+          );
+        } else {
+          throw errVac;
+        }
+      }
 
       const vacunaAplicadaId = resultado.insertId ?? resultado[0]?.insertId;
 
@@ -678,18 +844,37 @@ export class MariaDbAdapter {
         throw error;
       }
 
-      const resultado = await conn.query(
-        `INSERT INTO tratamiento
-          (id_diagnostico, descripcion, fecha_inicio, fecha_fin, estado, observaciones)
-         VALUES (?, ?, ?, ?, 'activo', ?)`,
-        [
-          datos.diagnosticoId,
-          datos.descripcion,
-          datos.fechaInicio ?? null,
-          datos.fechaFin ?? null,
-          datos.observaciones ?? null,
-        ]
-      );
+      let resultado;
+      try {
+        resultado = await conn.query(
+          `INSERT INTO tratamiento
+            (id_diagnostico, descripcion, fecha_inicio, fecha_fin, estado, observaciones)
+           VALUES (?, ?, ?, ?, 'activo', ?)`,
+          [
+            datos.diagnosticoId,
+            datos.descripcion,
+            datos.fechaInicio ?? null,
+            datos.fechaFin ?? null,
+            datos.observaciones ?? null,
+          ]
+        );
+      } catch (errTrat) {
+        if (errTrat.code === "ER_BAD_FIELD_ERROR" || errTrat.message?.includes("Unknown column")) {
+          resultado = await conn.query(
+            `INSERT INTO tratamiento
+              (id_consulta, descripcion, fecha_inicio, fecha_fin)
+             VALUES (?, ?, ?, ?)`,
+            [
+              datos.consultaId ?? datos.diagnosticoId,
+              datos.descripcion,
+              datos.fechaInicio ?? null,
+              datos.fechaFin ?? null,
+            ]
+          );
+        } else {
+          throw errTrat;
+        }
+      }
 
       const tratamientoId = resultado.insertId ?? resultado[0]?.insertId;
 
