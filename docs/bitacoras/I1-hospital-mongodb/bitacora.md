@@ -45,3 +45,22 @@
 - **Evidencia:** `scripts/notificar-pr.js`, `.github/workflows/ci.yml`.
 - **Tiempo invertido:** 70 min
 - **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
+
+
+## Sesión 4 · 2026-11-05 · Implementación MongoDB Atlas y Compass (I1-04)
+
+- **Objetivo de la sesión:** Implementar el modelo documental del Hospital General, configurar conexión a MongoDB Atlas mediante MongoDB Compass, crear el adaptador `MongoAdapter`, `mapper.js`, esquemas JSON y semillas de datos.
+- **Qué hice:**
+  - Diseñé el modelo documental a partir del diagrama ER del Hospital General (pág. 3): colecciones `pacientes` y `consultas` con pólizas, diagnósticos y tratamientos embebidos.
+  - Creé las semillas JSON en `infra/database/mongodb/seeds/` (`pacientes.json` y `consultas.json`) listas para importar desde MongoDB Compass.
+  - Implementé `src/infrastructure/adapters/mongodb/connection.js` con resolución DNS optimizada para clusters de Atlas, y `MongoAdapter.js` con las operaciones del puerto `HistorialRepository`.
+  - Diseñé el `mapper.js` para asegurar cumplimiento estricto de LSP (id como string, camelCase, ISO dates).
+  - Creé los esquemas JSON de validación en `infra/database/mongodb/colecciones/` y la definición de índices en `infra/database/mongodb/indices/`.
+  - Añadí pruebas unitarias para el mapper en `tests/unit/mongoMapper.test.js`.
+- **Decisiones tomadas (y por qué):**
+  - Embeber la póliza de seguro y aseguradora en `pacientes` al ser leídas conjuntamente en admisiones.
+  - Embeber la cadena clínica (diagnóstico, tratamiento, receta) dentro de cada documento de `consultas` para evitar JOINs y mantener atomicidad por episodio médico.
+- **Problemas / bloqueos:** Ninguno. Conexión a MongoDB Atlas verificada con latencia en vivo y pruebas en verde.
+- **Evidencia:** `src/infrastructure/adapters/mongodb/`, `infra/database/mongodb/`, `tests/unit/mongoMapper.test.js`.
+- **Tiempo invertido:** 75 min
+- **Siguiente paso:** Integración con rutas de Express y `RepositoryFactory`.

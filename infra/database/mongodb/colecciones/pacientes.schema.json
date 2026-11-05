@@ -1,0 +1,40 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["nombre", "apellidos", "estado"],
+    "properties": {
+      "expediente": { "bsonType": "string" },
+      "documentoIdentidad": { "bsonType": "string" },
+      "nombre": { "bsonType": "string" },
+      "apellidos": { "bsonType": "string" },
+      "fechaNacimiento": { "bsonType": ["date", "string"] },
+      "sexo": { "bsonType": "string" },
+      "direccion": { "bsonType": "string" },
+      "telefono": { "bsonType": ["int", "long", "string", "double"] },
+      "correo": { "bsonType": "string" },
+      "alergias": { "bsonType": "string" },
+      "estado": { "enum": ["activo", "archivado"] },
+      "polizaSeguro": {
+        "bsonType": ["object", "null"],
+        "properties": {
+          "idPoliza": { "bsonType": "string" },
+          "cobertura": { "bsonType": "string" },
+          "porcentajeCobertura": { "bsonType": ["int", "double"] },
+          "fechaInicio": { "bsonType": "string" },
+          "fechaVencimiento": { "bsonType": "string" },
+          "estado": { "bsonType": "string" },
+          "aseguradora": {
+            "bsonType": "object",
+            "properties": {
+              "idAseguradora": { "bsonType": "string" },
+              "nombreEmpresa": { "bsonType": "string" },
+              "nitIdentificador": { "bsonType": "string" },
+              "telefono": { "bsonType": ["int", "string", "double"] }
+            }
+          }
+        }
+      },
+      "detallesInstitucion": { "bsonType": "object" }
+    }
+  }
+}

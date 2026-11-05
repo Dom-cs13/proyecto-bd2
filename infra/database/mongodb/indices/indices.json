@@ -1,0 +1,11 @@
+{
+  "pacientes": [
+    { "key": { "expediente": 1 }, "options": { "unique": true, "name": "idx_pacientes_expediente" } },
+    { "key": { "documentoIdentidad": 1 }, "options": { "unique": true, "sparse": true, "name": "idx_pacientes_documento" } },
+    { "key": { "nombre": "text", "apellidos": "text" }, "options": { "name": "idx_pacientes_busqueda_texto" } }
+  ],
+  "consultas": [
+    { "key": { "pacienteId": 1, "fecha": -1 }, "options": { "name": "idx_consultas_paciente_fecha" } },
+    { "key": { "expediente": 1, "fecha": -1 }, "options": { "name": "idx_consultas_expediente_fecha" } }
+  ]
+}

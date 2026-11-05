@@ -1,0 +1,108 @@
+import { describe, expect, test } from 'vitest';
+import { ObjectId } from 'mongodb';
+import { pacienteToDomain, consultaToDomain, historialToDomain } from '../../src/infrastructure/adapters/mongodb/mapper.js';
+
+describe('MongoDB Mapper (Hospital General · I1)', () => {
+  test('pacienteToDomain convierte _id a string y asegura camelCase', () => {
+    const oid = new ObjectId('650000000000000000000001');
+    const docMongo = {
+      _id: oid,
+      expediente: 'EXP-01842',
+      nombre: 'Mariana',
+      apellidos: 'Soto Hernández',
+      fechaNacimiento: new Date('1990-04-18T00:00:00.000Z'),
+      sexo: 'Femenino',
+      direccion: 'Av. Central 45',
+      telefono: 12345678,
+      correo: 'mariana.soto@hospital.com',
+      alergias: 'Penicilina',
+      documentoIdentidad: 'DOC-12345',
+      polizaSeguro: {
+        idPoliza: 'POL-98421',
+        porcentajeCobertura: 85,
+        aseguradora: {
+          nombreEmpresa: 'Seguros Universales',
+        },
+      },
+      detallesInstitucion: {
+        institucionId: 'I1',
+        tipoSangre: 'O+',
+      },
+    };
+
+    const dominio = pacienteToDomain(docMongo);
+
+    expect(dominio.id).toBe('650000000000000000000001');
+    expect(dominio._id).toBeUndefined();
+    expect(dominio.fechaNacimiento).toBe('1990-04-18');
+    expect(dominio.telefono).toBe('12345678');
+    expect(dominio.polizaSeguro.aseguradora.nombreEmpresa).toBe('Seguros Universales');
+    expect(dominio.detallesInstitucion.tipoSangre).toBe('O+');
+  });
+
+  test('consultaToDomain convierte la cadena completa de diagnósticos y recetas', () => {
+    const oid = new ObjectId('651000000000000000000001');
+    const docConsulta = {
+      _id: oid,
+      pacienteId: '650000000000000000000001',
+      expediente: 'EXP-01842',
+      fecha: new Date('2026-10-26T09:15:00.000Z'),
+      motivos: 'Revisión de herida',
+      observaciones: 'Evolución normal',
+      servicios: [{ idServicio: 'srv-01', nombre: 'Cirugía' }],
+      diagnostico: {
+        idDiagnostico: 'diag-01',
+        descripcion: 'Apendicitis en remisión',
+        tratamiento: {
+          idTratamiento: 'trat-01',
+          descripcion: 'Reposo',
+          fechaInicio: '2026-10-26',
+          receta: {
+            idReceta: 'rec-01',
+            fecha: new Date('2026-10-26T09:15:00.000Z'),
+            detalles: [
+              {
+                idDetalleR: 'det-01',
+                medicamento: { nombre: 'Paracetamol' },
+                dosis: '500 mg',
+                frecuencia: 'Cada 8 horas',
+                cantidad: 10,
+              },
+            ],
+          },
+        },
+      },
+    };
+
+    const dominio = consultaToDomain(docConsulta);
+
+    expect(dominio.id).toBe('651000000000000000000001');
+    expect(dominio._id).toBeUndefined();
+    expect(dominio.diagnostico.descripcion).toBe('Apendicitis en remisión');
+    expect(dominio.diagnostico.tratamiento.descripcion).toBe('Reposo');
+    expect(dominio.diagnostico.tratamiento.receta.detalles[0].medicamento).toBe('Paracetamol');
+  });
+
+  test('historialToDomain consolida paciente y consultas ordenadas', () => {
+    const pacienteDoc = {
+      _id: new ObjectId('650000000000000000000001'),
+      nombre: 'Mariana',
+      apellidos: 'Soto',
+      estado: 'activo',
+    };
+    const consultasDocs = [
+      {
+        _id: new ObjectId('651000000000000000000001'),
+        pacienteId: '650000000000000000000001',
+        motivos: 'Consulta 1',
+      },
+    ];
+
+    const historial = historialToDomain(pacienteDoc, consultasDocs);
+
+    expect(historial.estado).toBe('activo');
+    expect(historial.paciente.nombre).toBe('Mariana');
+    expect(historial.consultas).toHaveLength(1);
+    expect(historial.consultas[0].motivos).toBe('Consulta 1');
+  });
+});
