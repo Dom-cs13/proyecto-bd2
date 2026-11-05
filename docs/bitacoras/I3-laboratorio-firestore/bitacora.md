@@ -17,3 +17,16 @@
 - **Evidencia:** Commits en rama `andres`, PR #5.
 - **Tiempo invertido:** 120 min
 - **Siguiente paso:** I3-04 Diseño documental de Firestore (colecciones `pacientes` y subcolecciones `ordenes`).
+
+## Sesión 2 · 2026-10-31 · Tarea I3-10
+
+- **Objetivo de la sesión:** Sincronizar la rama `andres` con `origin/main` y asegurar que los ajustes de ESLint (`fetchPlantillaHtml`, `wireTopAction`, bloque `catch`), control de sesión (`exigirSesion`) y bitácora queden integrados sin conflictos.
+- **Qué hice:**
+  - Sincronicé la rama con `origin/main` resolviendo los conflictos en `frontend/laboratorio/index.html`, `frontend/laboratorio/js/app.js` y `frontend/laboratorio/js/datos.js`.
+  - Verifiqué el uso de `fetchPlantillaHtml` desde `../../shared/js/api/client.js`, la invocación de `wireTopAction()` en el arranque, el comentario en el `catch` de `reiniciarDemo()` y la llamada a `exigirSesion('laboratorio')`.
+- **Decisiones tomadas (y por qué):**
+  - Mantener la versión alineada con las reglas del CI en `origin/main` para evitar regresiones de lint o conflictos de fusión.
+- **Problemas / bloqueos:** La rama local tenía un commit anterior al squash merge de `main`, lo que generaba conflictos y errores de lint en el PR.
+- **Evidencia:** Merge de `origin/main` en `andres` (`f9d5961`, `533bad7`).
+- **Tiempo invertido:** 15 min
+- **Siguiente paso:** I3-04 Diseño documental de Firestore (colecciones `pacientes` y subcolecciones `ordenes`).

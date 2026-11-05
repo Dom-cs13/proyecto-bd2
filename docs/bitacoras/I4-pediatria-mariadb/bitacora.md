@@ -30,3 +30,59 @@
 - **Evidencia:** rama `feat/I4-03-login-general`, PR a `main`.
 - **Tiempo invertido:** 90 min
 - **Siguiente paso:** I4-04 ER y relacional corregido de Pediatría.
+
+## Sesión 2 · 2026-11-03 · Tarea I4-10
+
+- **Objetivo de la sesión:** Implementar la interfaz de usuario completa del Centro Pediátrico (`frontend/pediatria/`) pos-login, basada en el mockup Alba Suite y con la paleta de colores pediátrica especializada.
+- **Qué hice:**
+  - Diseñé los tokens en `frontend/pediatria/css/variables.css` aplicando la paleta: `#2E6987` (Pacific), `#4D978C` (Treehouse), `#FA5C60` (Sunkissed), `#FFCCC4` (Bubblegum), `#AAD8DB` (Daydream), `#FFFFFF` (Blanco) y `#F4F7F8` (Gris azulado).
+  - Implementé el layout responsivo (`css/layout.css`) y componentes modulares (`css/components.css`) cumpliendo con las guías de contraste y accesibilidad.
+  - Desarrollé 5 vistas modulares en `frontend/pediatria/pages/`:
+    1. `principal.html`: Hero banner, KPI cards y menores en observación.
+    2. `buscador.html`: Búsqueda predictiva y tabla consolidada.
+    3. `crecimiento-vacunas.html`: Control antropométrico (`pesoKg`, `tallaCm`, `perimetroCefalicoCm`, `imc`) y carnet de vacunas (`esquema_vacunacion` vs `vacuna_aplicada`).
+    4. `gestion-pacientes.html`: Alta pediátrica con Tutor Principal Único (regla MariaDB) y módulo de archivado justificado.
+    5. `consulta-red.html`: Consulta federada multi-institucional en solo lectura y panel técnico de MariaDB.
+  - Construí el store reactivo `js/state.js`, el controlador SPA `js/app.js` y componentes (`sidebar.js`, `kpiCards.js`, `patientTable.js`, `crecimientoVacunas.js`, `listaArchivar.js`, `modalDrawer.js`).
+- **Decisiones tomadas (y por qué):**
+  - Se utilizó `fetchPlantillaHtml` para toda carga de vistas respetando la regla DRY de `AGENTS.md`.
+  - Iconos 100% vectoriales SVG sin emojis según lineamientos de diseño.
+  - Se habilitó soporte de demo en localhost si no hay sesión activa para facilitar la revisión visual de las pantallas.
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** `frontend/pediatria/`, rama `feat/I4-10-frontend-pediatria`, PR #15.
+- **Tiempo invertido:** 85 min
+- **Siguiente paso:** Auditoría de cumplimiento normativo de I4-10 y componentes compartidos en `frontend/shared/`.
+
+## Sesión 3 · 2026-11-03 · Tarea I4-10 (Auditoría y Correcciones)
+
+- **Objetivo de la sesión:** Auditar el cumplimiento estricto de `AGENTS.md`, `PLANIFICACION.md` (secciones 3.2, 3.5, 7.6) y los entregables de `I4-10` en `frontend/shared/` y `frontend/pediatria/`, corrigiendo las desviaciones encontradas.
+- **Qué hice:**
+  - **Cero Emojis:** Eliminé los 2 emojis residuales en `frontend/pediatria/js/components/modalDrawer.js` reemplazándolos por iconos SVG vectoriales.
+  - **Regla #2 LSP (`historial.estado`):** Eliminé la propiedad duplicada `estadoArchivo` en la raíz de `Paciente` (`state.js`, `app.js`, `kpiCards.js`, `patientTable.js`, `crecimientoVacunas.js`, `listaArchivar.js`), garantizando que el estado de archivo viva exclusivamente en `paciente.historial.estado`.
+  - **Abstracción del Motor (Sección 3.5 y 7.6):** Retiré toda mención a nombres de motores (`MariaDB`, `MongoDB`, `PostgreSQL`, `Firestore`) de las pantallas clínicas y de las tarjetas de Consulta en Red; ahora solo el Panel Técnico muestra el motor consultando `GET /system/status` mediante `apiClient`.
+  - **Componentes Compartidos (`frontend/shared/js/components/`):**
+    - `mensajesError.js`: Notificaciones con formato único `{ error: { codigo, mensaje } }` para códigos `400`, `401`, `403`, `404`, `409` (`PACIENTE_ARCHIVADO`) y `503` (`MOTOR_NO_DISPONIBLE`).
+    - `navegacionRol.js`: Gestión de roles (`pediatra`, `enfermeria`, `recepcion`) y validación de permisos por vista y acción.
+    - `archivadoMotivo.js`: Modal accesible de archivado con causal (`traslado`, `fallecimiento`, `administrativo`, `otro`) y detalle obligatorio.
+  - **Mejoras en `frontend/pediatria/`:**
+    - Agregué `frontend/pediatria/css/tema.css`, selector de rol en el Topbar y footer en Pacific (`#2E6987`).
+    - Reemplacé `prompt()` y `alert()` por diálogos modales y notificaciones integradas.
+    - Agregué la pestaña de *Crecimiento y Vacunas* y el modo de *Solo Lectura* para expedientes externos en el Drawer 360°.
+- **Decisiones tomadas (y por qué):**
+  - Centralizar errores HTTP, permisos por rol y modal de archivado en `frontend/shared/js/components/` cumple con la definición exacta de la tarea `I4-10` y la regla DRY.
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** rama `fix/I4-10-auditoria-frontend-pediatria`, PR #16 fusionado a `main`.
+- **Tiempo invertido:** 45 min
+- **Siguiente paso:** Ajustes finos de UI y pruebas del login multi-institucional.
+
+## Sesión 4 · 2026-11-03 · Tarea I4-10 (Limpieza de UI y simulación de login local)
+
+- **Objetivo de la sesión:** Corregir redundancia visual de signos `+` en botones con icono vectorial y habilitar fallback de autenticación en desarrollo local para navegar entre los portales institucionales.
+- **Qué hice:**
+  - Se eliminó el caracter `+` textual en los botones de acción (`Nuevo Paciente`, `Nuevo Registro`, `Registrar Control`, `Aplicar Vacuna`, `Nueva Atención`), dejando únicamente el icono SVG para evitar `+ +`.
+  - Se añadió fallback local en `frontend/shared/js/api/auth.js` para simular JWT cuando `POST /auth/login` responda 404/503 en localhost, permitiendo el ingreso directo a cualquiera de las 4 instituciones desde el login unificado.
+- **Decisiones tomadas (y por qué):**
+  - Mantener limpia la interfaz sin signos duplicados y permitir al usuario auditar los demás frontends locales sin requerir el endpoint final del backend de autenticación.
+- **Evidencia:** rama `fix/I4-10-ui-text-plus-icons`, PR a `main`.
+- **Tiempo invertido:** 15 min
+- **Siguiente paso:** Continuar con I4-01 o I4-04 / I4-05 según el cronograma.

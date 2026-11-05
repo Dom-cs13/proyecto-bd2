@@ -91,6 +91,7 @@ export function renderSidebar(containerId = 'sidebar-container', vistaActiva = '
           <span class="user-role">Hospital General / Admin</span>
         </div>
       </div>
+      <a href="../index.html?logout=true" style="display:block; text-align:center; margin-top:8px; font-size:0.75rem; color:#94a3b8; text-decoration:none;">Cerrar sesión / Salir</a>
     </div>
   `;
 
