@@ -11,11 +11,35 @@
           <h1 class="welcome-title">Bienvenido, Responsable de Laboratorio</h1>
           <p class="welcome-subtitle">Hematología · Orina · Heces · Cultivo</p>
         </div>
-        <div class="welcome-stats-pill"><div class="pill-dot"></div><span>Firestore · modo demostración</span></div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+          <div class="welcome-stats-pill"><div class="pill-dot"></div><span>Firestore · modo demostración</span></div>
+          <button type="button" class="btn btn-primary" id="btn-nuevo-estudio-inicio" style="background:#fff; color:var(--primary); font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.12);">
+            🔬 Nueva Orden de Examen
+          </button>
+        </div>
       </div>
       <div class="section-block">
-        <div><h2 class="section-title">Resumen de Carga del Laboratorio</h2><p class="section-desc">Estado de las órdenes y pacientes registrados.</p></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+          <div>
+            <h2 class="section-title">Resumen de Carga del Laboratorio</h2>
+            <p class="section-desc">Estado de las órdenes y pacientes registrados en todas las especialidades.</p>
+          </div>
+          <button type="button" class="btn btn-primary" id="btn-agregar-estudio-general">
+            ➕ Agregar Estudio
+          </button>
+        </div>
         <div id="inicio-kpi-container"></div>
+      </div>
+      <div class="section-block" style="background:#fff; border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:16px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <span style="font-size:0.85rem; font-weight:700; color:var(--text-main);">➕ Registrar estudio rápido:</span>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="hematologia">🩸 + Hematología</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="orina">🧪 + Orina</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="heces">🧫 + Heces</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="cultivo">🦠 + Cultivo</button>
+          </div>
+        </div>
       </div>
       <div class="section-block">
         <div><h2 class="section-title">⏳ Órdenes por Procesar</h2><p class="section-desc">Pendientes y en proceso, de la más antigua a la más reciente.</p></div>

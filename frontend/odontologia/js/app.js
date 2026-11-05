@@ -52,6 +52,7 @@ const secciones = {
 const opciones = {
   secretaria: ['inicio', 'pacientes', 'citas', 'administracion', 'recetas'],
   odontologo: ['inicio', 'pacientes', 'citas', 'historial', 'consultas', 'diagnosticos', 'procedimientos', 'tratamientos', 'prescribir'],
+  admin: ['inicio', 'pacientes', 'citas', 'historial', 'consultas', 'diagnosticos', 'procedimientos', 'tratamientos', 'prescribir'],
 };
 const contenido = document.getElementById('contenido');
 const acceso = (destino, titulo, texto, simbolo) => `<a class="quick-card" href="#${destino}"><span class="icon-box">${icono(simbolo)}</span><span><strong>${titulo}</strong><small>${texto}</small></span><span class="arrow">${icono('flecha')}</span></a>`;
@@ -72,7 +73,7 @@ function cabeceraZona(numero, titulo, texto) {
 
 // Contenido editorial estático de maqueta; no representa pacientes ni citas reales.
 function agenda() {
-  const clinica = rol === 'odontologo';
+  const clinica = rol === 'odontologo' || rol === 'admin';
   const pacientes = clinica ? ejemplos.filter(p => p.cita !== 'Cancelada') : ejemplos;
   return `<section class="panel"><div class="section-heading"><div><h2>${clinica ? 'Agenda de pacientes' : 'Próximas citas'}</h2><p>${clinica ? 'Accede al expediente de tu siguiente paciente.' : 'Consulta las citas antes de realizar cambios.'}</p></div><span class="label">Día de ejemplo</span></div><div class="agenda agenda-wide">
     ${pacientes.map(p => `<article class="appointment"><span class="time">${p.hora}</span><div class="appointment-info"><strong>${p.nombre}</strong><p>${p.id} · ${p.motivo}</p><div class="appointment-status">${estado(p)}${clinica ? `<span class="attendance">Atención: ${p.atencion}</span>` : ''}</div></div><div class="row-actions">${clinica
@@ -86,7 +87,7 @@ function tabla(esClinica) {
 }
 
 function inicio() {
-  const clinica = rol === 'odontologo';
+  const clinica = rol === 'odontologo' || rol === 'admin';
   const heading = `<div class="page-heading"><div><span class="eyebrow">${clinica ? 'ATENCIÓN CLÍNICA' : 'ADMINISTRACIÓN ODONTOLÓGICA'}</span><h1>${clinica ? 'Tu siguiente paciente, a un paso' : 'Una recepción más ágil'}</h1><p>${clinica ? 'Revisa la agenda y abre el expediente para preparar la atención.' : 'Encuentra al paciente, organiza su cita y acompaña su visita.'}</p></div><span class="label blue">Recorridos de demostración</span></div>`;
   if (clinica) return `${heading}
     <section class="dashboard-zone" aria-label="Pacientes por atender">${cabeceraZona('01', 'Pacientes por atender', 'Agenda del día · escenarios ficticios')}${agenda()}</section>
@@ -102,7 +103,7 @@ function inicio() {
 }
 
 function recorrido(seccion, paciente) {
-  const clinica = rol === 'odontologo';
+  const clinica = rol === 'odontologo' || rol === 'admin';
   const contexto = `<div class="patient-context"><span class="avatar">${icono('persona')}</span><div><strong>${paciente.nombre}</strong><small>${paciente.id} · Escenario ficticio de demostración</small></div></div>`;
   const encabezado = `<div class="page-heading"><div><span class="eyebrow">CLÍNICA ODONTOLÓGICA</span><h1>${secciones[seccion][0]}</h1><p>Vista de recorrido · sin registro ni actualización de datos</p></div>${boton('inicio', 'Volver al inicio', 'inicio')}</div>`;
   const pasos = (items) => `<ol class="flow-steps">${items.map(item => `<li>${item}</li>`).join('')}</ol>`;
@@ -139,7 +140,7 @@ function renderizar() {
   const conContexto = ['historial', 'consultas', 'diagnosticos', 'procedimientos', 'tratamientos', 'prescribir'];
   document.getElementById('navegacion').innerHTML = opciones[rol].map((id) => `<a class="nav-link" href="#${id}${conContexto.includes(id) ? `/${paciente.id}` : ''}"${id === grupoActivo ? ' aria-current="page"' : ''}>${icono(secciones[id][1])}${secciones[id][0]}</a>`).join('');
   document.getElementById('seccion-actual').textContent = secciones[seccion][0];
-  document.getElementById('rol-actual').textContent = rol === 'secretaria' ? 'Secretaria' : 'Odontólogo';
+  document.getElementById('rol-actual').textContent = rol === 'secretaria' ? 'Secretaria' : rol === 'admin' ? 'Administrador' : 'Odontólogo';
   document.title = `${secciones[seccion][0]} · Odontología · Alba Suite`;
   contenido.innerHTML = seccion === 'inicio' ? inicio() : recorrido(seccion, paciente);
 }
