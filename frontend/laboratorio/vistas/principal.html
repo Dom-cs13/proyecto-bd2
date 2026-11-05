@@ -9,12 +9,12 @@
         <div>
           <span class="welcome-badge">Sesión Activa · Laboratorio Clínico</span>
           <h1 class="welcome-title">Bienvenido, Responsable de Laboratorio</h1>
-          <p class="welcome-subtitle">Hematología · Orina · Heces · Cultivo</p>
+          <p class="welcome-subtitle">8 Especialidades Clínicas · Hematología, Química, Urianálisis, Inmunología, Microbiología, Coagulación, Banco de Sangre y Biología Molecular</p>
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
           <div class="welcome-stats-pill"><div class="pill-dot"></div><span>Firestore · modo demostración</span></div>
           <button type="button" class="btn btn-primary" id="btn-nuevo-estudio-inicio" style="background:#fff; color:var(--primary); font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.12);">
-            🔬 Nueva Orden de Examen
+            🔬 Nueva Orden de Laboratorio
           </button>
         </div>
       </div>
@@ -22,7 +22,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
           <div>
             <h2 class="section-title">Resumen de Carga del Laboratorio</h2>
-            <p class="section-desc">Estado de las órdenes y pacientes registrados en todas las especialidades.</p>
+            <p class="section-desc">Estado de las órdenes, muestras y pacientes registrados en las 8 especialidades.</p>
           </div>
           <button type="button" class="btn btn-primary" id="btn-agregar-estudio-general">
             ➕ Agregar Estudio
@@ -32,17 +32,21 @@
       </div>
       <div class="section-block" style="background:#fff; border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:16px 20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-          <span style="font-size:0.85rem; font-weight:700; color:var(--text-main);">➕ Registrar estudio rápido:</span>
+          <span style="font-size:0.85rem; font-weight:700; color:var(--text-main);">➕ Registrar estudio rápido (8 Especialidades):</span>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="hematologia">🩸 + Hematología</button>
-            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="orina">🧪 + Orina</button>
-            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="heces">🧫 + Heces</button>
-            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="cultivo">🦠 + Cultivo</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="quimica">⚗️ + Química</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="urianalisis">🧪 + Urianálisis</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="inmunologia">🛡️ + Inmunología</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="microbiologia">🦠 + Microbiología</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="coagulacion">⏱️ + Coagulación</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="banco_sangre">💉 + Banco Sangre</button>
+            <button type="button" class="btn btn-ghost btn-small" data-nuevo-tipo="biologia_molecular">🧬 + Bio Molecular</button>
           </div>
         </div>
       </div>
       <div class="section-block">
-        <div><h2 class="section-title">⏳ Órdenes por Procesar</h2><p class="section-desc">Pendientes y en proceso, de la más antigua a la más reciente.</p></div>
+        <div><h2 class="section-title">⏳ Órdenes por Procesar</h2><p class="section-desc">Pendientes y en proceso, ordenadas cronológicamente para atención técnica.</p></div>
         <div id="inicio-pendientes-container"></div>
       </div>
     </div>

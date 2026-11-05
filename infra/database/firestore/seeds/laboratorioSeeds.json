@@ -1,0 +1,273 @@
+{
+  "pacientes": [
+    {
+      "id": "pac-lab-001",
+      "documentoIdentidad": "2987654320101",
+      "nombre": "Mariana",
+      "apellidos": "Soto Hernández",
+      "fechaNacimiento": "1992-04-18",
+      "genero": "Femenino",
+      "tipoSangre": "O+",
+      "telefono": "+502 5555 1234",
+      "correo": "mariana.soto@correo.gt",
+      "direccion": "Zona 1, Quetzaltenango",
+      "alergias": ["Penicilina"],
+      "activo": true,
+      "detallesInstitucion": {
+        "institucionId": "I3",
+        "tipoPaciente": "ambulatorio",
+        "servicioProcedencia": "Consulta Externa"
+      }
+    },
+    {
+      "id": "pac-lab-002",
+      "documentoIdentidad": "2456789010901",
+      "nombre": "Carlos",
+      "apellidos": "Pérez López",
+      "fechaNacimiento": "1985-11-02",
+      "genero": "Masculino",
+      "tipoSangre": "A+",
+      "telefono": "+502 4444 9876",
+      "correo": "carlos.perez@correo.gt",
+      "direccion": "Zona 3, Quetzaltenango",
+      "alergias": [],
+      "activo": true,
+      "detallesInstitucion": {
+        "institucionId": "I3",
+        "tipoPaciente": "hospitalizado",
+        "servicioProcedencia": "Medicina Interna"
+      }
+    },
+    {
+      "id": "pac-lab-003",
+      "documentoIdentidad": "3012345670901",
+      "nombre": "Ana Lucía",
+      "apellidos": "Ramírez Díaz",
+      "fechaNacimiento": "2015-07-09",
+      "genero": "Femenino",
+      "tipoSangre": "B+",
+      "telefono": "+502 5511 2233",
+      "correo": "tutor.ramirez@correo.gt",
+      "direccion": "Salcajá, Quetzaltenango",
+      "alergias": ["Látex"],
+      "activo": true,
+      "detallesInstitucion": {
+        "institucionId": "I3",
+        "tipoPaciente": "emergencia",
+        "servicioProcedencia": "Emergencia Pediátrica"
+      }
+    }
+  ],
+  "ordenes": [
+    {
+      "id": "ord-0001",
+      "numeroOrden": "ORD-0001",
+      "pacienteId": "pac-lab-001",
+      "fechaSolicitud": "2026-10-26T08:30:00.000Z",
+      "medicoSolicitante": "Dr. Rodrigo Palma",
+      "especialidadSolicitante": "Hematología",
+      "tipoLaboratorio": "hematologia",
+      "examenesSolicitados": [
+        { "codigo": "HEM-01", "nombre": "Hemograma completo", "tipoLaboratorio": "hematologia" }
+      ],
+      "prioridad": "rutina",
+      "estadoOrden": "completada"
+    },
+    {
+      "id": "ord-0002",
+      "numeroOrden": "ORD-0002",
+      "pacienteId": "pac-lab-002",
+      "fechaSolicitud": "2026-10-27T09:15:00.000Z",
+      "medicoSolicitante": "Dra. Elena Ruiz",
+      "especialidadSolicitante": "Nefrología",
+      "tipoLaboratorio": "urianalisis",
+      "examenesSolicitados": [
+        { "codigo": "URI-01", "nombre": "Examen General de Orina (EGO)", "tipoLaboratorio": "urianalisis" }
+      ],
+      "prioridad": "urgente",
+      "estadoOrden": "completada"
+    },
+    {
+      "id": "ord-0003",
+      "numeroOrden": "ORD-0003",
+      "pacienteId": "pac-lab-002",
+      "fechaSolicitud": "2026-10-28T10:00:00.000Z",
+      "medicoSolicitante": "Dr. Rodrigo Palma",
+      "especialidadSolicitante": "Infectología",
+      "tipoLaboratorio": "microbiologia",
+      "examenesSolicitados": [
+        { "codigo": "MIC-01", "nombre": "Urocultivo con Antibiograma", "tipoLaboratorio": "microbiologia" }
+      ],
+      "prioridad": "rutina",
+      "estadoOrden": "completada"
+    },
+    {
+      "id": "ord-0004",
+      "numeroOrden": "ORD-0004",
+      "pacienteId": "pac-lab-001",
+      "fechaSolicitud": "2026-10-29T11:00:00.000Z",
+      "medicoSolicitante": "Dra. Elena Ruiz",
+      "especialidadSolicitante": "Endocrinología",
+      "tipoLaboratorio": "quimica",
+      "examenesSolicitados": [
+        { "codigo": "QUI-01", "nombre": "Glucosa en ayunas", "tipoLaboratorio": "quimica" }
+      ],
+      "prioridad": "rutina",
+      "estadoOrden": "completada"
+    }
+  ],
+  "muestras": [
+    {
+      "id": "mue-0001",
+      "ordenId": "ord-0001",
+      "codigoBarras": "BAR-0001-HEM",
+      "tipoMuestra": "sangre_venosa",
+      "fechaToma": "2026-10-26T08:45:00.000Z",
+      "fechaRecepcion": "2026-10-26T09:00:00.000Z",
+      "volumen": 4.5,
+      "contenedor": "Tubo EDTA lila",
+      "condicionMuestra": "optima",
+      "estadoMuestra": "completada"
+    },
+    {
+      "id": "mue-0002",
+      "ordenId": "ord-0002",
+      "codigoBarras": "BAR-0002-URI",
+      "tipoMuestra": "orina",
+      "fechaToma": "2026-10-27T09:30:00.000Z",
+      "fechaRecepcion": "2026-10-27T09:40:00.000Z",
+      "volumen": 50,
+      "contenedor": "Frasco estéril tapón rojo",
+      "condicionMuestra": "optima",
+      "estadoMuestra": "completada"
+    },
+    {
+      "id": "mue-0003",
+      "ordenId": "ord-0003",
+      "codigoBarras": "BAR-0003-MIC",
+      "tipoMuestra": "orina",
+      "fechaToma": "2026-10-28T10:15:00.000Z",
+      "fechaRecepcion": "2026-10-28T10:30:00.000Z",
+      "volumen": 30,
+      "contenedor": "Frasco estéril urocultivo",
+      "condicionMuestra": "optima",
+      "estadoMuestra": "completada"
+    },
+    {
+      "id": "mue-0004",
+      "ordenId": "ord-0004",
+      "codigoBarras": "BAR-0004-QUI",
+      "tipoMuestra": "suero",
+      "fechaToma": "2026-10-29T11:10:00.000Z",
+      "fechaRecepcion": "2026-10-29T11:20:00.000Z",
+      "volumen": 5.0,
+      "contenedor": "Tubo seco tapón rojo",
+      "condicionMuestra": "optima",
+      "estadoMuestra": "completada"
+    }
+  ],
+  "resultados": [
+    {
+      "id": "res-0001",
+      "ordenId": "ord-0001",
+      "muestraId": "mue-0001",
+      "examenCodigo": "HEM-01",
+      "examenNombre": "Hemograma completo",
+      "tipoLaboratorio": "hematologia",
+      "valorResultado": {
+        "hemoglobina": 13.5,
+        "hematocrito": 41.2,
+        "eritrocitos": 4.6,
+        "leucocitos": 6800,
+        "plaquetas": 260000,
+        "vcm": 89.5,
+        "hcm": 29.3,
+        "neutrofilos_pct": 60.5,
+        "linfocitos_pct": 31.0
+      },
+      "flagAnormalidad": "normal",
+      "fechaResultado": "2026-10-26T14:00:00.000Z",
+      "tecnicoIngreso": "Lic. Mario Calderón",
+      "tecnicoValido": "Dra. Sofía Cordero",
+      "fechaValidacion": "2026-10-26T15:00:00.000Z",
+      "estadoResultado": "validado"
+    },
+    {
+      "id": "res-0002",
+      "ordenId": "ord-0002",
+      "muestraId": "mue-0002",
+      "examenCodigo": "URI-01",
+      "examenNombre": "Examen General de Orina (EGO)",
+      "tipoLaboratorio": "urianalisis",
+      "valorResultado": {
+        "color": "Amarillo claro",
+        "aspecto": "Ligeramente turbio",
+        "densidad": 1.02,
+        "ph": 6.0,
+        "proteinas": "trazas",
+        "glucosa": "negativo",
+        "cetonas": "negativo",
+        "sangre": "negativo",
+        "leucocitos_esterasa": "+",
+        "nitritos": "positivo",
+        "sedimento_leucocitos": 12,
+        "sedimento_bacterias": "Moderadas"
+      },
+      "flagAnormalidad": "alto",
+      "fechaResultado": "2026-10-27T12:00:00.000Z",
+      "tecnicoIngreso": "Lic. Mario Calderón",
+      "tecnicoValido": "Dra. Sofía Cordero",
+      "fechaValidacion": "2026-10-27T13:00:00.000Z",
+      "estadoResultado": "validado"
+    },
+    {
+      "id": "res-0003",
+      "ordenId": "ord-0003",
+      "muestraId": "mue-0003",
+      "examenCodigo": "MIC-01",
+      "examenNombre": "Urocultivo con Antibiograma",
+      "tipoLaboratorio": "microbiologia",
+      "valorResultado": {
+        "tipo_muestra": "orina",
+        "tincion_gram": "Bacilos gram negativos",
+        "microorganismo_aislado": "Escherichia coli",
+        "recuento_colonias": "> 100,000 UFC/mL",
+        "antibiograma": [
+          { "antibiotico_nombre": "Nitrofurantoína", "antibiotico_sensibilidad": "sensible", "antibiotico_cmi": 16.0 },
+          { "antibiotico_nombre": "Ciprofloxacino", "antibiotico_sensibilidad": "resistente", "antibiotico_cmi": 4.0 },
+          { "antibiotico_nombre": "Ceftriaxona", "antibiotico_sensibilidad": "sensible", "antibiotico_cmi": 1.0 }
+        ],
+        "observaciones": "Infección urinaria confirmada"
+      },
+      "flagAnormalidad": "alto",
+      "fechaResultado": "2026-10-28T16:00:00.000Z",
+      "tecnicoIngreso": "Lic. Mario Calderón",
+      "tecnicoValido": "Dra. Sofía Cordero",
+      "fechaValidacion": "2026-10-28T17:00:00.000Z",
+      "estadoResultado": "validado"
+    },
+    {
+      "id": "res-0004",
+      "ordenId": "ord-0004",
+      "muestraId": "mue-0004",
+      "examenCodigo": "QUI-01",
+      "examenNombre": "Glucosa en ayunas",
+      "tipoLaboratorio": "quimica",
+      "valorResultado": {
+        "valor_numerico": 92.5,
+        "unidad_medida": "mg/dL",
+        "rango_referencia_min": 70.0,
+        "rango_referencia_max": 100.0,
+        "flag_anormalidad": "normal",
+        "metodo_analitico": "Hexoquinasa / Enzimático",
+        "equipo_utilizado": "Cobas c311"
+      },
+      "flagAnormalidad": "normal",
+      "fechaResultado": "2026-10-29T14:30:00.000Z",
+      "tecnicoIngreso": "Lic. Mario Calderón",
+      "tecnicoValido": "Dra. Sofía Cordero",
+      "fechaValidacion": "2026-10-29T15:00:00.000Z",
+      "estadoResultado": "validado"
+    }
+  ]
+}
