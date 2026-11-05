@@ -114,3 +114,35 @@
 - **Evidencia:** rama `feat/I4-05-ddl-mariadb-pediatria`, PR a `main`.
 - **Tiempo invertido:** 50 min
 - **Siguiente paso:** I4-07 `MariaDbAdapter` parte 1 (conexión, mapper, pacientes, historial, crecimiento y vacunas).
+
+## Sesión 6 · 2026-11-04 · Tareas I4-07 e I4-08 (MariaDbAdapter completo, Data Mapper, Auth Pediatría, Seeds y Tests)
+
+- **Objetivo de la sesión:** Implementar el adaptador `MariaDbAdapter` completo para el Centro Pediátrico (`I4`), el Data Mapper (`mapper.js`), el pool de conexión con soporte para MariaDB Cloud (`connection.js`), las operaciones clínicas con transacciones SQL (`BEGIN` / `COMMIT` / `ROLLBACK`), el router de autenticación de Pediatría (`pediatriaAuth.js`), semillas pediátricas (`seeds_pediatria.sql`), seguridad mínima y suite exhaustiva de pruebas unitarias.
+- **Qué hice:**
+  - Actualicé `.env.example` añadiendo `MARIADB_SSL=false` en el bloque de Pediatría.
+  - Creé `src/infrastructure/adapters/mariadb/connection.js` usando el driver oficial `mariadb`, configurando el pool con timeouts estrictos y autodetección de SSL para MariaDB Cloud.
+  - Creé `src/infrastructure/adapters/mariadb/mapper.js` con mapeo riguroso de identificadores a `string`, fechas a ISO-8601 (`YYYY-MM-DD` para nacimiento y mediciones; `YYYY-MM-DDTHH:mm:ss.sssZ` para instantes), campos en `camelCase`, estado de archivo residiendo exclusivamente en `historial.estado` (Regla #2 LSP), y detalles específicos pediátricos en `detallesInstitucion`.
+  - Creé `src/infrastructure/adapters/mariadb/MariaDbAdapter.js` implementando:
+    1. Pacientes e historial con inserción atómica de tutor principal único.
+    2. Archivado de historial médico con validación de estado activo y motivo formal.
+    3. Registro de controles antropométricos de crecimiento y dosis de vacunas aplicadas en pacientes activos.
+    4. Consultas, diagnósticos, tratamientos y recetas en bloques transaccionales protegidos con `ROLLBACK` ante fallos.
+    5. `registrarAtencionCompleta` unificando la consulta, diagnósticos, tratamientos y recetas pediátricas en una única transacción atómica.
+    6. `ping()` para diagnóstico del panel técnico con medición de latencia o `MotorNoDisponible` ('pediatria').
+  - Creé `src/interfaces/http/routes/pediatriaAuth.js` autenticando credenciales contra la base de datos MariaDB para los roles `pediatra`, `enfermeria` y `recepcion`, con emisión de JWT institucional y delegación (`next()`) para no interferir con otras instituciones. Montado en `src/app.js`.
+  - Creé `infra/database/mariadb/seeds/seeds_pediatria.sql` con 3 roles, usuarios demo con contraseña segura, catálogo y esquema oficial de vacunas, medicamentos pediátricos, alergias y 5 expedientes completos (4 activos y 1 archivado por traslado).
+  - Creé `infra/database/mariadb/seguridad/seguridad_pediatria.sql` con privilegios mínimos (`SELECT, INSERT, UPDATE, TRIGGER` sin `DELETE`).
+  - Desarrollé 5 suites de pruebas unitarias en `tests/unit/mariadb/`:
+    - `mapper.test.js`: 6 pruebas de conversión y formato contractual.
+    - `MariaDbAdapter.test.js`: 7 pruebas de creación, consulta, archivo, crecimiento, vacunas y ping.
+    - `MariaDbAdapterI408.test.js`: 3 pruebas de operaciones clínicas y reversión ante fallo en recetas.
+    - `MariaDbAdapterI408Transaccion.test.js`: 2 pruebas de atención pediátrica completa.
+    - `MariaDbAdapterI408Validaciones.test.js`: 2 pruebas de integridad y consultas en borrador.
+    - Actualización de `tests/integration/app.test.js` verificando validación de login de Pediatría.
+- **Decisiones tomadas (y por qué):**
+  - Implementar transacciones explícitas (`BEGIN`/`COMMIT`/`ROLLBACK`) en todas las operaciones compuestas garantiza que no queden registros huérfanos si falla la red o una clave foránea en MariaDB Cloud.
+  - La delegación con `next()` en `pediatriaAuth.js` y `odontologiaAuth.js` permite encadenar routers de autenticación de distintos centros médicos sin colisiones.
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** rama `feat/I4-07-mariadb-adapter-p1`, PR a `main`.
+- **Tiempo invertido:** 65 min
+- **Siguiente paso:** Pruebas de integración de extremo a extremo con MariaDB Cloud / Docker local y cierre de ciclo del Centro Pediátrico.

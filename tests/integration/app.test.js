@@ -16,4 +16,12 @@ describe('App base · formato de error único', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.codigo).toBe('JSON_INVALIDO');
   });
+
+  test('login de Pediatria valida campos requeridos con 400', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ institucion: 'pediatria', usuario: '', password: '' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.codigo).toBe('VALIDACION');
+  });
 });

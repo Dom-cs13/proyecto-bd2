@@ -10,13 +10,11 @@ const pool = new pg.Pool({
   connectionTimeoutMillis: 10000
 });
 
-routerOdontologiaAuth.post('/auth/login', async (req, res) => {
+routerOdontologiaAuth.post('/auth/login', async (req, res, next) => {
   const { institucion, usuario, password } = req.body ?? {};
 
   if (institucion !== 'odontologia') {
-    return res.status(404).json({
-      error: { mensaje: 'Ruta no disponible para esta institucion' }
-    });
+    return next();
   }
 
   if (typeof usuario !== 'string' ||
