@@ -8,6 +8,7 @@ import { renderInicioCriticos } from './components/inicioCriticos.js';
 import { renderListaArchivar } from './components/listaArchivar.js';
 import { renderLaboratorioTable } from './components/laboratorioTable.js';
 import { inicializarVistaPolizas, renderPolizasTable, actualizarMetricasPolizas, poblarSelectsPolizas } from './components/polizasComponent.js';
+import { mostrarToast, mostrarAlertaPersonalizada, mostrarModalNuevaOrdenLab } from './components/modalDialog.js';
 import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
 
 let vistaActual = 'principal'; // 'principal' | 'buscador' | 'gestion' | 'laboratorio' | 'polizas'
@@ -78,34 +79,45 @@ function inicializarBuscadorLaboratorio() {
   const btnNuevaOrden = document.getElementById('btn-nueva-orden-lab');
   if (btnNuevaOrden) {
     btnNuevaOrden.addEventListener('click', () => {
-      const paciente = store.pacientes.find(p => p.estadoArchivo === 'activo');
-      if (!paciente) {
-        alert("No hay pacientes activos disponibles.");
+      const pacientesActivos = store.pacientes.filter(p => p.estadoArchivo === 'activo');
+      if (pacientesActivos.length === 0) {
+        mostrarAlertaPersonalizada({
+          titulo: 'Sin Pacientes Activos',
+          mensaje: 'No hay pacientes activos disponibles para emitir órdenes de laboratorio.',
+          tipo: 'warning'
+        });
         return;
       }
 
-      const tipo = prompt("Tipo de análisis clínico (ej. Hematología Completa, Química Sanguínea, Examen General de Orina):", "Química Sanguínea (Glucosa)");
-      if (!tipo) return;
+      mostrarModalNuevaOrdenLab(pacientesActivos, ({ pacienteId, tipo, solicitante, observaciones }) => {
+        const paciente = store.pacientes.find(p => p.id === pacienteId);
+        if (!paciente) return;
 
-      const nuevaOrden = {
-        id: `lab-${Date.now()}`,
-        codigoOrden: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-        pacienteId: paciente.id,
-        expediente: paciente.expediente,
-        pacienteNombre: `${paciente.nombre} ${paciente.apellidos}`,
-        tipoExamen: tipo,
-        fechaOrden: new Date().toISOString(),
-        fechaResultado: null,
-        solicitante: "Dr. Rodrigo Palma",
-        estado: "En proceso",
-        resultadoResumen: "Muestra recolectada y enviada a centrífuga",
-        valores: [],
-        observacionesTecnicas: "Toma de muestra realizada en ayuno."
-      };
+        const nuevaOrden = {
+          id: `lab-${Date.now()}`,
+          codigoOrden: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+          pacienteId: paciente.id,
+          expediente: paciente.expediente,
+          pacienteNombre: `${paciente.nombre} ${paciente.apellidos}`,
+          tipoExamen: tipo,
+          fechaOrden: new Date().toISOString(),
+          fechaResultado: null,
+          solicitante: solicitante || "Dr. Rodrigo Palma",
+          estado: "En proceso",
+          resultadoResumen: "Muestra recolectada y enviada a centrífuga",
+          valores: [],
+          observacionesTecnicas: observaciones || "Toma de muestra realizada en ayuno."
+        };
 
-      store.agregarOrdenLaboratorio(nuevaOrden);
-      alert(`Orden ${nuevaOrden.codigoOrden} generada para ${nuevaOrden.pacienteNombre}.`);
-      renderLaboratorioTable('laboratorio-table-container');
+        store.agregarOrdenLaboratorio(nuevaOrden);
+        renderLaboratorioTable('laboratorio-table-container');
+
+        mostrarToast({
+          titulo: 'Orden de Laboratorio Emitida',
+          mensaje: `Se generó la orden ${nuevaOrden.codigoOrden} para el paciente ${nuevaOrden.pacienteNombre}.`,
+          tipo: 'success'
+        });
+      });
     });
   }
 }
@@ -135,19 +147,33 @@ function inicializarFormularioGestion() {
 
     const dpiVal = (document.getElementById('g-inp-curp').value || '').trim();
     if (!/^\d{13}$/.test(dpiVal)) {
-      alert('Error de validación: El DPI / CUI debe contener exactamente 13 dígitos numéricos enteros.');
+      mostrarAlertaPersonalizada({
+        titulo: 'DPI Inválido',
+        subtitulo: 'Validación de Documento Único de Identidad (Guatemala)',
+        mensaje: 'El DPI / CUI debe contener exactamente 13 dígitos numéricos enteros. Por favor verifique el número ingresado.',
+        tipo: 'error'
+      });
       return;
     }
 
     const telVal = (document.getElementById('g-inp-telefono').value || '').trim();
     if (!/^\d{8}$/.test(telVal)) {
-      alert('Error de validación: El número de teléfono debe contener exactamente 8 dígitos numéricos enteros.');
+      mostrarAlertaPersonalizada({
+        titulo: 'Teléfono Inválido',
+        subtitulo: 'Validación de Contacto Telefónico',
+        mensaje: 'El número de teléfono debe contener exactamente 8 dígitos numéricos enteros (ej. 77612345).',
+        tipo: 'error'
+      });
       return;
     }
 
     const generoVal = document.getElementById('g-inp-genero').value;
     if (generoVal !== 'Femenino' && generoVal !== 'Masculino') {
-      alert('Error: Debe seleccionar un género biológico válido (Femenino o Masculino).');
+      mostrarAlertaPersonalizada({
+        titulo: 'Género Requerido',
+        mensaje: 'Debe seleccionar un género biológico válido (Femenino o Masculino).',
+        tipo: 'warning'
+      });
       return;
     }
 
@@ -195,8 +221,13 @@ function inicializarFormularioGestion() {
 
     store.agregarPaciente(nuevo);
     form.reset();
-    alert(`¡Paciente ${nuevo.nombre} ${nuevo.apellidos} registrado exitosamente con expediente ${nuevo.expediente}!`);
     renderListaArchivar('lista-archivar-pacientes-container');
+
+    mostrarToast({
+      titulo: 'Expediente Registrado',
+      mensaje: `Paciente ${nuevo.nombre} ${nuevo.apellidos} registrado exitosamente con expediente ${nuevo.expediente}.`,
+      tipo: 'success'
+    });
   });
 }
 

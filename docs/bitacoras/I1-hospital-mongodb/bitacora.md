@@ -76,10 +76,12 @@
   - Actualizado el gestor de estado `frontend/hospital/js/state.js` con las colecciones `polizas`, métodos de creación y vinculación (`asociarPolizaAPaciente`), y cálculo automático de KPIs.
   - Actualizada la base de datos documental (`infra/database/mongodb/`): creado `colecciones/polizas.schema.json`, semillas `seeds/polizas.json` con 5 pólizas para Compass, índices `indices.json`, y adaptado `MongoAdapter.js` y `mapper.js` con operaciones `crearPoliza`, `listarPolizas` y `asociarPolizaPaciente`.
   - Añadida prueba unitaria en `tests/unit/mongoMapper.test.js` para `polizaToDomain` verificando cumplimiento LSP.
+  - Implementado el sistema integral de ventanas flotantes modales personalizadas (`modalDialog.js`) y notificaciones toast con el diseño visual de Alba Suite (Hospital General), reemplazando el 100% de los `alert()`, `prompt()` y `confirm()` nativos del navegador por modales clínicos con backdrop difuminado, selección de motivos, tarjetas explicativas y transiciones fluidas.
 - **Decisiones tomadas (y por qué):**
   - Implementar un patrón híbrido para pólizas: persistencia en colección propia `polizas` para gestión de convenios y aseguradoras, combinada con embebido en `pacientes.polizaSeguro` para consultas de admisión en O(1).
   - Sanitizar entradas numéricas directamente en el evento `input` (`replace(/\D/g, '')`) para evitar que el usuario ingrese letras, caracteres especiales o longitudes mayores a las permitidas por la regulación guatemalteca (13 para DPI, 8 para teléfono).
+  - Desacoplar los diálogos modales en `modalDialog.js` para garantizar consistencia visual UI/UX clínica en todas las vistas (archivado justificado, órdenes de laboratorio, validaciones y altas).
 - **Problemas / bloqueos:** Ninguno. Validaciones de ESLint y pruebas unitarias de Vitest en verde.
-- **Evidencia:** `frontend/hospital/pages/polizas.html`, `frontend/hospital/js/components/polizasComponent.js`, `infra/database/mongodb/colecciones/polizas.schema.json`, `infra/database/mongodb/seeds/polizas.json`, `tests/unit/mongoMapper.test.js`.
-- **Tiempo invertido:** 45 min
+- **Evidencia:** `frontend/hospital/js/components/modalDialog.js`, `frontend/hospital/css/components.css`, `frontend/hospital/pages/polizas.html`, `frontend/hospital/js/components/polizasComponent.js`, `infra/database/mongodb/colecciones/polizas.schema.json`, `infra/database/mongodb/seeds/polizas.json`, `tests/unit/mongoMapper.test.js`.
+- **Tiempo invertido:** 65 min
 - **Siguiente paso:** Pruebas e2e de navegación y commit a la rama.

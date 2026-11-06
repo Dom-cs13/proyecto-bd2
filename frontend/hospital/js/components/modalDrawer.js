@@ -1,4 +1,5 @@
 import { store } from '../state.js';
+import { mostrarModalArchivarPaciente, mostrarAlertaPersonalizada, mostrarToast } from './modalDialog.js';
 
 export function renderModalDrawer(containerId = 'drawer-container') {
   const container = document.getElementById(containerId);
@@ -195,21 +196,20 @@ export function renderModalDrawer(containerId = 'drawer-container') {
     panel.classList.add('open');
   };
 
-  // 3. CONFIRMAR ARCHIVADO FORMAL
+  // 3. CONFIRMAR ARCHIVADO FORMAL CON MODAL PERSONALIZADO
   window.confirmarArchivado = (id) => {
     const paciente = store.pacientes.find(p => p.id === id);
     if (!paciente) return;
 
-    const motivoTipo = prompt(
-      `Archivado clínico para ${paciente.nombre} ${paciente.apellidos}.\nSelecciona el tipo de motivo: traslado / fallecimiento / administrativo / otro`,
-      "administrativo"
-    );
-    if (!motivoTipo) return;
-
-    const detalle = prompt("Ingresa el detalle explicativo del archivado:", "Baja administrativa por término de tratamiento hospitalario.");
-    store.archivarPaciente(id, { tipo: motivoTipo, detalle: detalle || '' });
-    alert(`Expediente ${paciente.expediente} archivado correctamente.`);
-    cerrarDrawer();
+    mostrarModalArchivarPaciente(paciente, ({ tipo, detalle }) => {
+      store.archivarPaciente(id, { tipo, detalle });
+      mostrarToast({
+        titulo: 'Expediente Archivado',
+        mensaje: `El expediente ${paciente.expediente} (${paciente.nombre} ${paciente.apellidos}) ha sido archivado con motivo justificado.`,
+        tipo: 'warning'
+      });
+      cerrarDrawer();
+    });
   };
 
   // 4. MODAL EDITAR
@@ -275,7 +275,11 @@ export function renderModalDrawer(containerId = 'drawer-container') {
     document.getElementById('btn-actualizar-datos').addEventListener('click', () => {
       const telVal = (document.getElementById('edit-telefono').value || '').trim();
       if (telVal && !/^\d{8}$/.test(telVal)) {
-        alert('El teléfono debe tener exactamente 8 dígitos numéricos.');
+        mostrarAlertaPersonalizada({
+          titulo: 'Validación de Teléfono',
+          mensaje: 'El teléfono debe tener exactamente 8 dígitos numéricos enteros (formato estándar de Guatemala).',
+          tipo: 'warning'
+        });
         return;
       }
 
@@ -287,6 +291,13 @@ export function renderModalDrawer(containerId = 'drawer-container') {
         ubicacion: document.getElementById('edit-ubicacion').value,
         medicoTratante: document.getElementById('edit-medico').value
       });
+
+      mostrarToast({
+        titulo: 'Expediente Actualizado',
+        mensaje: `Los datos del expediente ${paciente.expediente} se actualizaron correctamente.`,
+        tipo: 'success'
+      });
+
       window.abrirDrawerDetalle(store.pacientes.find(p => p.id === id));
     });
   };

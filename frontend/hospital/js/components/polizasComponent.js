@@ -1,4 +1,5 @@
 import { store } from '../state.js';
+import { mostrarToast, mostrarAlertaPersonalizada } from './modalDialog.js';
 
 export function inicializarVistaPolizas() {
   actualizarMetricasPolizas();
@@ -205,7 +206,11 @@ function configurarEventosPolizas() {
 
       const telVal = (document.getElementById('pol-inp-tel-aseg').value || '').trim();
       if (!/^\d{8}$/.test(telVal)) {
-        alert('El teléfono de la aseguradora debe contener exactamente 8 dígitos numéricos enteros.');
+        mostrarAlertaPersonalizada({
+          titulo: 'Teléfono Aseguradora Inválido',
+          mensaje: 'El teléfono de la aseguradora debe contener exactamente 8 dígitos numéricos enteros (ej. 23456789).',
+          tipo: 'error'
+        });
         return;
       }
 
@@ -238,7 +243,11 @@ function configurarEventosPolizas() {
       poblarSelectsPolizas();
       renderPolizasTable();
 
-      alert(`¡Póliza ${nuevaPoliza.idPoliza} registrada exitosamente${paciente ? ` y asociada a ${paciente.nombre} ${paciente.apellidos}` : ''}!`);
+      mostrarToast({
+        titulo: 'Póliza Registrada',
+        mensaje: `Póliza ${nuevaPoliza.idPoliza} emitida exitosamente${paciente ? ` y vinculada a ${paciente.nombre} ${paciente.apellidos}` : ''}.`,
+        tipo: 'success'
+      });
     });
   }
 
@@ -251,7 +260,11 @@ function configurarEventosPolizas() {
       const pacienteId = document.getElementById('asoc-sel-paciente').value;
 
       if (!polizaCodigo || !pacienteId) {
-        alert('Por favor selecciona una póliza y un paciente para vincular.');
+        mostrarAlertaPersonalizada({
+          titulo: 'Campos Requeridos',
+          mensaje: 'Por favor selecciona una póliza y un paciente para completar la vinculación.',
+          tipo: 'warning'
+        });
         return;
       }
 
@@ -261,9 +274,18 @@ function configurarEventosPolizas() {
         actualizarMetricasPolizas();
         poblarSelectsPolizas();
         renderPolizasTable();
-        alert(`¡Póliza ${polizaCodigo} vinculada con éxito al paciente ${paciente.nombre} ${paciente.apellidos} (${paciente.expediente})!`);
+
+        mostrarToast({
+          titulo: 'Póliza Vinculada',
+          mensaje: `Póliza ${polizaCodigo} asociada con éxito a ${paciente.nombre} ${paciente.apellidos} (${paciente.expediente}).`,
+          tipo: 'success'
+        });
       } else {
-        alert('No se pudo completar la asociación de la póliza.');
+        mostrarAlertaPersonalizada({
+          titulo: 'Error de Asociación',
+          mensaje: 'No se pudo completar la asociación de la póliza seleccionada.',
+          tipo: 'error'
+        });
       }
     });
   }
@@ -280,3 +302,4 @@ function configurarEventosPolizas() {
     }
   };
 }
+
