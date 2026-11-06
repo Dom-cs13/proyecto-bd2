@@ -1,23 +1,23 @@
 /**
- * Datos locales de simulación para el Hospital General
- * Cumplen estrictamente con el contrato y el documento de Entrega I
+ * Datos iniciales del Hospital General sincronizados con MongoDB Compass / Atlas.
+ * Solo contiene los 3 registros existentes en la base de datos real.
  */
 export const MOCK_PACIENTES = [
   {
-    id: "pac-001",
+    id: "650000000000000000000001",
     expediente: "EXP-01842",
     nombre: "Mariana",
     apellidos: "Soto Hernández",
     fechaNacimiento: "1990-04-18",
     genero: "Femenino",
     curp: "SOHM900418MDF09",
-    telefono: "+52 55 1234 5678",
-    correo: "mariana.soto@correo.com",
+    telefono: "12345678",
+    correo: "mariana.soto@hospital.com",
     direccion: "Av. Central 45, Quetzaltenango",
     contactoEmergencia: {
       nombre: "Roberto Soto",
       parentesco: "Padre",
-      telefono: "+52 55 9876 5432"
+      telefono: "98765432"
     },
     servicioArea: "Hospitalización",
     medicoTratante: "Dr. Rodrigo Palma",
@@ -28,12 +28,12 @@ export const MOCK_PACIENTES = [
     detallesInstitucion: {
       institucionId: "I1",
       nombreInstitucion: "Hospital General",
-      antecedentesCriticos: ["Hipertensión arterial controlada", "Alergia a la penicilina"],
+      antecedentesCriticos: ["Alergia a penicilina", "Hipertensión controlada"],
       tipoSangre: "O+",
       seguro: {
-        aseguradora: "Seguros Médicos del Valle",
+        aseguradora: "Seguros Universales",
         poliza: "POL-98421",
-        cobertura: 80
+        cobertura: 85
       },
       internamiento: {
         enCama: true,
@@ -45,20 +45,20 @@ export const MOCK_PACIENTES = [
     historial: {
       consultas: [
         {
-          id: "con-101",
+          id: "651000000000000000000001",
           fecha: "2026-10-26T09:15:00.000Z",
-          motivo: "Revisión post-operatoria de apendicectomía",
+          motivo: "Revisión post-operatoria de apendicectomía y retiro de drenaje",
           medico: "Dr. Rodrigo Palma",
-          observaciones: "Herida quirúrgica limpia, afebril, adecuada tolerancia oral.",
+          observaciones: "Herida quirúrgica limpia, sin signos de infección ni eritema, afebril.",
           diagnosticos: [
             {
-              id: "diag-201",
+              id: "diag-01",
               codigoCie: "K35.80",
-              descripcion: "Apendicitis aguda en evolución favorable",
+              descripcion: "Apendicitis aguda fase III en evolución post-quirúrgica favorable",
               tratamientos: [
                 {
-                  id: "trat-301",
-                  descripcion: "Curas diarias de herida quirúrgica y deambulación asistida",
+                  id: "trat-01",
+                  descripcion: "Curas diarias con solución antiséptica y deambulación progresiva",
                   diasDuracion: 5,
                   fechaInicio: "2026-10-26",
                   fechaFin: "2026-10-31"
@@ -68,10 +68,10 @@ export const MOCK_PACIENTES = [
           ],
           recetas: [
             {
-              id: "rec-401",
+              id: "rec-01",
               medicamentos: [
-                { nombre: "Paracetamol", dosis: "500 mg", frecuencia: "Cada 8 horas", duracion: "3 días", cantidad: 9, indicaciones: "Tomar después de alimentos" },
-                { nombre: "Ciprofloxacino", dosis: "500 mg", frecuencia: "Cada 12 horas", duracion: "5 días", cantidad: 10, indicaciones: "Completar tratamiento antimicrobiano" }
+                { nombre: "Paracetamol", dosis: "500 mg", frecuencia: "Cada 8 horas", duracion: "3 días", cantidad: 9, indicaciones: "Tomar por vía oral después de los alimentos." },
+                { nombre: "Ciprofloxacino", dosis: "500 mg", frecuencia: "Cada 12 horas", duracion: "5 días", cantidad: 10, indicaciones: "Completar tratamiento antimicrobiano profiláctico." }
               ]
             }
           ]
@@ -80,20 +80,20 @@ export const MOCK_PACIENTES = [
     }
   },
   {
-    id: "pac-002",
+    id: "650000000000000000000002",
     expediente: "EXP-02491",
     nombre: "Carlos",
     apellidos: "Méndez Silva",
     fechaNacimiento: "1982-02-11",
     genero: "Masculino",
     curp: "MESC830211HDF04",
-    telefono: "+52 55 2345 6789",
-    correo: "carlos.mendez@correo.com",
+    telefono: "23456789",
+    correo: "carlos.mendez@hospital.com",
     direccion: "Calle Real 12-30, Zona 3",
     contactoEmergencia: {
       nombre: "Laura Méndez",
       parentesco: "Esposa",
-      telefono: "+52 55 8765 4321"
+      telefono: "87654321"
     },
     servicioArea: "Medicina General",
     medicoTratante: "Dra. Ana Ruiz",
@@ -116,61 +116,20 @@ export const MOCK_PACIENTES = [
     historial: { consultas: [] }
   },
   {
-    id: "pac-003",
-    expediente: "EXP-04205",
-    nombre: "Diego",
-    apellidos: "Ramírez Morales",
-    fechaNacimiento: "1963-09-15",
-    genero: "Masculino",
-    curp: "RAMD640915HDF08",
-    telefono: "+52 55 3456 7890",
-    correo: "diego.ramirez@correo.com",
-    direccion: "Colonia Los Altos 4-15",
-    contactoEmergencia: {
-      nombre: "Carmen Ramírez",
-      parentesco: "Hija",
-      telefono: "+52 55 7654 3210"
-    },
-    servicioArea: "Hospitalización",
-    medicoTratante: "Dr. Esteban Vega",
-    ubicacion: "Pabellón B - Cama 204",
-    ultimaConsulta: "2026-10-25T18:00:00.000Z",
-    estadoClinico: "observacion",
-    estadoArchivo: "activo",
-    detallesInstitucion: {
-      institucionId: "I1",
-      nombreInstitucion: "Hospital General",
-      antecedentesCriticos: ["Insuficiencia respiratoria leve", "Asma bronquial"],
-      tipoSangre: "B+",
-      seguro: {
-        aseguradora: "Aseguradora Universal",
-        poliza: "POL-77612",
-        cobertura: 85
-      },
-      internamiento: {
-        enCama: true,
-        pabellon: "Pabellón B",
-        cama: "Cama 204",
-        fechaIngreso: "2026-10-22T11:00:00.000Z"
-      }
-    },
-    historial: { consultas: [] }
-  },
-  {
-    id: "pac-004",
+    id: "650000000000000000000003",
     expediente: "EXP-06390",
     nombre: "Roberto",
     apellidos: "Navarro Ruiz",
     fechaNacimiento: "1969-03-12",
     genero: "Masculino",
     curp: "NARR700312HDF05",
-    telefono: "+52 55 4567 8901",
-    correo: "roberto.navarro@correo.com",
+    telefono: "45678901",
+    correo: "roberto.navarro@hospital.com",
     direccion: "Barrio El Calvario 2-90",
     contactoEmergencia: {
       nombre: "Gloria Ruiz",
       parentesco: "Madre",
-      telefono: "+52 55 6543 2109"
+      telefono: "65432109"
     },
     servicioArea: "Hospitalización",
     medicoTratante: "Dra. Elena Morales",
@@ -184,7 +143,7 @@ export const MOCK_PACIENTES = [
       antecedentesCriticos: ["Politraumatismo vial", "Fractura de fémur expuesta"],
       tipoSangre: "O-",
       seguro: {
-        aseguradora: "Seguros Médicos del Valle",
+        aseguradora: "Seguros Universales",
         poliza: "POL-55120",
         cobertura: 90
       },
@@ -199,14 +158,11 @@ export const MOCK_PACIENTES = [
   }
 ];
 
-/**
- * Exámenes y resultados de laboratorio del Hospital
- */
 export const MOCK_LABORATORIOS = [
   {
     id: "lab-001",
     codigoOrden: "ORD-9921",
-    pacienteId: "pac-001",
+    pacienteId: "650000000000000000000001",
     expediente: "EXP-01842",
     pacienteNombre: "Mariana Soto Hernández",
     tipoExamen: "Hematología Completa",
@@ -226,7 +182,7 @@ export const MOCK_LABORATORIOS = [
   {
     id: "lab-002",
     codigoOrden: "ORD-9924",
-    pacienteId: "pac-002",
+    pacienteId: "650000000000000000000002",
     expediente: "EXP-02491",
     pacienteNombre: "Carlos Méndez Silva",
     tipoExamen: "Química Sanguínea (Glucosa & Perfil Renal)",
@@ -245,7 +201,7 @@ export const MOCK_LABORATORIOS = [
   {
     id: "lab-003",
     codigoOrden: "ORD-9930",
-    pacienteId: "pac-004",
+    pacienteId: "650000000000000000000003",
     expediente: "EXP-06390",
     pacienteNombre: "Roberto Navarro Ruiz",
     tipoExamen: "Tiempos de Coagulación (TP y TTP)",
@@ -253,27 +209,12 @@ export const MOCK_LABORATORIOS = [
     fechaResultado: "2026-10-26T12:15:00.000Z",
     solicitante: "Dra. Elena Morales",
     estado: "Completado",
-    resultadoResumen: "Tiempos dentro de rango para intervención quirúrgica",
+    resultadoResumen: "Tiempos dentro de rango para intervención traumatológica",
     valores: [
       { parametro: "Tiempo de Protrombina (TP)", valor: "12.4 seg", referencia: "11.0 - 13.5 seg", estado: "normal" },
       { parametro: "INR", valor: "1.05", referencia: "0.8 - 1.2", estado: "normal" },
       { parametro: "Tiempo de Tromboplastina Parcial (TTP)", valor: "31.0 seg", referencia: "25.0 - 35.0 seg", estado: "normal" }
     ],
-    observacionesTecnicas: "Apto para procedimiento traumatológico."
-  },
-  {
-    id: "lab-004",
-    codigoOrden: "ORD-9935",
-    pacienteId: "pac-003",
-    expediente: "EXP-04205",
-    pacienteNombre: "Diego Ramírez Morales",
-    tipoExamen: "Gasometría Arterial",
-    fechaOrden: "2026-10-26T15:00:00.000Z",
-    fechaResultado: null,
-    solicitante: "Dr. Esteban Vega",
-    estado: "En proceso",
-    resultadoResumen: "Muestra en analizador de gases",
-    valores: [],
-    observacionesTecnicas: "Procesamiento prioritario por estado de observación respiratoria."
+    observacionesTecnicas: "Apto para procedimiento traumatológico en Pabellón Traumatología."
   }
 ];
