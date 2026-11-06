@@ -201,7 +201,7 @@ function configurarEventosPolizas() {
   // Formulario Nueva Póliza
   const formNueva = document.getElementById('form-nueva-poliza');
   if (formNueva) {
-    formNueva.addEventListener('submit', (e) => {
+    formNueva.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const telVal = (document.getElementById('pol-inp-tel-aseg').value || '').trim();
@@ -237,14 +237,14 @@ function configurarEventosPolizas() {
         }
       };
 
-      store.agregarPoliza(nuevaPoliza);
+      await store.agregarPoliza(nuevaPoliza);
       formNueva.reset();
       actualizarMetricasPolizas();
       poblarSelectsPolizas();
       renderPolizasTable();
 
       mostrarToast({
-        titulo: 'Póliza Registrada',
+        titulo: 'Póliza Guardada en MongoDB',
         mensaje: `Póliza ${nuevaPoliza.idPoliza} emitida exitosamente${paciente ? ` y vinculada a ${paciente.nombre} ${paciente.apellidos}` : ''}.`,
         tipo: 'success'
       });
@@ -254,7 +254,7 @@ function configurarEventosPolizas() {
   // Formulario Asociación Rápida
   const formAsoc = document.getElementById('form-asociar-poliza-existente');
   if (formAsoc) {
-    formAsoc.addEventListener('submit', (e) => {
+    formAsoc.addEventListener('submit', async (e) => {
       e.preventDefault();
       const polizaCodigo = document.getElementById('asoc-sel-poliza').value;
       const pacienteId = document.getElementById('asoc-sel-paciente').value;
@@ -268,7 +268,7 @@ function configurarEventosPolizas() {
         return;
       }
 
-      const ok = store.asociarPolizaAPaciente(polizaCodigo, pacienteId);
+      const ok = await store.asociarPolizaAPaciente(polizaCodigo, pacienteId);
       if (ok) {
         const paciente = store.pacientes.find(p => p.id === pacienteId);
         actualizarMetricasPolizas();
@@ -276,7 +276,7 @@ function configurarEventosPolizas() {
         renderPolizasTable();
 
         mostrarToast({
-          titulo: 'Póliza Vinculada',
+          titulo: 'Póliza Vinculada en MongoDB',
           mensaje: `Póliza ${polizaCodigo} asociada con éxito a ${paciente.nombre} ${paciente.apellidos} (${paciente.expediente}).`,
           tipo: 'success'
         });

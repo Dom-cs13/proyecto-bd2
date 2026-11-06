@@ -77,11 +77,13 @@
   - Actualizada la base de datos documental (`infra/database/mongodb/`): creado `colecciones/polizas.schema.json`, semillas `seeds/polizas.json` con 5 pólizas para Compass, índices `indices.json`, y adaptado `MongoAdapter.js` y `mapper.js` con operaciones `crearPoliza`, `listarPolizas` y `asociarPolizaPaciente`.
   - Añadida prueba unitaria en `tests/unit/mongoMapper.test.js` para `polizaToDomain` verificando cumplimiento LSP.
   - Implementado el sistema integral de ventanas flotantes modales personalizadas (`modalDialog.js`) y notificaciones toast con el diseño visual de Alba Suite (Hospital General), reemplazando el 100% de los `alert()`, `prompt()` y `confirm()` nativos del navegador por modales clínicos con backdrop difuminado, selección de motivos, tarjetas explicativas y transiciones fluidas.
+  - Conectada la arquitectura completa de persistencia web a base de datos real: implementado `RepositoryFactory.js` (`obtenerRepositorio` + `obtenerTodos`), middleware `auth.js` (JWT) y `resolverRepositorio.js`, rutas Express en `src/interfaces/http/routes/` (`auth.js`, `pacientes.js` y `polizas.js`), y enlazado el cliente HTTP `apiClient` con `state.js` para que cada alta, archivado y póliza creada en el navegador se guarde en MongoDB Atlas en vivo y se refleje al instante en MongoDB Compass.
 - **Decisiones tomadas (y por qué):**
   - Implementar un patrón híbrido para pólizas: persistencia en colección propia `polizas` para gestión de convenios y aseguradoras, combinada con embebido en `pacientes.polizaSeguro` para consultas de admisión en O(1).
   - Sanitizar entradas numéricas directamente en el evento `input` (`replace(/\D/g, '')`) para evitar que el usuario ingrese letras, caracteres especiales o longitudes mayores a las permitidas por la regulación guatemalteca (13 para DPI, 8 para teléfono).
   - Desacoplar los diálogos modales en `modalDialog.js` para garantizar consistencia visual UI/UX clínica en todas las vistas (archivado justificado, órdenes de laboratorio, validaciones y altas).
+  - Conectar el frontend a los endpoints REST de Express con fallback resiliente offline, permitiendo que las inserciones persistan en MongoDB Atlas en tiempo real.
 - **Problemas / bloqueos:** Ninguno. Validaciones de ESLint y pruebas unitarias de Vitest en verde.
-- **Evidencia:** `frontend/hospital/js/components/modalDialog.js`, `frontend/hospital/css/components.css`, `frontend/hospital/pages/polizas.html`, `frontend/hospital/js/components/polizasComponent.js`, `infra/database/mongodb/colecciones/polizas.schema.json`, `infra/database/mongodb/seeds/polizas.json`, `tests/unit/mongoMapper.test.js`.
-- **Tiempo invertido:** 65 min
+- **Evidencia:** `src/infrastructure/config/RepositoryFactory.js`, `src/interfaces/http/routes/pacientes.js`, `src/interfaces/http/routes/polizas.js`, `src/interfaces/http/routes/auth.js`, `frontend/hospital/js/components/modalDialog.js`, `tests/integration/app.test.js`.
+- **Tiempo invertido:** 85 min
 - **Siguiente paso:** Pruebas e2e de navegación y commit a la rama.

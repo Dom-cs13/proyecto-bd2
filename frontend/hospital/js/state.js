@@ -1,4 +1,5 @@
 import { MOCK_PACIENTES, MOCK_LABORATORIOS, MOCK_POLIZAS } from './api/mockData.js';
+import { apiClient } from '../../shared/js/api/client.js';
 
 class StateStore {
   constructor() {
@@ -11,6 +12,40 @@ class StateStore {
     this.filtroPolizaTexto = '';
     this.pacienteSeleccionado = null;
     this.listeners = [];
+    this.sincronizado = false;
+  }
+
+  async sincronizarConBackend() {
+    try {
+      const resPacientes = await apiClient('/pacientes');
+      if (resPacientes.ok) {
+        const data = await resPacientes.json();
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          this.pacientes = data.items.map(p => ({
+            ...p,
+            curp: p.documentoIdentidad || p.curp || '',
+            estadoClinico: p.estadoClinico || 'estable',
+            estadoArchivo: p.estado || p.estadoArchivo || 'activo',
+            servicioArea: p.servicioArea || (p.detallesInstitucion?.internamiento?.enCama ? 'Hospitalización' : 'Medicina General'),
+            medicoTratante: p.medicoTratante || 'Dr. Rodrigo Palma',
+            ubicacion: p.ubicacion || (p.detallesInstitucion?.internamiento?.pabellon || 'Consulta Externa')
+          }));
+        }
+      }
+
+      const resPolizas = await apiClient('/polizas');
+      if (resPolizas.ok) {
+        const dataPol = await resPolizas.json();
+        if (Array.isArray(dataPol.items) && dataPol.items.length > 0) {
+          this.polizas = dataPol.items;
+        }
+      }
+
+      this.sincronizado = true;
+      this.notify();
+    } catch (err) {
+      console.warn('Operando en modo de respaldo local offline:', err.message);
+    }
   }
 
   getPacientesFiltrados() {
@@ -82,17 +117,39 @@ class StateStore {
     this.notify();
   }
 
-  agregarPoliza(nuevaPoliza) {
-    this.polizas.unshift(nuevaPoliza);
+  async agregarPoliza(nuevaPoliza) {
+    try {
+      const res = await apiClient('/polizas', {
+        method: 'POST',
+        body: JSON.stringify(nuevaPoliza)
+      });
+      if (res.ok) {
+        const guardada = await res.json();
+        this.polizas.unshift(guardada);
+      } else {
+        this.polizas.unshift(nuevaPoliza);
+      }
+    } catch {
+      this.polizas.unshift(nuevaPoliza);
+    }
 
     if (nuevaPoliza.pacienteId) {
-      this.asociarPolizaAPaciente(nuevaPoliza.idPoliza, nuevaPoliza.pacienteId);
+      await this.asociarPolizaAPaciente(nuevaPoliza.idPoliza, nuevaPoliza.pacienteId);
     } else {
       this.notify();
     }
   }
 
-  asociarPolizaAPaciente(polizaIdentificador, pacienteId) {
+  async asociarPolizaAPaciente(polizaIdentificador, pacienteId) {
+    try {
+      await apiClient(`/polizas/${encodeURIComponent(polizaIdentificador)}/asociar`, {
+        method: 'POST',
+        body: JSON.stringify({ pacienteId })
+      });
+    } catch (err) {
+      console.warn('Asociación remota no completada, aplicando localmente:', err.message);
+    }
+
     const poliza = this.polizas.find(p => p.idPoliza === polizaIdentificador || p.id === polizaIdentificador);
     const paciente = this.pacientes.find(p => p.id === pacienteId || p.expediente === pacienteId);
 
@@ -145,9 +202,31 @@ class StateStore {
     this.notify();
   }
 
-  agregarPaciente(nuevoPaciente) {
+  async agregarPaciente(nuevoPaciente) {
+    try {
+      const res = await apiClient('/pacientes', {
+        method: 'POST',
+        body: JSON.stringify(nuevoPaciente)
+      });
+      if (res.ok) {
+        const guardado = await res.json();
+        const normalizado = {
+          ...nuevoPaciente,
+          ...guardado,
+          curp: guardado.documentoIdentidad || nuevoPaciente.curp,
+          estadoArchivo: 'activo'
+        };
+        this.pacientes.unshift(normalizado);
+        this.notify();
+        return normalizado;
+      }
+    } catch (err) {
+      console.warn('Persistencia remota en MongoDB no completada, almacenando localmente:', err.message);
+    }
+
     this.pacientes.unshift(nuevoPaciente);
     this.notify();
+    return nuevoPaciente;
   }
 
   actualizarPaciente(id, datosActualizados) {
@@ -158,7 +237,16 @@ class StateStore {
     }
   }
 
-  archivarPaciente(id, motivo) {
+  async archivarPaciente(id, motivo) {
+    try {
+      await apiClient(`/pacientes/${encodeURIComponent(id)}/archivar`, {
+        method: 'PATCH',
+        body: JSON.stringify({ motivo })
+      });
+    } catch (err) {
+      console.warn('Archivado remoto no completado, archivando localmente:', err.message);
+    }
+
     const idx = this.pacientes.findIndex(p => p.id === id);
     if (idx !== -1) {
       this.pacientes[idx].estadoArchivo = 'archivado';

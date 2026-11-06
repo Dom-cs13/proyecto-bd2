@@ -12,9 +12,11 @@ export async function fetchPlantillaHtml(rutaRelativa) {
 }
 
 export async function apiClient(endpoint, opciones = {}) {
+  const token = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('token') : null;
   const res = await fetch(endpoint, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(opciones.headers || {})
     },
     ...opciones

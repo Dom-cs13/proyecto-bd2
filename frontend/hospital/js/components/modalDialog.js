@@ -351,3 +351,4 @@ export function mostrarModalNuevaOrdenLab(pacientesActivos, onConfirmar) {
     }
   });
 }
+

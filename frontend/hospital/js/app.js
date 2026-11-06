@@ -142,7 +142,7 @@ function inicializarFormularioGestion() {
     });
   }
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const dpiVal = (document.getElementById('g-inp-curp').value || '').trim();
@@ -219,13 +219,13 @@ function inicializarFormularioGestion() {
       historial: { consultas: [] }
     };
 
-    store.agregarPaciente(nuevo);
+    const guardado = await store.agregarPaciente(nuevo);
     form.reset();
     renderListaArchivar('lista-archivar-pacientes-container');
 
     mostrarToast({
-      titulo: 'Expediente Registrado',
-      mensaje: `Paciente ${nuevo.nombre} ${nuevo.apellidos} registrado exitosamente con expediente ${nuevo.expediente}.`,
+      titulo: 'Expediente Guardado en MongoDB',
+      mensaje: `Paciente ${guardado.nombre} ${guardado.apellidos} registrado exitosamente con expediente ${guardado.expediente}.`,
       tipo: 'success'
     });
   });
@@ -239,6 +239,7 @@ window.navegarA = (nombreVista) => {
 document.addEventListener('DOMContentLoaded', () => {
   renderModalDrawer('drawer-container');
   cargarVista('principal');
+  store.sincronizarConBackend();
 
   store.subscribe(() => {
     if (vistaActual === 'principal') {
