@@ -44,6 +44,15 @@ export function renderSidebar(containerId = 'sidebar-container', vistaActiva = '
           </button>
         </li>
         <li>
+          <button class="nav-item ${vistaActiva === 'polizas' ? 'active' : ''}" data-view="polizas">
+            <span class="nav-item-content">
+              <span>🛡️</span>
+              <span>Pólizas de Seguro</span>
+            </span>
+            <span class="nav-badge" style="background-color: #ecfdf5; color: #047857;" id="sidebar-polizas-badge">${kpis.totalPolizas || 0}</span>
+          </button>
+        </li>
+        <li>
           <button class="nav-item ${vistaActiva === 'laboratorio' ? 'active' : ''}" data-view="laboratorio">
             <span class="nav-item-content">
               <span>🔬</span>

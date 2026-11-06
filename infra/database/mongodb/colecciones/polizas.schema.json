@@ -1,0 +1,31 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["idPoliza", "cobertura", "porcentajeCobertura", "fechaInicio", "fechaVencimiento", "estado", "aseguradora"],
+    "properties": {
+      "idPoliza": { "bsonType": "string" },
+      "cobertura": { "bsonType": "string" },
+      "porcentajeCobertura": {
+        "bsonType": ["int", "double"],
+        "minimum": 1,
+        "maximum": 100
+      },
+      "fechaInicio": { "bsonType": ["date", "string"] },
+      "fechaVencimiento": { "bsonType": ["date", "string"] },
+      "estado": { "enum": ["vigente", "por vencer", "vencida", "cancelada", "inactiva"] },
+      "pacienteId": { "bsonType": ["string", "objectId", "null"] },
+      "expediente": { "bsonType": ["string", "null"] },
+      "pacienteNombre": { "bsonType": ["string", "null"] },
+      "aseguradora": {
+        "bsonType": "object",
+        "required": ["nombreEmpresa", "nitIdentificador", "telefono"],
+        "properties": {
+          "idAseguradora": { "bsonType": "string" },
+          "nombreEmpresa": { "bsonType": "string" },
+          "nitIdentificador": { "bsonType": "string" },
+          "telefono": { "bsonType": ["int", "long", "string", "double"] }
+        }
+      }
+    }
+  }
+}

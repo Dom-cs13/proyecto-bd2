@@ -2,6 +2,7 @@
   {
     "_id": { "$oid": "650000000000000000000001" },
     "expediente": "EXP-01842",
+    "documentoIdentidad": "2984512300101",
     "nombre": "Mariana",
     "apellidos": "Soto Hernández",
     "fechaNacimiento": "1990-04-18",
@@ -41,6 +42,7 @@
   {
     "_id": { "$oid": "650000000000000000000002" },
     "expediente": "EXP-02491",
+    "documentoIdentidad": "1892345670101",
     "nombre": "Carlos",
     "apellidos": "Méndez Silva",
     "fechaNacimiento": "1982-02-11",
@@ -77,6 +79,7 @@
   {
     "_id": { "$oid": "650000000000000000000003" },
     "expediente": "EXP-06390",
+    "documentoIdentidad": "1029384750101",
     "nombre": "Roberto",
     "apellidos": "Navarro Ruiz",
     "fechaNacimiento": "1969-03-12",

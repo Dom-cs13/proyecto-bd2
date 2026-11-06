@@ -64,3 +64,22 @@
 - **Evidencia:** `src/infrastructure/adapters/mongodb/`, `infra/database/mongodb/`, `tests/unit/mongoMapper.test.js`.
 - **Tiempo invertido:** 75 min
 - **Siguiente paso:** Integración con rutas de Express y `RepositoryFactory`.
+
+## Sesión 5 · 2026-11-05 · Restricciones de Validación y Módulo de Pólizas (I1-04)
+
+- **Objetivo de la sesión:** Implementar restricciones estrictas en el formulario de alta de pacientes (género biológico Femenino/Masculino, DPI de 13 dígitos y teléfono de 8 dígitos) y desarrollar el módulo completo de gestión y asociación de pólizas de seguro (ER Hospital General) tanto en frontend como en base de datos MongoDB Atlas.
+- **Qué hice:**
+  - En `frontend/hospital/pages/gestion-pacientes.html` y `app.js`: eliminada la opción "Otro" dejando únicamente "Femenino" y "Masculino"; añadida validación y sanitización en tiempo real para limitar el DPI / CUI a exactamente 13 dígitos numéricos enteros y el teléfono a 8 dígitos numéricos.
+  - En `frontend/hospital/js/components/modalDrawer.js`: aplicada restricción de 8 dígitos numéricos en la edición del teléfono del paciente.
+  - En `frontend/hospital/js/components/sidebar.js`: incorporada la opción de navegación "🛡️ Pólizas de Seguro" con badge dinámico de conteo en tiempo real.
+  - Diseñada la vista `frontend/hospital/pages/polizas.html` y su componente `frontend/hospital/js/components/polizasComponent.js` con formulario de emisión de pólizas (cobertura, porcentaje, vigencia, empresa aseguradora, NIT y teléfono de 8 dígitos), panel de asociación directa a pacientes activos y tabla/catálogo con búsqueda interactiva.
+  - Actualizado el gestor de estado `frontend/hospital/js/state.js` con las colecciones `polizas`, métodos de creación y vinculación (`asociarPolizaAPaciente`), y cálculo automático de KPIs.
+  - Actualizada la base de datos documental (`infra/database/mongodb/`): creado `colecciones/polizas.schema.json`, semillas `seeds/polizas.json` con 5 pólizas para Compass, índices `indices.json`, y adaptado `MongoAdapter.js` y `mapper.js` con operaciones `crearPoliza`, `listarPolizas` y `asociarPolizaPaciente`.
+  - Añadida prueba unitaria en `tests/unit/mongoMapper.test.js` para `polizaToDomain` verificando cumplimiento LSP.
+- **Decisiones tomadas (y por qué):**
+  - Implementar un patrón híbrido para pólizas: persistencia en colección propia `polizas` para gestión de convenios y aseguradoras, combinada con embebido en `pacientes.polizaSeguro` para consultas de admisión en O(1).
+  - Sanitizar entradas numéricas directamente en el evento `input` (`replace(/\D/g, '')`) para evitar que el usuario ingrese letras, caracteres especiales o longitudes mayores a las permitidas por la regulación guatemalteca (13 para DPI, 8 para teléfono).
+- **Problemas / bloqueos:** Ninguno. Validaciones de ESLint y pruebas unitarias de Vitest en verde.
+- **Evidencia:** `frontend/hospital/pages/polizas.html`, `frontend/hospital/js/components/polizasComponent.js`, `infra/database/mongodb/colecciones/polizas.schema.json`, `infra/database/mongodb/seeds/polizas.json`, `tests/unit/mongoMapper.test.js`.
+- **Tiempo invertido:** 45 min
+- **Siguiente paso:** Pruebas e2e de navegación y commit a la rama.

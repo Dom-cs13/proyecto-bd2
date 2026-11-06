@@ -1,0 +1,220 @@
+<!-- Vista: Gestión de Pólizas de Seguro y Aseguradoras (Hospital General · I1) -->
+<div class="view-polizas">
+  <div class="section-block">
+    <div class="section-header">
+      <span class="welcome-badge">Aseguramiento y Convenios · Hospital General</span>
+      <h1 class="page-main-title">Pólizas de Seguro y Aseguradoras</h1>
+      <p class="section-desc">
+        Administración de pólizas médicas, catálogo de aseguradoras (ER Hospital General) y vinculación directa con expedientes de pacientes.
+      </p>
+    </div>
+  </div>
+
+  <!-- Métricas Rápidas de Aseguramiento -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Total Pólizas</span>
+        <div class="kpi-icon-wrap" style="background-color: var(--primary-light); color: var(--primary);">🛡️</div>
+      </div>
+      <div class="kpi-value" id="kpi-polizas-total">5</div>
+      <div class="kpi-trend" style="color: var(--text-muted); font-size: 0.8rem;">Registradas en sistema</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Pólizas Vigentes</span>
+        <div class="kpi-icon-wrap" style="background-color: #ecfdf5; color: #047857;">✓</div>
+      </div>
+      <div class="kpi-value" id="kpi-polizas-vigentes" style="color: #047857;">5</div>
+      <div class="kpi-trend" style="color: #047857; font-size: 0.8rem;">100% de vigencia activa</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Pacientes Asegurados</span>
+        <div class="kpi-icon-wrap" style="background-color: var(--badge-cyan-bg); color: var(--badge-cyan-text);">👥</div>
+      </div>
+      <div class="kpi-value" id="kpi-polizas-pacientes" style="color: var(--badge-cyan-text);">3</div>
+      <div class="kpi-trend" style="color: var(--text-muted); font-size: 0.8rem;">Con cobertura médica activa</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Aseguradoras</span>
+        <div class="kpi-icon-wrap" style="background-color: #fef3c7; color: #b45309;">🏢</div>
+      </div>
+      <div class="kpi-value" id="kpi-polizas-empresas" style="color: #b45309;">4</div>
+      <div class="kpi-trend" style="color: var(--text-muted); font-size: 0.8rem;">Empresas en convenio</div>
+    </div>
+  </div>
+
+  <div class="gestion-grid-layout" style="margin-bottom: 24px;">
+    <!-- Formulario Crear Nueva Póliza -->
+    <div class="kpi-card" style="padding: 28px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+        <div class="kpi-icon-wrap" style="background-color: var(--primary-light); color: var(--primary); font-size: 1.3rem;">🛡️</div>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Crear y Emitir Nueva Póliza</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Registro de entidad Póliza y Aseguradora asociada a un paciente.</p>
+        </div>
+      </div>
+
+      <form id="form-nueva-poliza" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Número de Póliza *</label>
+            <input type="text" id="pol-inp-codigo" class="form-control" required placeholder="Ej. POL-99881" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Porcentaje de Cobertura (1-100%) *</label>
+            <input type="number" id="pol-inp-porcentaje" class="form-control" required min="1" max="100" value="80" placeholder="Ej. 80" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo de Cobertura *</label>
+            <select id="pol-inp-cobertura" class="form-control" required>
+              <option value="Hospitalaria completa">Hospitalaria completa</option>
+              <option value="Cirugía y Emergencias">Cirugía y Emergencias</option>
+              <option value="Consulta Externa y Diagnóstico">Consulta Externa y Diagnóstico</option>
+              <option value="Accidentes y Traumatología">Accidentes y Traumatología</option>
+              <option value="Maternidad y Neonatología">Maternidad y Neonatología</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estado de la Póliza *</label>
+            <select id="pol-inp-estado" class="form-control" required>
+              <option value="vigente">Vigente</option>
+              <option value="por vencer">Por vencer</option>
+              <option value="inactiva">Inactiva</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fecha de Inicio *</label>
+            <input type="date" id="pol-inp-inicio" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de Vencimiento *</label>
+            <input type="date" id="pol-inp-fin" class="form-control" required />
+          </div>
+        </div>
+
+        <!-- Sección Datos Aseguradora (Entidad ER) -->
+        <div style="background-color: var(--bg-subtle); padding: 14px; border-radius: var(--radius-md); border: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--primary);">🏢 Datos de la Aseguradora Emisora (ER)</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Empresa Aseguradora *</label>
+              <input type="text" id="pol-inp-empresa" class="form-control" required placeholder="Ej. Seguros Universales" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">NIT o Identificador Fiscal *</label>
+              <input type="text" id="pol-inp-nit" class="form-control" required placeholder="Ej. 1234567-8" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono Aseguradora (8 dígitos numéricos) *</label>
+            <input
+              type="tel"
+              id="pol-inp-tel-aseg"
+              class="form-control"
+              required
+              maxlength="8"
+              minlength="8"
+              pattern="\d{8}"
+              inputmode="numeric"
+              placeholder="Ej. 23456789"
+              title="Debe contener exactamente 8 dígitos enteros"
+            />
+          </div>
+        </div>
+
+        <!-- Asociación a Paciente -->
+        <div class="form-group">
+          <label class="form-label">Asociar Directamente a Paciente (Opcional)</label>
+          <select id="pol-inp-paciente-select" class="form-control">
+            <option value="">-- Dejar disponible (sin asociar aún) --</option>
+            <!-- Inyectado dinámicamente con pacientes activos -->
+          </select>
+        </div>
+
+        <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">
+            <span>🛡️</span> Guardar Póliza en MongoDB Atlas
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Panel de Asociación Rápida de Póliza -->
+    <div class="kpi-card" style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+          <div class="kpi-icon-wrap" style="background-color: #ecfdf5; color: #047857; font-size: 1.3rem;">🔗</div>
+          <div>
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: #047857;">Vincular Póliza a Paciente</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              Asigna o actualiza la cobertura de seguro de un paciente ya registrado.
+            </p>
+          </div>
+        </div>
+
+        <form id="form-asociar-poliza-existente" style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Seleccionar Póliza Existente *</label>
+            <select id="asoc-sel-poliza" class="form-control" required>
+              <!-- Inyectado dinámicamente -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Seleccionar Paciente Destino *</label>
+            <select id="asoc-sel-paciente" class="form-control" required>
+              <!-- Inyectado dinámicamente -->
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-outline" style="border-color: #047857; color: #047857; padding: 12px 20px; font-weight: 700;">
+            <span>🔗</span> Vincular Póliza Seleccionada
+          </button>
+        </form>
+
+        <div style="background-color: var(--bg-subtle); border-left: 3px solid var(--primary); padding: 14px; border-radius: var(--radius-md); margin-top: 24px;">
+          <h4 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; color: var(--primary);">Integración en Historial Clínico</h4>
+          <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+            Al asociar una póliza a un paciente, se actualiza automáticamente su expediente hospitalario y sus detalles institucionales en MongoDB Atlas para efectos de facturación y cobertura de cama/consultas.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catálogo de Pólizas -->
+  <div class="section-block" style="margin-top: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">Catálogo de Pólizas Registradas</h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted);">Listado en tiempo real con detalle de aseguradoras y pacientes receptores.</p>
+      </div>
+
+      <div class="search-input-wrapper" style="min-width: 280px;">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          id="pol-search-input" 
+          class="search-input" 
+          placeholder="Filtrar por póliza, aseguradora o paciente..."
+        />
+      </div>
+    </div>
+
+    <div id="polizas-table-container">
+      <!-- Inyectado dinámicamente -->
+    </div>
+  </div>
+</div>

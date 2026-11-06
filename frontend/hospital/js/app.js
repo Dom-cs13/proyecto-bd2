@@ -7,9 +7,10 @@ import { renderModalDrawer } from './components/modalDrawer.js';
 import { renderInicioCriticos } from './components/inicioCriticos.js';
 import { renderListaArchivar } from './components/listaArchivar.js';
 import { renderLaboratorioTable } from './components/laboratorioTable.js';
+import { inicializarVistaPolizas, renderPolizasTable, actualizarMetricasPolizas, poblarSelectsPolizas } from './components/polizasComponent.js';
 import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
 
-let vistaActual = 'principal'; // 'principal' | 'buscador' | 'gestion' | 'laboratorio'
+let vistaActual = 'principal'; // 'principal' | 'buscador' | 'gestion' | 'laboratorio' | 'polizas'
 const plantillasCargadas = {};
 
 // Mapeo del identificador de vista al nombre del archivo en /pages/
@@ -17,7 +18,8 @@ const MAPA_ARCHIVOS_VISTAS = {
   principal: 'principal',
   buscador: 'buscador',
   gestion: 'gestion-pacientes',
-  laboratorio: 'laboratorio'
+  laboratorio: 'laboratorio',
+  polizas: 'polizas'
 };
 
 async function cargarVista(nombreVista) {
@@ -50,6 +52,8 @@ async function cargarVista(nombreVista) {
     } else if (nombreVista === 'laboratorio') {
       renderLaboratorioTable('laboratorio-table-container');
       inicializarBuscadorLaboratorio();
+    } else if (nombreVista === 'polizas') {
+      inicializarVistaPolizas();
     }
   } catch (err) {
     console.error(err);
@@ -110,8 +114,42 @@ function inicializarFormularioGestion() {
   const form = document.getElementById('form-gestion-nuevo-paciente');
   if (!form) return;
 
+  const curpInput = document.getElementById('g-inp-curp');
+  if (curpInput) {
+    curpInput.addEventListener('input', (e) => {
+      // Filtrar a números enteros y restringir a 13 dígitos
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 13);
+    });
+  }
+
+  const telInput = document.getElementById('g-inp-telefono');
+  if (telInput) {
+    telInput.addEventListener('input', (e) => {
+      // Filtrar a números enteros y restringir a 8 dígitos
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+    });
+  }
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+
+    const dpiVal = (document.getElementById('g-inp-curp').value || '').trim();
+    if (!/^\d{13}$/.test(dpiVal)) {
+      alert('Error de validación: El DPI / CUI debe contener exactamente 13 dígitos numéricos enteros.');
+      return;
+    }
+
+    const telVal = (document.getElementById('g-inp-telefono').value || '').trim();
+    if (!/^\d{8}$/.test(telVal)) {
+      alert('Error de validación: El número de teléfono debe contener exactamente 8 dígitos numéricos enteros.');
+      return;
+    }
+
+    const generoVal = document.getElementById('g-inp-genero').value;
+    if (generoVal !== 'Femenino' && generoVal !== 'Masculino') {
+      alert('Error: Debe seleccionar un género biológico válido (Femenino o Masculino).');
+      return;
+    }
 
     const antecedentesVal = document.getElementById('g-inp-antecedentes').value;
     const antecedentesArr = antecedentesVal ? antecedentesVal.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -126,9 +164,9 @@ function inicializarFormularioGestion() {
       nombre: document.getElementById('g-inp-nombre').value,
       apellidos: document.getElementById('g-inp-apellidos').value,
       fechaNacimiento: document.getElementById('g-inp-fecha').value,
-      genero: document.getElementById('g-inp-genero').value,
-      curp: document.getElementById('g-inp-curp').value.toUpperCase(),
-      telefono: document.getElementById('g-inp-telefono').value,
+      genero: generoVal,
+      curp: dpiVal,
+      telefono: telVal,
       correo: document.getElementById('g-inp-correo').value || 'sin-correo@hospital.com',
       direccion: document.getElementById('g-inp-direccion').value || 'Dirección no registrada',
       servicioArea: document.getElementById('g-inp-servicio').value,
@@ -181,13 +219,19 @@ document.addEventListener('DOMContentLoaded', () => {
       renderListaArchivar('lista-archivar-pacientes-container');
     } else if (vistaActual === 'laboratorio') {
       renderLaboratorioTable('laboratorio-table-container');
+    } else if (vistaActual === 'polizas') {
+      actualizarMetricasPolizas();
+      poblarSelectsPolizas();
+      renderPolizasTable();
     }
 
     const kpis = store.getKPIs();
     const totalEl = document.getElementById('sidebar-total-badge');
     const labBadge = document.getElementById('sidebar-lab-badge');
+    const polizasBadge = document.getElementById('sidebar-polizas-badge');
     if (totalEl) totalEl.textContent = kpis.total;
     if (labBadge) labBadge.textContent = kpis.labsPendientes > 0 ? kpis.labsPendientes : 'OK';
+    if (polizasBadge) polizasBadge.textContent = kpis.totalPolizas || 0;
   });
 
   // Botones de acceso en header

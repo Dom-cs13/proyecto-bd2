@@ -234,8 +234,8 @@ export function renderModalDrawer(containerId = 'drawer-container') {
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Teléfono</label>
-            <input type="tel" id="edit-telefono" class="form-control" value="${paciente.telefono}" />
+            <label class="form-label">Teléfono (8 dígitos)</label>
+            <input type="tel" id="edit-telefono" class="form-control" maxlength="8" pattern="\\d{8}" inputmode="numeric" value="${paciente.telefono || ''}" placeholder="Ej. 77612345" />
           </div>
           <div class="form-group">
             <label class="form-label">Estado Clínico</label>
@@ -265,11 +265,24 @@ export function renderModalDrawer(containerId = 'drawer-container') {
       <button class="btn btn-primary" id="btn-actualizar-datos">Actualizar Expediente</button>
     `;
 
+    const telInp = document.getElementById('edit-telefono');
+    if (telInp) {
+      telInp.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+      });
+    }
+
     document.getElementById('btn-actualizar-datos').addEventListener('click', () => {
+      const telVal = (document.getElementById('edit-telefono').value || '').trim();
+      if (telVal && !/^\d{8}$/.test(telVal)) {
+        alert('El teléfono debe tener exactamente 8 dígitos numéricos.');
+        return;
+      }
+
       store.actualizarPaciente(id, {
         nombre: document.getElementById('edit-nombre').value,
         apellidos: document.getElementById('edit-apellidos').value,
-        telefono: document.getElementById('edit-telefono').value,
+        telefono: telVal,
         estadoClinico: document.getElementById('edit-estado').value,
         ubicacion: document.getElementById('edit-ubicacion').value,
         medicoTratante: document.getElementById('edit-medico').value

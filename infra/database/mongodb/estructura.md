@@ -10,7 +10,7 @@
 | Entidad Relacional | Estrategia en MongoDB | Justificación |
 |---|---|---|
 | **Paciente** | Colección raíz `pacientes` | Entidad primaria de búsqueda y control clínico. |
-| **Póliza & Aseguradora** | **Embebido** en `pacientes.polizaSeguro` | Relación 1:1 o 1:pocos que se lee siempre junto al paciente en cada ingreso. |
+| **Póliza & Aseguradora** | **Embebido** en `pacientes.polizaSeguro` y **Colección catálogo** `polizas` | Patrón híbrido: Embebido en paciente para lectura rápida en admisiones, y colección propia para gestión centralizada de aseguradoras y emisión. |
 | **Detalles Hospitalarios** | **Embebido** en `pacientes.detallesInstitucion` | Cama, pabellón, tipo de sangre y antecedentes críticos (específicos de I1). |
 | **Consultas** | Colección separada `consultas` | Crecimiento no acotado a lo largo de los años. Indexada por `pacienteId`. |
 | **Diagnóstico** | **Embebido** en `consultas.diagnostico` | Relación 1:1 atómica dentro del episodio médico. |
@@ -29,3 +29,7 @@
 * **`consultas`**:
   * `{ pacienteId: 1, fecha: -1 }`: Recuperación cronológica del historial clínico completo del paciente.
   * `{ expediente: 1, fecha: -1 }`: Índice alternativo por expediente.
+* **`polizas`**:
+  * `{ idPoliza: 1 }` (Unique): Identificador de póliza única emitida.
+  * `{ pacienteId: 1 }`: Paciente asegurado vinculado.
+  * `{ "aseguradora.nombreEmpresa": 1 }`: Búsquedas por aseguradora emisora.

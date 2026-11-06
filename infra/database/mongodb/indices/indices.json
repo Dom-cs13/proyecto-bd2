@@ -7,5 +7,10 @@
   "consultas": [
     { "key": { "pacienteId": 1, "fecha": -1 }, "options": { "name": "idx_consultas_paciente_fecha" } },
     { "key": { "expediente": 1, "fecha": -1 }, "options": { "name": "idx_consultas_expediente_fecha" } }
+  ],
+  "polizas": [
+    { "key": { "idPoliza": 1 }, "options": { "unique": true, "name": "idx_polizas_id" } },
+    { "key": { "pacienteId": 1 }, "options": { "name": "idx_polizas_paciente" } },
+    { "key": { "aseguradora.nombreEmpresa": 1 }, "options": { "name": "idx_polizas_aseguradora" } }
   ]
 }

@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { obtenerConexionMongo } from './connection.js';
-import { pacienteToDomain, consultaToDomain, historialToDomain } from './mapper.js';
+import { pacienteToDomain, consultaToDomain, historialToDomain, polizaToDomain } from './mapper.js';
 import { NoEncontrado, Conflicto } from '../../../domain/errores.js';
 
 export class MongoAdapter {
@@ -288,6 +288,119 @@ export class MongoAdapter {
       fecha: receta.fecha.toISOString(),
       detalles: receta.detalles,
     };
+  }
+
+  async crearPoliza(datos) {
+    const db = await this._getDb();
+    const idPoliza = datos.idPoliza;
+
+    if (idPoliza) {
+      const duplicada = await db.collection('polizas').findOne({ idPoliza });
+      if (duplicada) {
+        throw new Conflicto('POLIZA_DUPLICADA', `Ya existe una póliza con identificador ${idPoliza}`);
+      }
+    }
+
+    const doc = {
+      ...datos,
+      estado: datos.estado || 'vigente',
+      fechaCreacion: new Date(),
+    };
+
+    const resultado = await db.collection('polizas').insertOne(doc);
+    doc._id = resultado.insertedId;
+
+    if (datos.pacienteId) {
+      await this.asociarPolizaPaciente(doc.idPoliza, datos.pacienteId);
+    }
+
+    return polizaToDomain(doc);
+  }
+
+  async listarPolizas(filtro = {}) {
+    const db = await this._getDb();
+    const query = {};
+
+    if (filtro.estado) {
+      query.estado = filtro.estado;
+    }
+
+    if (filtro.texto) {
+      const regex = new RegExp(filtro.texto, 'i');
+      query.$or = [
+        { idPoliza: regex },
+        { 'aseguradora.nombreEmpresa': regex },
+        { cobertura: regex },
+        { pacienteNombre: regex },
+        { expediente: regex },
+      ];
+    }
+
+    const docs = await db.collection('polizas').find(query).toArray();
+    return docs.map(polizaToDomain);
+  }
+
+  async asociarPolizaPaciente(idPoliza, pacienteId) {
+    const db = await this._getDb();
+    const queryPoliza = {
+      $or: [
+        { _id: this._parseId(idPoliza) },
+        { idPoliza },
+      ],
+    };
+
+    const poliza = await db.collection('polizas').findOne(queryPoliza);
+    if (!poliza) {
+      throw new NoEncontrado('POLIZA_NO_ENCONTRADA', `No existe la póliza ${idPoliza}`);
+    }
+
+    const queryPaciente = {
+      $or: [
+        { _id: this._parseId(pacienteId) },
+        { expediente: pacienteId },
+        { documentoIdentidad: pacienteId },
+      ],
+    };
+
+    const paciente = await db.collection('pacientes').findOne(queryPaciente);
+    if (!paciente) {
+      throw new NoEncontrado('PACIENTE_NO_ENCONTRADO', `No existe el paciente ${pacienteId}`);
+    }
+
+    const polizaSeguro = {
+      idPoliza: poliza.idPoliza,
+      cobertura: poliza.cobertura,
+      porcentajeCobertura: poliza.porcentajeCobertura,
+      fechaInicio: poliza.fechaInicio,
+      fechaVencimiento: poliza.fechaVencimiento,
+      estado: poliza.estado,
+      aseguradora: { ...poliza.aseguradora },
+    };
+
+    await db.collection('pacientes').updateOne(queryPaciente, {
+      $set: {
+        polizaSeguro,
+        'detallesInstitucion.seguro': {
+          aseguradora: poliza.aseguradora?.nombreEmpresa || '',
+          poliza: poliza.idPoliza,
+          cobertura: poliza.porcentajeCobertura,
+        },
+      },
+    });
+
+    await db.collection('polizas').updateOne(queryPoliza, {
+      $set: {
+        pacienteId: paciente._id.toString(),
+        expediente: paciente.expediente,
+        pacienteNombre: `${paciente.nombre} ${paciente.apellidos}`,
+      },
+    });
+
+    poliza.pacienteId = paciente._id.toString();
+    poliza.expediente = paciente.expediente;
+    poliza.pacienteNombre = `${paciente.nombre} ${paciente.apellidos}`;
+
+    return polizaToDomain(poliza);
   }
 }
 

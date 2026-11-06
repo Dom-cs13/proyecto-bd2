@@ -1,12 +1,14 @@
-import { MOCK_PACIENTES, MOCK_LABORATORIOS } from './api/mockData.js';
+import { MOCK_PACIENTES, MOCK_LABORATORIOS, MOCK_POLIZAS } from './api/mockData.js';
 
 class StateStore {
   constructor() {
     this.pacientes = [...MOCK_PACIENTES];
     this.laboratorios = [...MOCK_LABORATORIOS];
+    this.polizas = [...MOCK_POLIZAS];
     this.filtroTexto = '';
     this.filtroArea = 'Todos'; // 'Todos' | 'Hospitalización' | 'Medicina General' | 'Críticos'
     this.filtroLabTexto = '';
+    this.filtroPolizaTexto = '';
     this.pacienteSeleccionado = null;
     this.listeners = [];
   }
@@ -49,14 +51,78 @@ class StateStore {
     );
   }
 
+  getPolizasFiltradas() {
+    const q = this.filtroPolizaTexto.toLowerCase().trim();
+    if (!q) return this.polizas;
+
+    return this.polizas.filter(p =>
+      p.idPoliza.toLowerCase().includes(q) ||
+      (p.aseguradora?.nombreEmpresa || '').toLowerCase().includes(q) ||
+      (p.cobertura || '').toLowerCase().includes(q) ||
+      (p.pacienteNombre || '').toLowerCase().includes(q) ||
+      (p.expediente || '').toLowerCase().includes(q)
+    );
+  }
+
   getKPIs() {
     const total = this.pacientes.filter(p => p.estadoArchivo === 'activo').length;
     const internados = this.pacientes.filter(p => p.detallesInstitucion?.internamiento?.enCama && p.estadoArchivo === 'activo').length;
     const criticos = this.pacientes.filter(p => (p.estadoClinico === 'critico' || p.estadoClinico === 'observacion') && p.estadoArchivo === 'activo').length;
     const medGeneral = this.pacientes.filter(p => p.servicioArea === 'Medicina General' && p.estadoArchivo === 'activo').length;
     const labsPendientes = this.laboratorios.filter(l => l.estado === 'En proceso').length;
+    const totalPolizas = this.polizas.length;
+    const polizasVigentes = this.polizas.filter(p => p.estado === 'vigente').length;
+    const pacientesAsegurados = this.pacientes.filter(p => p.detallesInstitucion?.seguro && p.estadoArchivo === 'activo').length;
 
-    return { total, internados, criticos, medGeneral, labsPendientes };
+    return { total, internados, criticos, medGeneral, labsPendientes, totalPolizas, polizasVigentes, pacientesAsegurados };
+  }
+
+  setFiltroPolizaTexto(texto) {
+    this.filtroPolizaTexto = texto;
+    this.notify();
+  }
+
+  agregarPoliza(nuevaPoliza) {
+    this.polizas.unshift(nuevaPoliza);
+
+    if (nuevaPoliza.pacienteId) {
+      this.asociarPolizaAPaciente(nuevaPoliza.idPoliza, nuevaPoliza.pacienteId);
+    } else {
+      this.notify();
+    }
+  }
+
+  asociarPolizaAPaciente(polizaIdentificador, pacienteId) {
+    const poliza = this.polizas.find(p => p.idPoliza === polizaIdentificador || p.id === polizaIdentificador);
+    const paciente = this.pacientes.find(p => p.id === pacienteId || p.expediente === pacienteId);
+
+    if (poliza && paciente) {
+      poliza.pacienteId = paciente.id;
+      poliza.expediente = paciente.expediente;
+      poliza.pacienteNombre = `${paciente.nombre} ${paciente.apellidos}`;
+
+      if (!paciente.detallesInstitucion) {
+        paciente.detallesInstitucion = {};
+      }
+      paciente.detallesInstitucion.seguro = {
+        aseguradora: poliza.aseguradora.nombreEmpresa,
+        poliza: poliza.idPoliza,
+        cobertura: poliza.porcentajeCobertura
+      };
+      paciente.polizaSeguro = {
+        idPoliza: poliza.idPoliza,
+        cobertura: poliza.cobertura,
+        porcentajeCobertura: poliza.porcentajeCobertura,
+        fechaInicio: poliza.fechaInicio,
+        fechaVencimiento: poliza.fechaVencimiento,
+        estado: poliza.estado,
+        aseguradora: { ...poliza.aseguradora }
+      };
+
+      this.notify();
+      return true;
+    }
+    return false;
   }
 
   setFiltroTexto(texto) {

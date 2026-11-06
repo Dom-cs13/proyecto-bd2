@@ -93,3 +93,26 @@ export function historialToDomain(pacienteDoc, consultasDocs = []) {
   };
 }
 
+export function polizaToDomain(doc) {
+  if (!doc) return null;
+
+  return {
+    id: doc._id?.toString() || doc.id,
+    idPoliza: doc.idPoliza || '',
+    cobertura: doc.cobertura || '',
+    porcentajeCobertura: Number(doc.porcentajeCobertura) || 0,
+    fechaInicio: formatearFechaIso(doc.fechaInicio)?.slice(0, 10) || '',
+    fechaVencimiento: formatearFechaIso(doc.fechaVencimiento)?.slice(0, 10) || '',
+    estado: doc.estado || 'vigente',
+    pacienteId: doc.pacienteId?.toString() || doc.pacienteId || null,
+    expediente: doc.expediente || null,
+    pacienteNombre: doc.pacienteNombre || null,
+    aseguradora: doc.aseguradora ? {
+      idAseguradora: doc.aseguradora.idAseguradora || '',
+      nombreEmpresa: doc.aseguradora.nombreEmpresa || '',
+      nitIdentificador: doc.aseguradora.nitIdentificador || '',
+      telefono: doc.aseguradora.telefono ? String(doc.aseguradora.telefono) : '',
+    } : null,
+  };
+}
+

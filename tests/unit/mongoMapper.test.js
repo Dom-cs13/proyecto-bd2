@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { ObjectId } from 'mongodb';
-import { pacienteToDomain, consultaToDomain, historialToDomain } from '../../src/infrastructure/adapters/mongodb/mapper.js';
+import { pacienteToDomain, consultaToDomain, historialToDomain, polizaToDomain } from '../../src/infrastructure/adapters/mongodb/mapper.js';
 
 describe('MongoDB Mapper (Hospital General · I1)', () => {
   test('pacienteToDomain convierte _id a string y asegura camelCase', () => {
@@ -104,5 +104,39 @@ describe('MongoDB Mapper (Hospital General · I1)', () => {
     expect(historial.paciente.nombre).toBe('Mariana');
     expect(historial.consultas).toHaveLength(1);
     expect(historial.consultas[0].motivos).toBe('Consulta 1');
+  });
+
+  test('polizaToDomain mapea póliza y aseguradora con fecha ISO y porcentaje numérico', () => {
+    const oid = new ObjectId('652000000000000000000001');
+    const docPoliza = {
+      _id: oid,
+      idPoliza: 'POL-98421',
+      cobertura: 'Hospitalaria completa',
+      porcentajeCobertura: 85,
+      fechaInicio: new Date('2026-01-01T00:00:00.000Z'),
+      fechaVencimiento: new Date('2026-12-31T00:00:00.000Z'),
+      estado: 'vigente',
+      pacienteId: '650000000000000000000001',
+      expediente: 'EXP-01842',
+      pacienteNombre: 'Mariana Soto Hernández',
+      aseguradora: {
+        idAseguradora: 'ASEG-01',
+        nombreEmpresa: 'Seguros Universales',
+        nitIdentificador: '1234567-8',
+        telefono: 23456789,
+      },
+    };
+
+    const dominio = polizaToDomain(docPoliza);
+
+    expect(dominio.id).toBe('652000000000000000000001');
+    expect(dominio._id).toBeUndefined();
+    expect(dominio.idPoliza).toBe('POL-98421');
+    expect(dominio.porcentajeCobertura).toBe(85);
+    expect(dominio.fechaInicio).toBe('2026-01-01');
+    expect(dominio.fechaVencimiento).toBe('2026-12-31');
+    expect(dominio.aseguradora.nombreEmpresa).toBe('Seguros Universales');
+    expect(dominio.aseguradora.telefono).toBe('23456789');
+    expect(dominio.pacienteNombre).toBe('Mariana Soto Hernández');
   });
 });
