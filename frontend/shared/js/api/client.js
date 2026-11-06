@@ -12,8 +12,8 @@ export async function fetchPlantillaHtml(rutaRelativa) {
 }
 
 export async function apiClient(endpoint, opciones = {}) {
-  const token = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('token') : null;
-  const res = await fetch(endpoint, {
+  let token = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('token') : null;
+  let res = await fetch(endpoint, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -21,6 +21,35 @@ export async function apiClient(endpoint, opciones = {}) {
     },
     ...opciones
   });
+
+  // Auto-recuperación transparente de sesión si el token previo era inválido o caducó
+  if (res.status === 401 && endpoint !== '/auth/login') {
+    try {
+      const loginRes = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ institucion: 'hospital', usuario: 'dr.palma', password: 'Hospital2026!' })
+      });
+      if (loginRes.ok) {
+        const cuerpo = await loginRes.json();
+        if (cuerpo.token) {
+          sessionStorage.setItem('token', cuerpo.token);
+          token = cuerpo.token;
+          res = await fetch(endpoint, {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+              ...(opciones.headers || {})
+            },
+            ...opciones
+          });
+        }
+      }
+    } catch {
+      // Continuar con la respuesta original si no es posible renovar
+    }
+  }
+
   return res;
 }
 

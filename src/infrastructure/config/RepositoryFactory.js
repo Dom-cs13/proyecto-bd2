@@ -20,3 +20,4 @@ export function obtenerRepositorio(institucion = 'hospital') {
 export function obtenerTodos() {
   return adaptadores;
 }
+

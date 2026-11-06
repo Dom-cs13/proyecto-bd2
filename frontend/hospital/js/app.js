@@ -187,9 +187,11 @@ function inicializarFormularioGestion() {
     const nuevo = {
       id: `pac-${Date.now()}`,
       expediente: `EXP-0${expNum}`,
+      documentoIdentidad: dpiVal,
       nombre: document.getElementById('g-inp-nombre').value,
       apellidos: document.getElementById('g-inp-apellidos').value,
       fechaNacimiento: document.getElementById('g-inp-fecha').value,
+      sexo: generoVal,
       genero: generoVal,
       curp: dpiVal,
       telefono: telVal,
