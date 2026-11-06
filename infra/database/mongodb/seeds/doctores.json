@@ -1,0 +1,50 @@
+[
+  {
+    "_id": { "$oid": "653000000000000000000001" },
+    "idColegiado": "COL-07412",
+    "nombre": "Rodrigo",
+    "apellidos": "Palma",
+    "especialidad": "Cirugía General",
+    "telefono": 23456789,
+    "correo": "rodrigo.palma@hospital.com",
+    "horario": "Turno Completo (Matutino/Vespertino)",
+    "estado": "activo",
+    "institucionId": "I1"
+  },
+  {
+    "_id": { "$oid": "653000000000000000000002" },
+    "idColegiado": "COL-08194",
+    "nombre": "Ana",
+    "apellidos": "Ruiz",
+    "especialidad": "Medicina General",
+    "telefono": 22334455,
+    "correo": "ana.ruiz@hospital.com",
+    "horario": "Matutino (07:00 - 15:00)",
+    "estado": "de turno",
+    "institucionId": "I1"
+  },
+  {
+    "_id": { "$oid": "653000000000000000000003" },
+    "idColegiado": "COL-06231",
+    "nombre": "Elena",
+    "apellidos": "Morales",
+    "especialidad": "Traumatología y Ortopedia",
+    "telefono": 24567890,
+    "correo": "elena.morales@hospital.com",
+    "horario": "Vespertino (13:00 - 20:00)",
+    "estado": "activo",
+    "institucionId": "I1"
+  },
+  {
+    "_id": { "$oid": "653000000000000000000004" },
+    "idColegiado": "COL-09315",
+    "nombre": "Carlos",
+    "apellidos": "Estrada",
+    "especialidad": "Medicina Interna",
+    "telefono": 25678901,
+    "correo": "carlos.estrada@hospital.com",
+    "horario": "Nocturno (20:00 - 07:00)",
+    "estado": "activo",
+    "institucionId": "I1"
+  }
+]

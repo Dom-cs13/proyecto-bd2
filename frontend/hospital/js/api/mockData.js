@@ -311,3 +311,54 @@ export const MOCK_POLIZAS = [
     }
   }
 ];
+
+export const MOCK_DOCTORES = [
+  {
+    id: "doc-001",
+    idColegiado: "COL-07412",
+    nombre: "Rodrigo",
+    apellidos: "Palma",
+    especialidad: "Cirugía General",
+    telefono: "23456789",
+    correo: "rodrigo.palma@hospital.com",
+    horario: "Turno Completo",
+    estado: "activo",
+    institucionId: "I1"
+  },
+  {
+    id: "doc-002",
+    idColegiado: "COL-08194",
+    nombre: "Ana",
+    apellidos: "Ruiz",
+    especialidad: "Medicina General",
+    telefono: "22334455",
+    correo: "ana.ruiz@hospital.com",
+    horario: "Matutino (07:00 - 15:00)",
+    estado: "de turno",
+    institucionId: "I1"
+  },
+  {
+    id: "doc-003",
+    idColegiado: "COL-06231",
+    nombre: "Elena",
+    apellidos: "Morales",
+    especialidad: "Traumatología y Ortopedia",
+    telefono: "24567890",
+    correo: "elena.morales@hospital.com",
+    horario: "Vespertino (13:00 - 20:00)",
+    estado: "activo",
+    institucionId: "I1"
+  },
+  {
+    id: "doc-004",
+    idColegiado: "COL-09315",
+    nombre: "Carlos",
+    apellidos: "Estrada",
+    especialidad: "Medicina Interna",
+    telefono: "25678901",
+    correo: "carlos.estrada@hospital.com",
+    horario: "Nocturno (20:00 - 07:00)",
+    estado: "activo",
+    institucionId: "I1"
+  }
+];

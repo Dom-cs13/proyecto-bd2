@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { ObjectId } from 'mongodb';
-import { pacienteToDomain, consultaToDomain, historialToDomain, polizaToDomain } from '../../src/infrastructure/adapters/mongodb/mapper.js';
+import { pacienteToDomain, consultaToDomain, historialToDomain, polizaToDomain, doctorToDomain } from '../../src/infrastructure/adapters/mongodb/mapper.js';
 
 describe('MongoDB Mapper (Hospital General · I1)', () => {
   test('pacienteToDomain convierte _id a string y asegura camelCase', () => {
@@ -138,5 +138,29 @@ describe('MongoDB Mapper (Hospital General · I1)', () => {
     expect(dominio.aseguradora.nombreEmpresa).toBe('Seguros Universales');
     expect(dominio.aseguradora.telefono).toBe('23456789');
     expect(dominio.pacienteNombre).toBe('Mariana Soto Hernández');
+  });
+
+  test('doctorToDomain mapea médico y colegiado cumpliendo LSP', () => {
+    const oid = new ObjectId('653000000000000000000001');
+    const docDoctor = {
+      _id: oid,
+      idColegiado: 'COL-07412',
+      nombre: 'Rodrigo',
+      apellidos: 'Palma',
+      especialidad: 'Cirugía General',
+      telefono: 23456789,
+      correo: 'rodrigo.palma@hospital.com',
+      horario: 'Turno Completo',
+      estado: 'activo',
+    };
+
+    const dominio = doctorToDomain(docDoctor);
+
+    expect(dominio.id).toBe('653000000000000000000001');
+    expect(dominio._id).toBeUndefined();
+    expect(dominio.idColegiado).toBe('COL-07412');
+    expect(dominio.nombre).toBe('Rodrigo');
+    expect(dominio.especialidad).toBe('Cirugía General');
+    expect(dominio.telefono).toBe('23456789');
   });
 });

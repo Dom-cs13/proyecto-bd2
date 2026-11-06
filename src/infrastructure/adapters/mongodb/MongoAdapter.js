@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { obtenerConexionMongo } from './connection.js';
-import { pacienteToDomain, consultaToDomain, historialToDomain, polizaToDomain } from './mapper.js';
+import { pacienteToDomain, consultaToDomain, historialToDomain, polizaToDomain, doctorToDomain } from './mapper.js';
 import { NoEncontrado, Conflicto } from '../../../domain/errores.js';
 
 export class MongoAdapter {
@@ -401,6 +401,68 @@ export class MongoAdapter {
     poliza.pacienteNombre = `${paciente.nombre} ${paciente.apellidos}`;
 
     return polizaToDomain(poliza);
+  }
+
+  async crearDoctor(datos) {
+    const db = await this._getDb();
+    const idColegiado = datos.idColegiado;
+
+    if (idColegiado) {
+      const duplicado = await db.collection('doctores').findOne({ idColegiado });
+      if (duplicado) {
+        throw new Conflicto('DOCTOR_DUPLICADO', `Ya existe un médico con número de colegiado ${idColegiado}`);
+      }
+    }
+
+    const doc = {
+      ...datos,
+      estado: datos.estado || 'activo',
+      institucionId: 'I1',
+      fechaCreacion: new Date(),
+    };
+
+    const resultado = await db.collection('doctores').insertOne(doc);
+    doc._id = resultado.insertedId;
+    return doctorToDomain(doc);
+  }
+
+  async listarDoctores(filtro = {}) {
+    const db = await this._getDb();
+    const query = {};
+
+    if (filtro.estado) {
+      query.estado = filtro.estado;
+    }
+
+    if (filtro.especialidad) {
+      query.especialidad = filtro.especialidad;
+    }
+
+    if (filtro.texto) {
+      const regex = new RegExp(filtro.texto, 'i');
+      query.$or = [
+        { nombre: regex },
+        { apellidos: regex },
+        { idColegiado: regex },
+        { especialidad: regex },
+      ];
+    }
+
+    const docs = await db.collection('doctores').find(query).toArray();
+    return docs.map(doctorToDomain);
+  }
+
+  async obtenerDoctor(id) {
+    const db = await this._getDb();
+    const query = {
+      $or: [
+        { _id: this._parseId(id) },
+        { idColegiado: id },
+      ],
+    };
+
+    const doc = await db.collection('doctores').findOne(query);
+    return doc ? doctorToDomain(doc) : null;
   }
 }
 

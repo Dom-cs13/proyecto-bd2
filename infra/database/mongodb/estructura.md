@@ -17,6 +17,7 @@
 | **Tratamiento** | **Embebido** en `consultas.diagnostico.tratamiento` | El tratamiento depende directamente del diagnóstico clínico asignado. |
 | **Receta & Medicamentos**| **Embebido** en `tratamiento.receta.detalles[]` | La prescripción y desglose de fármacos (dosis, cantidad, frecuencia) pertenecen al episodio. |
 | **Servicios** | **Embebido** en `consultas.servicios[]` | Snapshot del catálogo de especialidad médica asignada a la atención. |
+| **Doctores / Personal Médico** | **Colección raíz** `doctores` | Directorio de profesionales colegiados con especialidad y horario de atención para asignación en expedientes y consultas. |
 
 ---
 
@@ -33,3 +34,6 @@
   * `{ idPoliza: 1 }` (Unique): Identificador de póliza única emitida.
   * `{ pacienteId: 1 }`: Paciente asegurado vinculado.
   * `{ "aseguradora.nombreEmpresa": 1 }`: Búsquedas por aseguradora emisora.
+* **`doctores`**:
+  * `{ idColegiado: 1 }` (Unique): Número de colegiado médico único.
+  * `{ "nombre": "text", "apellidos": "text", "especialidad": "text" }`: Búsqueda predictiva en directorio médico.

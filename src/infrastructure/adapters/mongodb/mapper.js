@@ -116,3 +116,20 @@ export function polizaToDomain(doc) {
   };
 }
 
+export function doctorToDomain(doc) {
+  if (!doc) return null;
+
+  return {
+    id: doc._id?.toString() || doc.id,
+    idColegiado: doc.idColegiado || '',
+    nombre: doc.nombre || '',
+    apellidos: doc.apellidos || '',
+    especialidad: doc.especialidad || 'Medicina General',
+    telefono: doc.telefono ? String(doc.telefono) : '',
+    correo: doc.correo || '',
+    horario: doc.horario || 'Turno Completo',
+    estado: doc.estado || 'activo',
+    institucionId: doc.institucionId || 'I1',
+  };
+}
+

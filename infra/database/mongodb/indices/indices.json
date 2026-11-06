@@ -12,5 +12,9 @@
     { "key": { "idPoliza": 1 }, "options": { "unique": true, "name": "idx_polizas_id" } },
     { "key": { "pacienteId": 1 }, "options": { "name": "idx_polizas_paciente" } },
     { "key": { "aseguradora.nombreEmpresa": 1 }, "options": { "name": "idx_polizas_aseguradora" } }
+  ],
+  "doctores": [
+    { "key": { "idColegiado": 1 }, "options": { "unique": true, "name": "idx_doctores_colegiado" } },
+    { "key": { "nombre": "text", "apellidos": "text", "especialidad": "text" }, "options": { "name": "idx_doctores_busqueda" } }
   ]
 }

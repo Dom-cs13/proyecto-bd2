@@ -253,8 +253,16 @@ export function renderModalDrawer(containerId = 'drawer-container') {
             <input type="text" id="edit-ubicacion" class="form-control" value="${paciente.ubicacion}" />
           </div>
           <div class="form-group">
-            <label class="form-label">Médico Tratante</label>
-            <input type="text" id="edit-medico" class="form-control" value="${paciente.medicoTratante}" />
+            <label class="form-label">Médico Tratante Asignado *</label>
+            <select id="edit-medico" class="form-control">
+              <option value="">-- Seleccionar Médico Tratante --</option>
+              ${store.doctores.map(d => {
+                const nombreCompleto = `Dr(a). ${d.nombre} ${d.apellidos}`;
+                const selected = (paciente.medicoTratante && (paciente.medicoTratante.includes(d.nombre) || paciente.medicoTratante === nombreCompleto)) ? 'selected' : '';
+                return `<option value="${nombreCompleto}" ${selected}>${nombreCompleto} · ${d.especialidad} (${d.idColegiado})</option>`;
+              }).join('')}
+              ${paciente.medicoTratante && !store.doctores.some(d => paciente.medicoTratante.includes(d.nombre)) ? `<option value="${paciente.medicoTratante}" selected>${paciente.medicoTratante} (Personalizado)</option>` : ''}
+            </select>
           </div>
         </div>
       </form>

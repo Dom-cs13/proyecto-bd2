@@ -82,26 +82,26 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Correo Electrónico</label>
-            <input type="email" id="g-inp-correo" class="form-control" placeholder="paciente@correo.com" />
+            <label class="form-label">Correo Electrónico *</label>
+            <input type="email" id="g-inp-correo" class="form-control" required placeholder="paciente@correo.com" />
           </div>
           <div class="form-group">
-            <label class="form-label">Dirección Domiciliar</label>
-            <input type="text" id="g-inp-direccion" class="form-control" placeholder="Zona, Municipio, Departamento" />
+            <label class="form-label">Dirección Domiciliar *</label>
+            <input type="text" id="g-inp-direccion" class="form-control" required placeholder="Zona, Municipio, Departamento" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Servicio Hospitalario</label>
-            <select id="g-inp-servicio" class="form-control">
+            <label class="form-label">Servicio Hospitalario *</label>
+            <select id="g-inp-servicio" class="form-control" required>
               <option value="Hospitalización">Hospitalización (Camas / Pabellón)</option>
               <option value="Medicina General">Medicina General (Ambulatorio)</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Estado Inicial</label>
-            <select id="g-inp-estado" class="form-control">
+            <label class="form-label">Estado Inicial *</label>
+            <select id="g-inp-estado" class="form-control" required>
               <option value="estable">Estable</option>
               <option value="observacion">Observación Médica</option>
               <option value="critico">Estado Crítico</option>
@@ -111,12 +111,12 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Ubicación / Pabellón</label>
-            <input type="text" id="g-inp-ubicacion" class="form-control" placeholder="Ej. Pabellón B - Cama 202" />
+            <label class="form-label">Ubicación / Pabellón *</label>
+            <input type="text" id="g-inp-ubicacion" class="form-control" required placeholder="Ej. Pabellón B - Cama 202" />
           </div>
           <div class="form-group">
-            <label class="form-label">Tipo de Sangre</label>
-            <select id="g-inp-sangre" class="form-control">
+            <label class="form-label">Tipo de Sangre *</label>
+            <select id="g-inp-sangre" class="form-control" required>
               <option value="O+">O+</option>
               <option value="O-">O-</option>
               <option value="A+">A+</option>
@@ -128,23 +128,30 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label class="form-label">Médico Tratante / Doctor Asignado *</label>
+          <select id="g-inp-medico" class="form-control" required>
+            <!-- Inyectado dinámicamente con los doctores registrados -->
+          </select>
+        </div>
+
         <!-- Sección de Póliza y Seguro Médico -->
         <div style="background-color: var(--bg-subtle); padding: 14px; border-radius: var(--radius-md); border: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 10px;">
           <div style="font-size: 0.82rem; font-weight: 700; color: var(--primary);">🛡️ Póliza de Seguro Médico (Opcional)</div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Aseguradora</label>
+              <label class="form-label">Aseguradora (Opcional)</label>
               <input type="text" id="g-inp-aseguradora" class="form-control" placeholder="Ej. Seguros Universales" />
             </div>
             <div class="form-group">
-              <label class="form-label">Número de Póliza</label>
+              <label class="form-label">Número de Póliza (Opcional)</label>
               <input type="text" id="g-inp-poliza" class="form-control" placeholder="Ej. POL-99412" />
             </div>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Alergias y Antecedentes Críticos (separados por coma)</label>
+          <label class="form-label">Alergias y Antecedentes Críticos (Opcional - separados por coma)</label>
           <input type="text" id="g-inp-antecedentes" class="form-control" placeholder="Ej. Alergia a la penicilina, Asma, Hipertensión" />
         </div>
 

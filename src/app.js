@@ -3,6 +3,7 @@ import express from 'express';
 import authRoutes from './interfaces/http/routes/auth.js';
 import pacientesRoutes from './interfaces/http/routes/pacientes.js';
 import polizasRoutes from './interfaces/http/routes/polizas.js';
+import doctoresRoutes from './interfaces/http/routes/doctores.js';
 import { errorHandler, noEncontrado } from './interfaces/http/middleware/errorHandler.js';
 
 export function crearApp() {
@@ -14,6 +15,7 @@ export function crearApp() {
   app.use('/auth', authRoutes);
   app.use('/pacientes', pacientesRoutes);
   app.use('/polizas', polizasRoutes);
+  app.use('/doctores', doctoresRoutes);
 
   app.use(noEncontrado);
   app.use(errorHandler);

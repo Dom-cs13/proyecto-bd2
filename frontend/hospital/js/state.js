@@ -1,4 +1,4 @@
-import { MOCK_PACIENTES, MOCK_LABORATORIOS, MOCK_POLIZAS } from './api/mockData.js';
+import { MOCK_PACIENTES, MOCK_LABORATORIOS, MOCK_POLIZAS, MOCK_DOCTORES } from './api/mockData.js';
 import { apiClient } from '../../shared/js/api/client.js';
 
 class StateStore {
@@ -6,10 +6,12 @@ class StateStore {
     this.pacientes = [...MOCK_PACIENTES];
     this.laboratorios = [...MOCK_LABORATORIOS];
     this.polizas = [...MOCK_POLIZAS];
+    this.doctores = [...MOCK_DOCTORES];
     this.filtroTexto = '';
     this.filtroArea = 'Todos'; // 'Todos' | 'Hospitalización' | 'Medicina General' | 'Críticos'
     this.filtroLabTexto = '';
     this.filtroPolizaTexto = '';
+    this.filtroDoctorTexto = '';
     this.pacienteSeleccionado = null;
     this.listeners = [];
     this.sincronizado = false;
@@ -38,6 +40,14 @@ class StateStore {
         const dataPol = await resPolizas.json();
         if (Array.isArray(dataPol.items) && dataPol.items.length > 0) {
           this.polizas = dataPol.items;
+        }
+      }
+
+      const resDoctores = await apiClient('/doctores');
+      if (resDoctores.ok) {
+        const dataDoc = await resDoctores.json();
+        if (Array.isArray(dataDoc.items) && dataDoc.items.length > 0) {
+          this.doctores = dataDoc.items;
         }
       }
 
@@ -99,6 +109,18 @@ class StateStore {
     );
   }
 
+  getDoctoresFiltrados() {
+    const q = this.filtroDoctorTexto.toLowerCase().trim();
+    if (!q) return this.doctores;
+
+    return this.doctores.filter(d =>
+      `${d.nombre} ${d.apellidos}`.toLowerCase().includes(q) ||
+      (d.especialidad || '').toLowerCase().includes(q) ||
+      (d.idColegiado || '').toLowerCase().includes(q) ||
+      (d.correo || '').toLowerCase().includes(q)
+    );
+  }
+
   getKPIs() {
     const total = this.pacientes.filter(p => p.estadoArchivo === 'activo').length;
     const internados = this.pacientes.filter(p => p.detallesInstitucion?.internamiento?.enCama && p.estadoArchivo === 'activo').length;
@@ -108,8 +130,36 @@ class StateStore {
     const totalPolizas = this.polizas.length;
     const polizasVigentes = this.polizas.filter(p => p.estado === 'vigente').length;
     const pacientesAsegurados = this.pacientes.filter(p => p.detallesInstitucion?.seguro && p.estadoArchivo === 'activo').length;
+    const totalDoctores = this.doctores.length;
+    const doctoresActivos = this.doctores.filter(d => d.estado === 'activo' || d.estado === 'de turno').length;
 
-    return { total, internados, criticos, medGeneral, labsPendientes, totalPolizas, polizasVigentes, pacientesAsegurados };
+    return { total, internados, criticos, medGeneral, labsPendientes, totalPolizas, polizasVigentes, pacientesAsegurados, totalDoctores, doctoresActivos };
+  }
+
+  setFiltroDoctorTexto(texto) {
+    this.filtroDoctorTexto = texto;
+    this.notify();
+  }
+
+  async agregarDoctor(nuevoDoctor) {
+    try {
+      const res = await apiClient('/doctores', {
+        method: 'POST',
+        body: JSON.stringify(nuevoDoctor)
+      });
+      if (res.ok) {
+        const guardado = await res.json();
+        this.doctores.unshift(guardado);
+        this.notify();
+        return guardado;
+      }
+    } catch (err) {
+      console.warn('Persistencia de doctor no completada, guardando local:', err.message);
+    }
+
+    this.doctores.unshift(nuevoDoctor);
+    this.notify();
+    return nuevoDoctor;
   }
 
   setFiltroPolizaTexto(texto) {

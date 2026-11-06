@@ -53,6 +53,15 @@ export function renderSidebar(containerId = 'sidebar-container', vistaActiva = '
           </button>
         </li>
         <li>
+          <button class="nav-item ${vistaActiva === 'doctores' ? 'active' : ''}" data-view="doctores">
+            <span class="nav-item-content">
+              <span>👨‍⚕️</span>
+              <span>Personal Médico</span>
+            </span>
+            <span class="nav-badge" style="background-color: #f0fdf4; color: #166534;" id="sidebar-doctores-badge">${kpis.totalDoctores || 0}</span>
+          </button>
+        </li>
+        <li>
           <button class="nav-item ${vistaActiva === 'laboratorio' ? 'active' : ''}" data-view="laboratorio">
             <span class="nav-item-content">
               <span>🔬</span>

@@ -87,3 +87,22 @@
 - **Evidencia:** `src/infrastructure/config/RepositoryFactory.js`, `src/interfaces/http/routes/pacientes.js`, `src/interfaces/http/routes/polizas.js`, `src/interfaces/http/routes/auth.js`, `frontend/hospital/js/components/modalDialog.js`, `tests/integration/app.test.js`.
 - **Tiempo invertido:** 85 min
 - **Siguiente paso:** Pruebas e2e de navegación y commit a la rama.
+
+## Sesión 6 · 2026-11-05 · Campos Obligatorios y Módulo de Personal Médico (I1-04)
+
+- **Objetivo de la sesión:** Hacer obligatorios todos los campos de registro de un paciente (salvo pólizas y antecedentes/observaciones), permitir asignar médico tratante a cada paciente y crear el módulo completo de administración y registro de personal médico (doctores).
+- **Qué hice:**
+  - En `frontend/hospital/pages/gestion-pacientes.html` y `app.js`: se establecieron como estrictamente obligatorios los campos de Nombre(s), Apellidos, Fecha de Nacimiento, Género Biológico (Femenino/Masculino), DPI/CUI (13 dígitos numéricos), Teléfono (8 dígitos numéricos), Correo Electrónico, Dirección Domiciliar, Servicio Hospitalario, Estado Inicial, Ubicación/Pabellón, Tipo de Sangre y Médico Tratante Asignado. Se mantuvieron opcionales únicamente la póliza de seguro médico y las alergias/antecedentes.
+  - Diseñado y creado el módulo completo de doctores:
+    - En base de datos MongoDB: creado `infra/database/mongodb/colecciones/doctores.schema.json` con validación de tipos, semillas `infra/database/mongodb/seeds/doctores.json` con 4 médicos colegiados iniciales e índices `infra/database/mongodb/indices/indices.json` (único en `idColegiado` y búsqueda por texto en nombres y especialidad).
+    - En capa de infraestructura: implementado `doctorToDomain` en `mapper.js` (LSP compliant: id string, camelCase), y métodos `crearDoctor`, `listarDoctores` y `obtenerDoctor` en `MongoAdapter.js`.
+    - En interfaz HTTP: creado `src/interfaces/http/routes/doctores.js` (GET /, POST /, GET /:id) y montado en `src/app.js` sobre `/doctores`.
+    - En frontend: creada la página `frontend/hospital/pages/doctores.html`, el componente `doctoresComponent.js` (registro de doctores, directorio con búsqueda y KPIs), incorporado el botón de acceso en el sidebar con badge dinámico, y vinculado el selector dinámico de doctores en los formularios de nuevo paciente y edición de expediente en `modalDrawer.js`.
+  - Añadidas pruebas unitarias en `tests/unit/mongoMapper.test.js` para `doctorToDomain`.
+- **Decisiones tomadas (y por qué):**
+  - Implementar una entidad de primer nivel `doctores` en MongoDB que modele a los médicos con su número de colegiado guatemalteco (`idColegiado`), especialidad y horario de atención, permitiendo asociarlos de manera atómica tanto en altas de pacientes como en consultas clínicas.
+  - Validar todos los campos del formulario antes del envío con diálogos modales personalizados (`mostrarAlertaPersonalizada`), evitando que se guarden expedientes incompletos en la base de datos de producción.
+- **Problemas / bloqueos:** Ninguno. Linter (ESLint) y pruebas unitarias (Vitest) pasando en verde con 0 errores.
+- **Evidencia:** `infra/database/mongodb/colecciones/doctores.schema.json`, `src/interfaces/http/routes/doctores.js`, `frontend/hospital/pages/doctores.html`, `frontend/hospital/js/components/doctoresComponent.js`, `tests/unit/mongoMapper.test.js`.
+- **Tiempo invertido:** 45 min
+- **Siguiente paso:** Verificación final en el navegador e integración de consultas.
