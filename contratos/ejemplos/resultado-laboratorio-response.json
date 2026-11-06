@@ -1,0 +1,32 @@
+{
+  "id": "res-0001",
+  "ordenId": "ord-0001",
+  "muestraId": "mue-0001",
+  "examenCodigo": "HEM-01",
+  "examenNombre": "Hemograma completo",
+  "tipoLaboratorio": "hematologia",
+  "valorResultado": {
+    "hemoglobina": 13.5,
+    "hematocrito": 41.0,
+    "eritrocitos": 4.5,
+    "leucocitos": 6800,
+    "plaquetas": 240000
+  },
+  "unidadMedida": "g/dL",
+  "rangoReferencia": "12.0 - 15.5",
+  "flagAnormalidad": "normal",
+  "metodo": "Citometría de flujo",
+  "equipo": "Sysmex XN-550",
+  "fechaResultado": "2026-10-26T10:00:00.000Z",
+  "tecnicoIngreso": "Dra. Sofía Cordero",
+  "tecnicoValido": "Dra. Sofía Cordero",
+  "fechaValidacion": "2026-10-26T10:30:00.000Z",
+  "estadoResultado": "validado",
+  "comentarios": "Parámetros dentro de límites normales",
+  "version": 1,
+  "historialVersiones": [],
+  "auditoria": {
+    "createdAt": "2026-10-26T10:00:00.000Z",
+    "updatedAt": "2026-10-26T10:30:00.000Z"
+  }
+}

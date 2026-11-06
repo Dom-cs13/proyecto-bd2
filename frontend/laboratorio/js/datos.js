@@ -1,7 +1,12 @@
 /* ============================================================
    datos.js · Capa de Persistencia y Estado del Laboratorio Clínico
+   ============================================================
+   Conectado a la API Express y persistencia real en Firestore.
+   Cumple con la regla de oro: fetch solo a través de apiClient en shared.
    ============================================================ */
 
+import { apiClient } from '../../shared/js/api/client.js';
+import { obtenerSesion } from '../../shared/js/api/auth.js';
 import {
   GENEROS,
   TIPOS_SANGRE,
@@ -34,7 +39,7 @@ export const ESTADOS = ESTADOS_ORDEN;
 
 const STORAGE_KEY = 'lab-clinico:demo:v2';
 
-/* ---------- Datos semilla con los 8 tipos de laboratorio ---------- */
+/* ---------- Datos semilla con los 8 tipos de laboratorio (Fallback local) ---------- */
 const SEED_PACIENTES = [
   {
     cui: '2987654320101',
@@ -267,12 +272,64 @@ const SEED_EXAMENES = [
   },
 ];
 
-/* ---------- Arrays mutables de identidad estable ---------- */
+/* ---------- Arrays mutables de identidad estable para la UI ---------- */
 export const pacientes = [];
 export const examenes = [];
 export const muestras = [];
 
-/* ---------- Persistencia LocalStorage ---------- */
+let datosListener = null;
+export function registrarListenerActualizacion(fn) {
+  datosListener = fn;
+}
+
+function headersAuth() {
+  const sesion = obtenerSesion();
+  return sesion?.token ? { Authorization: `Bearer ${sesion.token}` } : {};
+}
+
+function adaptarPacienteParaUi(p) {
+  const cui = p.documentoIdentidad || p.cui || p.id;
+  return {
+    id: p.id || cui,
+    cui,
+    documentoIdentidad: cui,
+    nombre: p.nombre,
+    apellidos: p.apellidos,
+    fechaNacimiento: p.fechaNacimiento?.slice(0, 10) || p.fechaNacimiento,
+    genero: p.genero || 'Otro',
+    tipoSangre: p.tipoSangre || 'O+',
+    telefono: p.telefono || '',
+    correo: p.correo || '',
+    direccion: p.direccion || '',
+    alergias: Array.isArray(p.alergias) ? p.alergias : [],
+    activo: p.activo !== false,
+    motivoBaja: p.motivoBaja || null,
+    fechaBaja: p.fechaBaja || null,
+    detallesInstitucion: p.detallesInstitucion || { tipoPaciente: 'ambulatorio', servicioProcedencia: 'Consulta Externa' },
+  };
+}
+
+function adaptarOrdenParaUi(ord) {
+  const primerRes = ord.resultados?.[0] || {};
+  return {
+    id: ord.numeroOrden || ord.id,
+    pacienteCui: ord.pacienteId,
+    tipo: ord.tipoLaboratorio,
+    tipoLaboratorio: ord.tipoLaboratorio,
+    fechaSolicitud: ord.fechaSolicitud?.slice(0, 10) || ord.fechaSolicitud,
+    fechaResultado: primerRes.fechaResultado?.slice(0, 10) || null,
+    medicoSolicitante: ord.medicoSolicitante,
+    prioridad: ord.prioridad || 'rutina',
+    estado: ord.estadoOrden === 'completada' ? 'completado' : ord.estadoOrden,
+    flagAnormalidad: primerRes.flagAnormalidad || 'normal',
+    tecnicoValido: primerRes.tecnicoValido || null,
+    fechaValidacion: primerRes.fechaValidacion || null,
+    resultados: primerRes.valorResultado || ord.resultados || {},
+    muestras: ord.muestras || [],
+  };
+}
+
+/* ---------- Hidratación ---------- */
 function hydrate(data) {
   const cloned = JSON.parse(JSON.stringify(data));
   pacientes.length = 0;
@@ -298,7 +355,7 @@ function hayStorage() {
   }
 }
 
-export function cargarEstado() {
+function cargarDesdeStorage() {
   if (hayStorage()) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -306,15 +363,65 @@ export function cargarEstado() {
         const data = JSON.parse(raw);
         if (Array.isArray(data?.pacientes) && Array.isArray(data?.examenes)) {
           hydrate(data);
-          return 'storage';
+          return true;
         }
       }
-    } catch (e) {
-      console.warn('[datos] No se pudo leer localStorage, usando semilla:', e);
+    } catch {
+      // Ignorar error al leer storage
     }
   }
-  hydrate({ pacientes: SEED_PACIENTES, examenes: SEED_EXAMENES, muestras: SEED_MUESTRAS });
-  return 'seed';
+  return false;
+}
+
+/**
+ * Carga el estado general: primero del almacenamiento local para inicio rápido
+ * y luego sincroniza en vivo con la API Express conectada a Firestore.
+ */
+export async function cargarEstado() {
+  const teniaLocal = cargarDesdeStorage();
+  if (!teniaLocal) {
+    hydrate({ pacientes: SEED_PACIENTES, examenes: SEED_EXAMENES, muestras: SEED_MUESTRAS });
+  }
+
+  // Consulta en segundo plano hacia la API
+  try {
+    const headers = headersAuth();
+    const [resPac, resOrd] = await Promise.allSettled([
+      apiClient('/pacientes', { headers }),
+      apiClient('/laboratorio/ordenes', { headers }),
+    ]);
+
+    let cambiado = false;
+
+    if (resPac.status === 'fulfilled' && resPac.value.ok) {
+      const dataPac = await resPac.value.json();
+      const lista = Array.isArray(dataPac.items) ? dataPac.items : (Array.isArray(dataPac) ? dataPac : []);
+      if (lista.length > 0) {
+        pacientes.length = 0;
+        pacientes.push(...lista.map(adaptarPacienteParaUi));
+        cambiado = true;
+      }
+    }
+
+    if (resOrd.status === 'fulfilled' && resOrd.value.ok) {
+      const listaOrd = await resOrd.value.json();
+      if (Array.isArray(listaOrd) && listaOrd.length > 0) {
+        examenes.length = 0;
+        examenes.push(...listaOrd.map(adaptarOrdenParaUi));
+        cambiado = true;
+      }
+    }
+
+    if (cambiado) {
+      guardarEstado();
+      datosListener?.();
+      return 'api';
+    }
+  } catch (err) {
+    console.warn('[datos] API no accesible, conservando modo local:', err.message);
+  }
+
+  return teniaLocal ? 'storage' : 'seed';
 }
 
 export function guardarEstado() {
@@ -323,7 +430,7 @@ export function guardarEstado() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot()));
     return true;
   } catch (e) {
-    console.warn('[datos] No se pudo guardar en localStorage:', e);
+    console.warn('[datos] Error al guardar en localStorage:', e);
     return false;
   }
 }
@@ -333,15 +440,82 @@ export function reiniciarDemo() {
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
-      /* ignorar si el almacenamiento local no está disponible */
+      // ignorar si el almacenamiento no está disponible
     }
   }
   hydrate({ pacientes: SEED_PACIENTES, examenes: SEED_EXAMENES, muestras: SEED_MUESTRAS });
 }
 
+/* ---------- Operaciones Conectadas a la API ---------- */
+
+export async function crearPacienteApi(datosPaciente) {
+  try {
+    const res = await apiClient('/pacientes', {
+      method: 'POST',
+      headers: headersAuth(),
+      body: JSON.stringify(datosPaciente),
+    });
+    if (res.ok) {
+      const creado = await res.json();
+      const uiPaciente = adaptarPacienteParaUi(creado);
+      const existe = pacientes.findIndex((p) => p.cui === uiPaciente.cui);
+      if (existe >= 0) {
+        pacientes[existe] = uiPaciente;
+      } else {
+        pacientes.push(uiPaciente);
+      }
+      guardarEstado();
+      return uiPaciente;
+    }
+  } catch (err) {
+    console.warn('[datos] Error al crear paciente en API, guardando local:', err.message);
+  }
+  return null;
+}
+
+export async function archivarPacienteApi(cui, motivo) {
+  try {
+    const res = await apiClient(`/pacientes/${encodeURIComponent(cui)}/archivar`, {
+      method: 'PATCH',
+      headers: headersAuth(),
+      body: JSON.stringify({ motivo }),
+    });
+    if (res.ok) {
+      const p = buscarPaciente(cui);
+      if (p) {
+        p.activo = false;
+        p.motivoBaja = motivo;
+        p.fechaBaja = new Date().toISOString().slice(0, 10);
+      }
+      guardarEstado();
+      return true;
+    }
+  } catch (err) {
+    console.warn('[datos] Error al archivar paciente en API:', err.message);
+  }
+  return false;
+}
+
+export async function crearOrdenApi(ordenDatos) {
+  try {
+    const res = await apiClient('/laboratorio/ordenes', {
+      method: 'POST',
+      headers: headersAuth(),
+      body: JSON.stringify(ordenDatos),
+    });
+    if (res.ok) {
+      const ordenCreada = await res.json();
+      return ordenCreada;
+    }
+  } catch (err) {
+    console.warn('[datos] Error al crear orden en API:', err.message);
+  }
+  return null;
+}
+
 /* ---------- Helpers de consulta y generación de claves ---------- */
-export const buscarPaciente = (cui) => pacientes.find((p) => p.cui === cui || p.documentoIdentidad === cui);
-export const existeCui = (cui) => pacientes.some((p) => p.cui === cui || p.documentoIdentidad === cui);
+export const buscarPaciente = (cui) => pacientes.find((p) => p.cui === cui || p.documentoIdentidad === cui || p.id === cui);
+export const existeCui = (cui) => pacientes.some((p) => p.cui === cui || p.documentoIdentidad === cui || p.id === cui);
 export const nombreDeCui = (cui) => {
   const p = buscarPaciente(cui);
   return p ? `${p.nombre} ${p.apellidos}` : cui;

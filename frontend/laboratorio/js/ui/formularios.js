@@ -20,6 +20,7 @@ import {
   obtenerMuestrasDeOrden,
   buscarPaciente,
   nombreDeCui,
+  crearOrdenApi,
 } from '../datos.js';
 import { tablaExamenes, badgeEstado, badgeAnormalidad } from './tablas.js';
 import {
@@ -572,6 +573,17 @@ export function formOrden(onGuardar, existente = null, preseCui = null, preseTip
         resultados,
       });
       toast('Orden de examen registrada con éxito');
+      crearOrdenApi({
+        id: ordenId,
+        numeroOrden: ordenId,
+        pacienteId: f.pacienteCui.value,
+        tipoLaboratorio: tipoKey,
+        fechaSolicitud: f.fechaSolicitud.value || hoy(),
+        medicoSolicitante: medico,
+        prioridad: f.prioridad.value,
+        estadoOrden: estado,
+        examenesSolicitados: [{ codigo: tipoKey.toUpperCase(), nombre: `Examen de ${tipoKey}`, tipoLaboratorio: tipoKey }],
+      });
     }
 
     guardarEstado();

@@ -1,0 +1,25 @@
+{
+  "id": "ord-0001",
+  "numeroOrden": "ORD-0001",
+  "pacienteId": "2987654320101",
+  "fechaSolicitud": "2026-10-26",
+  "medicoSolicitante": "Dr. Rodrigo Palma",
+  "especialidadSolicitante": "Hematología",
+  "tipoLaboratorio": "hematologia",
+  "examenesSolicitados": [
+    {
+      "codigo": "HEM-01",
+      "nombre": "Hemograma completo",
+      "tipoLaboratorio": "hematologia"
+    }
+  ],
+  "prioridad": "rutina",
+  "observacionesOrden": "",
+  "estadoOrden": "pendiente",
+  "muestras": [],
+  "resultados": [],
+  "auditoria": {
+    "createdAt": "2026-10-26T08:30:00.000Z",
+    "updatedAt": "2026-10-26T08:30:00.000Z"
+  }
+}

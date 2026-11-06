@@ -49,3 +49,41 @@
 - **Evidencia:** Archivos creados en `src/`, `infra/database/firestore/`, `frontend/laboratorio/js/` y `tests/unit/`.
 - **Tiempo invertido:** 90 min
 - **Siguiente paso:** I3-02 Documentación en `contratos/API.md` con ejemplos JSON.
+
+
+## Sesión 4 · 2026-11-05 · Tareas I3-03, I3-09, I3-10
+
+- **Objetivo de la sesión:** Conectar el módulo de Laboratorio Clínico con Firebase Firestore en la API Express y desacoplar el frontend de `localStorage` para sincronizarse con la base de datos real.
+- **Qué hice:**
+  - Creé `src/infrastructure/config/RepositoryFactory.js` implementando el patrón Factory/Strategy para resolver `FirestoreAdapter` y `LaboratorioFirestoreRepository` para la institución `laboratorio`.
+  - Implementé la ruta de autenticación de laboratorio `src/interfaces/http/routes/laboratorioAuth.js` (`POST /auth/login`) con emisión de JWT para laboratorista/técnico/validador.
+  - Implementé `src/interfaces/http/routes/laboratorioRoutes.js` exponiendo los endpoints del núcleo (`/pacientes`, `/pacientes/:id`, `/pacientes/:id/historial`, `/pacientes/:id/archivar`) y los especializados de laboratorio (`/laboratorio/ordenes`, `/laboratorio/muestras`, `/laboratorio/resultados`, `/laboratorio/status`).
+  - Desarrollé el script de seeding `scripts/seed-firestore.js` y agregué el comando `npm run seed:laboratorio`, poblando con éxito las colecciones `pacientes`, `ordenes`, `muestras` y `resultados` en Firestore real.
+  - Eliminé `frontend/laboratorio/js/firestore.js` para respetar la regla arquitectónica de que el navegador jamás habla directo con una base de datos.
+  - Refactoricé `frontend/laboratorio/js/datos.js` y vistas para consultar en vivo la API Express mediante `apiClient` e incorporar actualización en tiempo real con fallback resiliente.
+  - Creé la suite de pruebas de integración `tests/integration/laboratorioRoutes.test.js` (9 pruebas pasando).
+- **Decisiones tomadas (y por qué):**
+  - Respetar la arquitectura hexagonal y la regla 7 de `AGENTS.md` ("El navegador nunca se conecta a una base"): todo el tráfico pasa por Express con `apiClient`.
+  - Asegurar `serviceAccountKey*.json` en `.gitignore` para salvaguardar credenciales privadas.
+- **Problemas / bloqueos:** Error inicial con la importación modular de `firebase-admin` en Node v22 resuelto migrando a las funciones oficiales `getApps`, `initializeApp`, `cert` y `getFirestore`.
+- **Evidencia:** 68/68 pruebas unitarias e integración en verde con Vitest y 0 errores en ESLint.
+- **Tiempo invertido:** 45 min
+- **Siguiente paso:** I3-02 Documentación en `contratos/API.md` con ejemplos JSON.
+
+
+## Sesión 5 · 2026-11-05 · Tareas I3-02, I3-08, I3-09
+
+- **Objetivo de la sesión:** Implementar la suite de pruebas de contrato formal (`tests/contract/contrato.test.js`), actualizar el contrato HTTP `contratos/API.md` v1.0 con sus ejemplos JSON validados por Zod, y certificar el aislamiento institucional y seguridad deny-all de Firestore.
+- **Qué hice:**
+  - Implementé `src/infrastructure/adapters/mock/MockAdapter.js` como base de pruebas en memoria para la suite de equivalencia.
+  - Creé la suite de pruebas de contrato `tests/contract/contrato.test.js` (`describe.each`) ejecutando las 18 pruebas contra `MockAdapter` y `FirestoreAdapter` (LSP compliant).
+  - Actualicé `contratos/API.md` a la versión 1.0 documentando todas las rutas, parámetros y formatos de error único.
+  - Creé los archivos JSON de ejemplo en `contratos/ejemplos/` y la suite automatizada `tests/unit/contratosEjemplos.test.js` para asegurar que cada ejemplo valide contra sus esquemas Zod de dominio.
+  - Implementé `tests/integration/aislamientoLaboratorio.test.js` validando aislamiento por `RepositoryFactory`, tagging obligatorio de `institucionId = I3` y aislamiento de 503 ante caídas de motor.
+- **Decisiones tomadas (y por qué):**
+  - Mantener `firestore.rules` con directiva estricta deny-all para forzar que el 100% de operaciones provengan del backend con el Admin SDK.
+  - Integrar `MockAdapter` y `FirestoreAdapter` en la suite de contrato común para asegurar que no existan discrepancias de tipos o nombres entre motores.
+- **Problemas / bloqueos:** Ninguno; las 97 pruebas pasaron en verde.
+- **Evidencia:** 97/97 pruebas pasando en Vitest (`npm test`), 0 errores de ESLint (`npm run lint`), `contratos/API.md` v1.0 completo.
+- **Tiempo invertido:** 40 min
+- **Siguiente paso:** I3-11 Refinamiento visual y tablas de resultados por tipo en el frontend.

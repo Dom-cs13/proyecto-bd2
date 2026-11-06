@@ -1,0 +1,25 @@
+{
+  "paciente": {
+    "id": "pac-lab-001",
+    "documentoIdentidad": "2987654320101",
+    "nombre": "Mariana",
+    "apellidos": "Soto Hernández",
+    "fechaNacimiento": "1992-04-18",
+    "genero": "Femenino",
+    "tipoSangre": "O+",
+    "telefono": "+502 5555 1234",
+    "correo": "mariana.soto@correo.gt",
+    "direccion": "Zona 1, Quetzaltenango",
+    "alergias": ["Penicilina"],
+    "activo": false,
+    "motivoBaja": "Traslado voluntario a otra institución de salud",
+    "fechaBaja": "2026-11-05"
+  },
+  "estado": "archivado",
+  "fechaArchivo": "2026-11-05",
+  "motivoArchivo": {
+    "tipo": "administrativo",
+    "detalle": "Traslado voluntario a otra institución de salud"
+  },
+  "consultas": []
+}

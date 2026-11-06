@@ -1,0 +1,18 @@
+{
+  "documentoIdentidad": "2987654320101",
+  "nombre": "Mariana",
+  "apellidos": "Soto Hernández",
+  "fechaNacimiento": "1992-04-18",
+  "genero": "Femenino",
+  "tipoSangre": "O+",
+  "telefono": "+502 5555 1234",
+  "correo": "mariana.soto@correo.gt",
+  "direccion": "Zona 1, Quetzaltenango",
+  "alergias": ["Penicilina"],
+  "activo": true,
+  "detallesInstitucion": {
+    "institucionId": "I3",
+    "tipoPaciente": "ambulatorio",
+    "servicioProcedencia": "Consulta Externa"
+  }
+}

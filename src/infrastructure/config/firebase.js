@@ -25,7 +25,8 @@
  * ============================================================================
  */
 
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert, applicationDefault } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { MotorNoDisponible } from '../../domain/errores.js';
@@ -46,13 +47,14 @@ export function esFirebaseConfigurado() {
 
 /**
  * Obtiene o inicializa la app de Firebase Admin.
- * @returns {admin.app.App}
+ * @returns {import('firebase-admin/app').App}
  */
 export function obtenerFirebaseApp() {
   if (appInstance) return appInstance;
 
-  if (admin.apps.length > 0) {
-    appInstance = admin.apps[0];
+  const apps = getApps();
+  if (apps.length > 0) {
+    appInstance = apps[0];
     return appInstance;
   }
 
@@ -70,7 +72,7 @@ export function obtenerFirebaseApp() {
     if (existsSync(fullPath)) {
       try {
         const fileContent = JSON.parse(readFileSync(fullPath, 'utf8'));
-        credential = admin.credential.cert(fileContent);
+        credential = cert(fileContent);
       } catch (err) {
         console.warn(`[Firebase] Error al leer serviceAccount desde ${fullPath}:`, err.message);
       }
@@ -79,17 +81,18 @@ export function obtenerFirebaseApp() {
 
   if (!credential && FIREBASE_CLIENT_EMAIL && FIREBASE_PRIVATE_KEY) {
     const privateKey = FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-    credential = admin.credential.cert({
+    credential = cert({
       projectId: FIREBASE_PROJECT_ID,
       clientEmail: FIREBASE_CLIENT_EMAIL,
       privateKey,
     });
   }
 
-  if (!credential) {
-    // Si no hay credenciales completas pero hay projectId, intentamos inicializar con credenciales por defecto de la aplicación
-    if (FIREBASE_PROJECT_ID) {
-      credential = admin.credential.applicationDefault();
+  if (!credential && FIREBASE_PROJECT_ID) {
+    try {
+      credential = applicationDefault();
+    } catch {
+      // Ignorar si applicationDefault falla
     }
   }
 
@@ -100,7 +103,7 @@ export function obtenerFirebaseApp() {
     );
   }
 
-  appInstance = admin.initializeApp({
+  appInstance = initializeApp({
     credential,
     projectId: FIREBASE_PROJECT_ID,
   });
@@ -110,13 +113,12 @@ export function obtenerFirebaseApp() {
 
 /**
  * Obtiene la instancia de Firestore. Lanza MotorNoDisponible si no se puede conectar.
- * @returns {admin.firestore.Firestore}
+ * @returns {import('firebase-admin/firestore').Firestore}
  */
 export function obtenerFirestore() {
   if (firestoreInstance) return firestoreInstance;
   const app = obtenerFirebaseApp();
-  firestoreInstance = admin.firestore(app);
-  // Ajuste recomendado para evitar advertencias de timestamps
+  firestoreInstance = getFirestore(app);
   try {
     firestoreInstance.settings({ ignoreUndefinedProperties: true });
   } catch {
@@ -127,7 +129,7 @@ export function obtenerFirestore() {
 
 /**
  * Permite inyectar un mock o instancia alternativa para pruebas unitarias.
- * @param {admin.firestore.Firestore|null} mock
+ * @param {import('firebase-admin/firestore').Firestore|null} mock
  */
 export function inyectarFirestoreParaPruebas(mock) {
   firestoreInstance = mock;
