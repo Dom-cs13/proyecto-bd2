@@ -106,3 +106,32 @@
 - **Evidencia:** `infra/database/mongodb/colecciones/doctores.schema.json`, `src/interfaces/http/routes/doctores.js`, `frontend/hospital/pages/doctores.html`, `frontend/hospital/js/components/doctoresComponent.js`, `tests/unit/mongoMapper.test.js`.
 - **Tiempo invertido:** 45 min
 - **Siguiente paso:** Verificación final en el navegador e integración de consultas.
+
+## Sesión 7 · 2026-11-05 · Red de Laboratorios Diagnósticos, Catálogo de Exámenes y Pacientes Asociados (I1-04)
+
+- **Objetivo de la sesión:** Transformar el módulo de laboratorio para soportar múltiples unidades de laboratorio especializadas (Hematología, Bioquímica, Microbiología, Inmunología, etc.), administrar la creación de laboratorios, crear y administrar tipos de exámenes vinculados a cada unidad diagnóstica, emitir órdenes clínicas relacionando pacientes a exámenes y laboratorios, y visualizar qué pacientes están asociados a uno o varios laboratorios.
+- **Qué hice:**
+  - En base de datos MongoDB Atlas (`infra/database/mongodb/`):
+    - Diseñados los esquemas JSON de validación: `colecciones/laboratorios.schema.json` y `colecciones/tipos_examenes.schema.json`.
+    - Creadas semillas para Compass con datos clínicos representativos: `seeds/laboratorios.json` (4 unidades) y `seeds/tipos_examenes.json` (6 análisis especializados con muestra requerida, tiempo y parámetros).
+    - Agregados índices en `indices/indices.json`: únicos en código de laboratorio y código de examen, e índices de búsqueda por texto.
+  - En capa de infraestructura (`src/infrastructure/`):
+    - Añadidos en `mapper.js`: `laboratorioToDomain`, `tipoExamenToDomain` y `ordenLaboratorioToDomain` (LSP compliant).
+    - Implementados en `MongoAdapter.js`: `crearLaboratorio`, `listarLaboratorios`, `obtenerLaboratorio`, `crearTipoExamen`, `listarTiposExamenes`, `crearOrdenLaboratorio`, `listarOrdenesLaboratorio` y `obtenerPacientesPorLaboratorio`.
+  - En capa de interfaz HTTP (`src/interfaces/http/`):
+    - Creado `routes/laboratorios.js` con endpoints GET y POST para laboratorios, catálogo de exámenes, emisión de órdenes y reporte de pacientes asociados.
+    - Montado el enrutador en `src/app.js` sobre `/laboratorios`.
+  - En frontend (`frontend/hospital/`):
+    - Rediseñada la vista `pages/laboratorio.html` incorporando sub-pestañas clínicas (Órdenes y Pacientes Asociados, Gestión de Laboratorios y Catálogo de Tipos de Exámenes), métricas KPI interactivas y formularios de alta.
+    - Desarrollado el controlador completo `js/components/laboratorioTable.js` con filtrado dinámico por unidad de laboratorio, tarjetas de directorio, tabla de catálogo, vista toggle de pacientes canalizados a laboratorios y emisión de órdenes.
+    - Actualizado el modal `mostrarModalNuevaOrdenLab` en `modalDialog.js` para seleccionar paciente, laboratorio y tipo de examen filtrado dinámicamente según la unidad elegida.
+    - Sincronizado el estado en `state.js` (`unidadesLaboratorio`, `tiposExamenes`, `getPacientesPorLaboratorio`).
+  - Añadidas pruebas unitarias en `tests/unit/mongoMapper.test.js` para los nuevos mappers.
+- **Decisiones tomadas (y por qué):**
+  - Modelar los laboratorios y el catálogo de exámenes como colecciones independientes en MongoDB Atlas para permitir que el Hospital General incorpore nuevas unidades diagnósticas sin requerir migraciones de código.
+  - Enlazar dinámicamente el modal de nueva orden para que al elegir un laboratorio (ej. Hematología), el selector de examen cargue exclusivamente los análisis que dicho laboratorio realiza, previniendo errores clínicos de canalización de muestras.
+  - Proveer una vista conmutable entre la tabla cronológica de órdenes y el reporte de "Pacientes y Laboratorios Asociados" para que el personal hospitalario vea de un vistazo qué estudios tiene activos cada paciente en los distintos laboratorios.
+- **Problemas / bloqueos:** Ninguno. Validaciones de ESLint (0 errores), pruebas de Vitest (6 unitarias + 3 de integración) en verde.
+- **Evidencia:** `infra/database/mongodb/seeds/laboratorios.json`, `infra/database/mongodb/seeds/tipos_examenes.json`, `src/interfaces/http/routes/laboratorios.js`, `frontend/hospital/pages/laboratorio.html`, `frontend/hospital/js/components/laboratorioTable.js`, `tests/unit/mongoMapper.test.js`.
+- **Tiempo invertido:** 65 min
+- **Siguiente paso:** Pruebas visuales finales y entrega.

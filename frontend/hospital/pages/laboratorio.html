@@ -1,35 +1,284 @@
-<!-- Vista: Laboratorios Clínicos y Exámenes (Hospital General) -->
+<!-- Vista: Red de Laboratorios Clínicos, Exámenes y Pacientes Asociados (Hospital General · Alba Suite) -->
 <div class="view-laboratorio">
-  <div class="section-block">
+  <div class="section-block" style="margin-bottom: 20px;">
     <div class="section-header">
-      <span class="welcome-badge">Unidad Diagnóstica · Hospital General</span>
-      <h1 class="page-main-title">Laboratorio Clínico y Procesamiento de Muestras</h1>
+      <span class="welcome-badge">Unidad Diagnóstica Central · Hospital General</span>
+      <h1 class="page-main-title">Red de Laboratorios Clínicos y Procesamiento de Muestras</h1>
       <p class="section-desc">
-        Consulta de órdenes de análisis, valores biométricos (glucosa, hemoglobina, tiempos de coagulación) y registro de resultados.
+        Administración integral de laboratorios especializados, catálogo de análisis clínicos, emisión de órdenes y visualización de pacientes asociados.
       </p>
     </div>
   </div>
 
-  <!-- Barra de Filtro de Laboratorio y Nueva Orden -->
-  <div class="search-filter-card">
-    <div style="display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-      <div class="search-input-wrapper" style="flex: 1; min-width: 280px;">
-        <span class="search-icon">🔍</span>
-        <input 
-          type="text" 
-          id="lab-search-input" 
-          class="search-input" 
-          placeholder="Buscar orden por código (#ORD), paciente, expediente, tipo de examen o médico..."
-        />
+  <!-- Métricas Rápidas KPI -->
+  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 24px;">
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper" style="background-color: #ecfdf5; color: #047857;">🔬</div>
+      <div class="kpi-data">
+        <span class="kpi-label">Total Órdenes Emitidas</span>
+        <span class="kpi-value" id="kpi-lab-total-ordenes">0</span>
       </div>
-
-      <button id="btn-nueva-orden-lab" class="btn btn-primary" style="padding: 11px 20px;">
-        <span>🔬</span> Generar Orden de Examen
-      </button>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper" style="background-color: #eff6ff; color: #1d4ed8;">🏥</div>
+      <div class="kpi-data">
+        <span class="kpi-label">Unidades de Laboratorio</span>
+        <span class="kpi-value" id="kpi-lab-unidades">0</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper" style="background-color: #f5f3ff; color: #7c3aed;">📋</div>
+      <div class="kpi-data">
+        <span class="kpi-label">Tipos de Exámenes</span>
+        <span class="kpi-value" id="kpi-lab-examenes">0</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon-wrapper" style="background-color: #fef3c7; color: #d97706;">👥</div>
+      <div class="kpi-data">
+        <span class="kpi-label">Pacientes en Laboratorio</span>
+        <span class="kpi-value" id="kpi-lab-pacientes-asoc">0</span>
+      </div>
     </div>
   </div>
 
-  <!-- Tabla de Exámenes de Laboratorio -->
-  <div id="laboratorio-table-container"></div>
-</div>
+  <!-- Navegación de Pestañas Secundarias Clínicas -->
+  <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--border-color); margin-bottom: 24px; overflow-x: auto;">
+    <button id="subtab-btn-ordenes" class="btn" style="padding: 10px 20px; font-weight: 700; border-radius: 8px 8px 0 0; background: var(--primary); color: white; border: none; cursor: pointer;">
+      🔬 Órdenes y Pacientes Asociados
+    </button>
+    <button id="subtab-btn-unidades" class="btn btn-outline" style="padding: 10px 20px; font-weight: 600; border-radius: 8px 8px 0 0; border-bottom: none; cursor: pointer;">
+      🏥 Gestión de Laboratorios
+    </button>
+    <button id="subtab-btn-catalogo" class="btn btn-outline" style="padding: 10px 20px; font-weight: 600; border-radius: 8px 8px 0 0; border-bottom: none; cursor: pointer;">
+      📋 Catálogo de Tipos de Exámenes
+    </button>
+  </div>
 
+  <!-- ========================================== -->
+  <!-- SECCIÓN 1: ÓRDENES Y PACIENTES ASOCIADOS   -->
+  <!-- ========================================== -->
+  <div id="subview-ordenes" class="lab-subview">
+    <!-- Barra de Filtros y Acción Rápida -->
+    <div class="search-filter-card" style="margin-bottom: 20px;">
+      <div style="display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+        <div class="search-input-wrapper" style="flex: 2; min-width: 260px;">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            id="lab-search-input" 
+            class="search-input" 
+            placeholder="Buscar orden (#ORD), paciente, expediente, análisis o laboratorio..."
+          />
+        </div>
+
+        <div style="flex: 1; min-width: 200px;">
+          <select id="lab-filtro-unidad-select" class="form-control" style="height: 44px;">
+            <option value="todos">Todos los Laboratorios</option>
+            <!-- Inyectado dinámicamente -->
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-toggle-modo-vista" class="btn btn-outline" style="padding: 10px 16px; white-space: nowrap;">
+            👥 Ver Pacientes Asociados
+          </button>
+          <button id="btn-nueva-orden-lab" class="btn btn-primary" style="padding: 10px 20px; white-space: nowrap;">
+            <span>🔬</span> Generar Orden de Examen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor de la Tabla Principal de Órdenes -->
+    <div id="laboratorio-table-container"></div>
+
+    <!-- Contenedor Alternativo: Tarjetas de Pacientes y Laboratorios Asociados -->
+    <div id="laboratorio-pacientes-asociados-container" style="display: none; margin-top: 20px;"></div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- SECCIÓN 2: ADMINISTRACIÓN DE LABORATORIOS  -->
+  <!-- ========================================== -->
+  <div id="subview-unidades" class="lab-subview" style="display: none;">
+    <div style="display: grid; grid-template-columns: minmax(320px, 1fr) minmax(340px, 1.4fr); gap: 24px; align-items: start;">
+      
+      <!-- Formulario para Registrar Nueva Unidad de Laboratorio -->
+      <div class="card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <div style="font-size: 1.5rem; background: #eff6ff; padding: 8px 12px; border-radius: 8px;">🏥</div>
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">Nueva Unidad de Laboratorio</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0 0;">Crea una nueva área o departamento de diagnóstico clínico</p>
+          </div>
+        </div>
+
+        <form id="form-nuevo-laboratorio" style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Código Único *</label>
+              <input type="text" id="lab-inp-codigo" class="form-control" required placeholder="Ej. LAB-TOX" style="text-transform: uppercase;" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo / Área Médica *</label>
+              <select id="lab-inp-tipo" class="form-control" required>
+                <option value="Hematología">Hematología</option>
+                <option value="Bioquímica">Bioquímica</option>
+                <option value="Microbiología">Microbiología</option>
+                <option value="Inmunología">Inmunología</option>
+                <option value="Patología">Patología y Citología</option>
+                <option value="Genética">Genética y Biología Molecular</option>
+                <option value="Toxicología">Toxicología Clínica</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nombre del Laboratorio *</label>
+            <input type="text" id="lab-inp-nombre" class="form-control" required placeholder="Ej. Laboratorio de Toxicología y Farmacología Clínica" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Responsable / Jefe de Unidad *</label>
+            <input type="text" id="lab-inp-responsable" class="form-control" required placeholder="Ej. Licda. Sofía Morales · Q.F.B. (Col. 5891)" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Ubicación en el Hospital *</label>
+              <input type="text" id="lab-inp-ubicacion" class="form-control" required placeholder="Ej. Módulo B - Nivel 1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono Directo (8 dígitos) *</label>
+              <input type="tel" id="lab-inp-telefono" class="form-control" required maxlength="8" placeholder="Ej. 23456785" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Correo Electrónico</label>
+              <input type="email" id="lab-inp-correo" class="form-control" placeholder="lab@hospitalgeneral.gob.gt" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Horario de Atención *</label>
+              <input type="text" id="lab-inp-horario" class="form-control" required value="24 Horas / Turno Continuo" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descripción Operativa</label>
+            <textarea id="lab-inp-descripcion" class="form-control" rows="2" placeholder="Alcance de procesamiento, equipamiento y tipos de análisis admitidos..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 8px; padding: 12px;">
+            <span>💾</span> Registrar Unidad en MongoDB Atlas
+          </button>
+        </form>
+      </div>
+
+      <!-- Directorio de Laboratorios Registrados -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">Directorio de Laboratorios Activos</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0 0;">Unidades operativas autorizadas en el Hospital General</p>
+          </div>
+          <div style="width: 220px;">
+            <input type="text" id="search-unidades-input" class="form-control form-control-sm" placeholder="Filtrar laboratorio..." />
+          </div>
+        </div>
+
+        <div id="unidades-laboratorio-cards-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 640px; overflow-y: auto; padding-right: 4px;">
+          <!-- Inyectado dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- SECCIÓN 3: CATÁLOGO DE TIPOS DE EXÁMENES  -->
+  <!-- ========================================== -->
+  <div id="subview-catalogo" class="lab-subview" style="display: none;">
+    <div style="display: grid; grid-template-columns: minmax(320px, 1fr) minmax(340px, 1.4fr); gap: 24px; align-items: start;">
+      
+      <!-- Formulario para Registrar Nuevo Tipo de Examen -->
+      <div class="card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <div style="font-size: 1.5rem; background: #f5f3ff; padding: 8px 12px; border-radius: 8px;">📋</div>
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">Nuevo Tipo de Examen</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0 0;">Registra un análisis clínico asociándolo al laboratorio responsable</p>
+          </div>
+        </div>
+
+        <form id="form-nuevo-tipo-examen" style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Laboratorio Responsable *</label>
+            <select id="ex-inp-laboratorio" class="form-control" required>
+              <option value="">-- Seleccionar Laboratorio Emisor --</option>
+              <!-- Inyectado dinámicamente -->
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Código del Examen *</label>
+              <input type="text" id="ex-inp-codigo" class="form-control" required placeholder="Ej. EX-TOX-01" style="text-transform: uppercase;" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Categoría *</label>
+              <input type="text" id="ex-inp-categoria" class="form-control" required placeholder="Ej. Toxicología" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nombre Completo del Examen *</label>
+            <input type="text" id="ex-inp-nombre" class="form-control" required placeholder="Ej. Panel Toxicológico en Orina (6 Drogas)" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tipo de Muestra Requerida *</label>
+              <input type="text" id="ex-inp-muestra" class="form-control" required placeholder="Ej. Orina espontánea (50 mL)" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tiempo Estimado (Horas) *</label>
+              <input type="number" id="ex-inp-tiempo" class="form-control" required min="1" max="120" value="4" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Parámetros Medidos (Separados por coma)</label>
+            <input type="text" id="ex-inp-parametros" class="form-control" placeholder="Ej. Anfetaminas, Benzodiacepinas, Cannabinoides, Opiáceos" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Instrucciones / Preparación del Paciente</label>
+            <textarea id="ex-inp-indicaciones" class="form-control" rows="2" placeholder="Ej. Recolección bajo supervisión en frasco estéril..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 8px; padding: 12px;">
+            <span>💾</span> Agregar al Catálogo de Laboratorio
+          </button>
+        </form>
+      </div>
+
+      <!-- Tabla del Catálogo de Exámenes -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">Catálogo de Análisis Disponibles</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0 0;">Exámenes clasificados por unidad diagnóstica</p>
+          </div>
+          <div style="width: 220px;">
+            <input type="text" id="search-catalogo-input" class="form-control form-control-sm" placeholder="Buscar examen o código..." />
+          </div>
+        </div>
+
+        <div id="catalogo-examenes-table-container">
+          <!-- Inyectado dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

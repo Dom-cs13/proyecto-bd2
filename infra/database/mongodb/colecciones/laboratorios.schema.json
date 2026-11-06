@@ -1,0 +1,19 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["codigo", "nombre", "tipo", "responsable", "ubicacion", "telefono", "estado"],
+    "properties": {
+      "codigo": { "bsonType": "string" },
+      "nombre": { "bsonType": "string" },
+      "tipo": { "bsonType": "string" },
+      "responsable": { "bsonType": "string" },
+      "ubicacion": { "bsonType": "string" },
+      "telefono": { "bsonType": ["int", "long", "string", "double"] },
+      "correo": { "bsonType": "string" },
+      "horario": { "bsonType": "string" },
+      "descripcion": { "bsonType": "string" },
+      "estado": { "enum": ["activo", "mantenimiento", "inactivo"] },
+      "institucionId": { "bsonType": "string" }
+    }
+  }
+}

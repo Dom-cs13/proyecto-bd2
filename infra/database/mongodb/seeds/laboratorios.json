@@ -1,0 +1,58 @@
+[
+  {
+    "_id": { "$oid": "654000000000000000000001" },
+    "codigo": "LAB-HEM",
+    "nombre": "Laboratorio de Hematología y Banco de Sangre",
+    "tipo": "Hematología",
+    "responsable": "Licda. Karla Monroy · Q.F.B. (Col. 4521)",
+    "ubicacion": "Edificio Central - Nivel 2, Ala Norte",
+    "telefono": 23456781,
+    "correo": "hematologia@hospitalgeneral.gob.gt",
+    "horario": "24 Horas / Turno Continuo",
+    "descripcion": "Procesamiento de biometría hemática completa, tiempos de coagulación, frotis y banco de hemocomponentes.",
+    "estado": "activo",
+    "institucionId": "I1"
+  },
+  {
+    "_id": { "$oid": "654000000000000000000002" },
+    "codigo": "LAB-BIO",
+    "nombre": "Laboratorio de Bioquímica Clínica y Metabólica",
+    "tipo": "Bioquímica",
+    "responsable": "Lic. Mario Gómez · Bioquímico (Col. 3890)",
+    "ubicacion": "Edificio Central - Nivel 2, Ala Sur",
+    "telefono": 23456782,
+    "correo": "bioquimica@hospitalgeneral.gob.gt",
+    "horario": "Lunes a Domingo 06:00 - 22:00",
+    "descripcion": "Análisis cuantitativo de electrolitos, perfiles lipídicos, función renal, hepática y monitoreo glucémico.",
+    "estado": "activo",
+    "institucionId": "I1"
+  },
+  {
+    "_id": { "$oid": "654000000000000000000003" },
+    "codigo": "LAB-MIC",
+    "nombre": "Laboratorio de Microbiología e Infectología",
+    "tipo": "Microbiología",
+    "responsable": "Dr. Fernando Morales · Infectólogo (Col. 6712)",
+    "ubicacion": "Módulo Diagnóstico - Nivel 1",
+    "telefono": 23456783,
+    "correo": "microbiologia@hospitalgeneral.gob.gt",
+    "horario": "Lunes a Viernes 07:00 - 19:00",
+    "descripcion": "Cultivos bacteriológicos automatizados, antibiogramas, baciloscopías y detección molecular de patógenos.",
+    "estado": "activo",
+    "institucionId": "I1"
+  },
+  {
+    "_id": { "$oid": "654000000000000000000004" },
+    "codigo": "LAB-INM",
+    "nombre": "Laboratorio de Inmunología y Serología Especializada",
+    "tipo": "Inmunología",
+    "responsable": "Dra. Patricia Valenzuela · Inmunóloga (Col. 5240)",
+    "ubicacion": "Módulo Diagnóstico - Nivel 2",
+    "telefono": 23456784,
+    "correo": "inmunologia@hospitalgeneral.gob.gt",
+    "horario": "Lunes a Viernes 08:00 - 17:00",
+    "descripcion": "Marcadores tumorales, pruebas serológicas de alta sensibilidad, hormonas tiroideas y anticuerpos.",
+    "estado": "activo",
+    "institucionId": "I1"
+  }
+]

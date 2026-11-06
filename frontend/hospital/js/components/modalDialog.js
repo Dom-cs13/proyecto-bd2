@@ -256,18 +256,22 @@ export function mostrarModalArchivarPaciente(paciente, onConfirmar) {
 /**
  * Modal Flotante Específico para Generar Órdenes de Laboratorio
  */
-export function mostrarModalNuevaOrdenLab(pacientesActivos, onConfirmar) {
+export function mostrarModalNuevaOrdenLab(pacientesActivos, onConfirmar, extraData = {}) {
   cerrarModalActivo();
   const container = obtenerContenedorModal();
 
+  const unidades = extraData.unidadesLab || [];
+  const catalogoExamenes = extraData.tiposExamenes || [];
+  const doctores = extraData.doctoresActivos || [];
+
   container.innerHTML = `
     <div class="custom-modal-backdrop" id="custom-modal-backdrop">
-      <div class="custom-modal-card" style="max-width: 540px;">
+      <div class="custom-modal-card" style="max-width: 580px;">
         <div class="custom-modal-header">
           <div class="custom-modal-icon-wrap custom-modal-icon-primary">🔬</div>
           <div class="custom-modal-header-text">
             <h3 class="custom-modal-title">Generar Orden de Examen Clínico</h3>
-            <p class="custom-modal-subtitle">Hospital General · Unidad de Procesamiento Bioquímico</p>
+            <p class="custom-modal-subtitle">Hospital General · Red de Laboratorios Diagnósticos</p>
           </div>
           <button class="custom-modal-close-btn" id="modal-btn-close">&times;</button>
         </div>
@@ -275,40 +279,63 @@ export function mostrarModalNuevaOrdenLab(pacientesActivos, onConfirmar) {
         <form id="form-modal-orden-lab">
           <div class="custom-modal-body">
             <div class="form-group">
-              <label class="form-label">Paciente Destino *</label>
+              <label class="form-label">Paciente Asignado *</label>
               <select id="lab-modal-paciente-select" class="form-control" required>
+                <option value="">-- Seleccionar Paciente Registrado --</option>
                 ${pacientesActivos.map(p => `
                   <option value="${p.id}">${p.nombre} ${p.apellidos} (${p.expediente}) · ${p.ubicacion}</option>
                 `).join('')}
               </select>
             </div>
 
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Unidad de Laboratorio *</label>
+                <select id="lab-modal-unidad-select" class="form-control" required>
+                  <option value="">-- Seleccionar Laboratorio Destino --</option>
+                  ${unidades.map(u => `
+                    <option value="${u.id}">${u.nombre} (${u.codigo})</option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Prioridad Médica *</label>
+                <select id="lab-modal-prioridad" class="form-control" required>
+                  <option value="Normal">Normal (Rutinario)</option>
+                  <option value="Urgente">Urgente (Hospitalización)</option>
+                  <option value="Stat / Emergencia">Stat / Emergencia Inmediata</option>
+                </select>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label class="form-label">Tipo de Análisis Clínico *</label>
+              <label class="form-label">Tipo de Examen Clínico *</label>
               <select id="lab-modal-tipo-select" class="form-control" required>
-                <option value="Química Sanguínea (Glucosa & Perfil Renal)">Química Sanguínea (Glucosa & Perfil Renal)</option>
-                <option value="Hematología Completa">Hematología Completa</option>
-                <option value="Tiempos de Coagulación (TP y TTP)">Tiempos de Coagulación (TP y TTP)</option>
-                <option value="Examen General de Orina (EGO)">Examen General de Orina (EGO)</option>
-                <option value="Perfil Lipídico Completo">Perfil Lipídico Completo</option>
-                <option value="Gasometría Arterial">Gasometría Arterial</option>
+                <option value="">-- Primero seleccione una unidad de laboratorio --</option>
               </select>
+              <div id="lab-modal-examen-info" style="font-size: 0.78rem; color: var(--primary); margin-top: 4px; display: none;"></div>
             </div>
 
             <div class="form-group">
               <label class="form-label">Médico Solicitante *</label>
-              <input type="text" id="lab-modal-medico" class="form-control" required value="Dr. Rodrigo Palma" />
+              <select id="lab-modal-medico" class="form-control" required>
+                ${doctores.map(d => `
+                  <option value="Dr(a). ${d.nombre} ${d.apellidos}">Dr(a). ${d.nombre} ${d.apellidos} · ${d.especialidad}</option>
+                `).join('')}
+                ${doctores.length === 0 ? '<option value="Dr. Rodrigo Palma">Dr. Rodrigo Palma</option>' : ''}
+              </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Observaciones Clínicas o Preparación de la Muestra</label>
+              <label class="form-label">Observaciones Clínicas o Indicaciones de Muestra</label>
               <textarea
                 id="lab-modal-observaciones"
                 class="form-control"
                 rows="2"
                 style="resize: vertical; font-family: inherit;"
-                placeholder="Ej. Paciente en ayunas estricto de 8 horas. Muestra urgente..."
-              >Toma de muestra en ayunas matutina.</textarea>
+                placeholder="Ej. Paciente en ayuno estricto de 8 horas. Muestra venosa tomada en Pabellón B..."
+              >Toma de muestra en ayuno matutino según protocolo hospitalario.</textarea>
             </div>
           </div>
 
@@ -326,6 +353,52 @@ export function mostrarModalNuevaOrdenLab(pacientesActivos, onConfirmar) {
   const backdrop = document.getElementById('custom-modal-backdrop');
   requestAnimationFrame(() => backdrop.classList.add('open'));
 
+  const unidadSelect = document.getElementById('lab-modal-unidad-select');
+  const tipoSelect = document.getElementById('lab-modal-tipo-select');
+  const infoEl = document.getElementById('lab-modal-examen-info');
+
+  const actualizarExamenesPorUnidad = () => {
+    const unidadId = unidadSelect.value;
+    if (!unidadId) {
+      tipoSelect.innerHTML = '<option value="">-- Primero seleccione una unidad de laboratorio --</option>';
+      if (infoEl) infoEl.style.display = 'none';
+      return;
+    }
+
+    const unidad = unidades.find(u => u.id === unidadId || u.codigo === unidadId);
+    const examenesFiltrados = catalogoExamenes.filter(ex =>
+      ex.laboratorioId === unidadId ||
+      ex.laboratorioCodigo === unidad?.codigo ||
+      ex.laboratorioNombre === unidad?.nombre
+    );
+
+    if (examenesFiltrados.length === 0) {
+      tipoSelect.innerHTML = '<option value="">-- No hay exámenes registrados para este laboratorio --</option>';
+      if (infoEl) infoEl.style.display = 'none';
+      return;
+    }
+
+    tipoSelect.innerHTML = `
+      <option value="">-- Seleccionar Tipo de Examen (${examenesFiltrados.length} disponibles) --</option>
+      ${examenesFiltrados.map(ex => `
+        <option value="${ex.nombre}" data-id="${ex.id}" data-muestra="${ex.tipoMuestra}" data-tiempo="${ex.tiempoEstimadoHoras}">
+          ${ex.nombre} · (${ex.codigoExamen} - Muestra: ${ex.tipoMuestra})
+        </option>
+      `).join('')}
+    `;
+  };
+
+  unidadSelect.addEventListener('change', actualizarExamenesPorUnidad);
+  tipoSelect.addEventListener('change', () => {
+    const opt = tipoSelect.selectedOptions[0];
+    if (opt && opt.dataset.muestra) {
+      infoEl.textContent = `ℹ️ Muestra: ${opt.dataset.muestra} | Tiempo estimado de entrega: ${opt.dataset.tiempo} horas.`;
+      infoEl.style.display = 'block';
+    } else {
+      infoEl.style.display = 'none';
+    }
+  });
+
   const cerrar = () => {
     backdrop.classList.remove('open');
     setTimeout(() => {
@@ -341,13 +414,25 @@ export function mostrarModalNuevaOrdenLab(pacientesActivos, onConfirmar) {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const pacienteId = document.getElementById('lab-modal-paciente-select').value;
+    const unidadId = document.getElementById('lab-modal-unidad-select').value;
+    const unidad = unidades.find(u => u.id === unidadId || u.codigo === unidadId);
     const tipo = document.getElementById('lab-modal-tipo-select').value;
+    const prioridad = document.getElementById('lab-modal-prioridad').value;
     const solicitante = document.getElementById('lab-modal-medico').value.trim();
     const observaciones = document.getElementById('lab-modal-observaciones').value.trim();
 
     cerrar();
     if (typeof onConfirmar === 'function') {
-      onConfirmar({ pacienteId, tipo, solicitante, observaciones });
+      onConfirmar({
+        pacienteId,
+        laboratorioId: unidad ? unidad.id : unidadId,
+        laboratorioNombre: unidad ? unidad.nombre : 'Laboratorio General',
+        laboratorioCodigo: unidad ? unidad.codigo : '',
+        tipo,
+        prioridad,
+        solicitante,
+        observaciones
+      });
     }
   });
 }

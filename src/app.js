@@ -4,6 +4,7 @@ import authRoutes from './interfaces/http/routes/auth.js';
 import pacientesRoutes from './interfaces/http/routes/pacientes.js';
 import polizasRoutes from './interfaces/http/routes/polizas.js';
 import doctoresRoutes from './interfaces/http/routes/doctores.js';
+import laboratoriosRoutes from './interfaces/http/routes/laboratorios.js';
 import { errorHandler, noEncontrado } from './interfaces/http/middleware/errorHandler.js';
 
 export function crearApp() {
@@ -16,6 +17,7 @@ export function crearApp() {
   app.use('/pacientes', pacientesRoutes);
   app.use('/polizas', polizasRoutes);
   app.use('/doctores', doctoresRoutes);
+  app.use('/laboratorios', laboratoriosRoutes);
 
   app.use(noEncontrado);
   app.use(errorHandler);

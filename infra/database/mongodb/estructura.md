@@ -18,6 +18,9 @@
 | **Receta & Medicamentos**| **Embebido** en `tratamiento.receta.detalles[]` | La prescripción y desglose de fármacos (dosis, cantidad, frecuencia) pertenecen al episodio. |
 | **Servicios** | **Embebido** en `consultas.servicios[]` | Snapshot del catálogo de especialidad médica asignada a la atención. |
 | **Doctores / Personal Médico** | **Colección raíz** `doctores` | Directorio de profesionales colegiados con especialidad y horario de atención para asignación en expedientes y consultas. |
+| **Laboratorios Diagnósticos** | **Colección raíz** `laboratorios` | Unidades y departamentos de diagnóstico especializado (Hematología, Bioquímica, Microbiología, etc.) con responsable, horario y ubicación. |
+| **Tipos de Exámenes** | **Colección catálogo** `tipos_examenes` | Catálogo maestro de análisis clínicos asociados a cada unidad de laboratorio con muestra requerida, parámetros y tiempo de respuesta. |
+| **Órdenes de Laboratorio** | **Colección transaccional** `ordenes_laboratorio` | Solicitudes de exámenes asociadas a pacientes y laboratorios, con resultados biométricos y estado. |
 
 ---
 
@@ -37,3 +40,14 @@
 * **`doctores`**:
   * `{ idColegiado: 1 }` (Unique): Número de colegiado médico único.
   * `{ "nombre": "text", "apellidos": "text", "especialidad": "text" }`: Búsqueda predictiva en directorio médico.
+* **`laboratorios`**:
+  * `{ codigo: 1 }` (Unique): Código único de la unidad de laboratorio (ej. `LAB-HEM`).
+  * `{ "nombre": "text", "tipo": "text", "responsable": "text" }`: Búsqueda de unidades de laboratorio.
+* **`tipos_examenes`**:
+  * `{ codigoExamen: 1 }` (Unique): Código único del análisis clínico.
+  * `{ laboratorioId: 1 }`: Asociación al laboratorio emisor.
+  * `{ "nombre": "text", "categoria": "text" }`: Búsqueda de análisis por texto.
+* **`ordenes_laboratorio`**:
+  * `{ codigoOrden: 1 }` (Unique): Código de orden clínica (#ORD-XXXX).
+  * `{ pacienteId: 1, fechaOrden: -1 }`: Historial de órdenes de laboratorio por paciente.
+  * `{ laboratorioId: 1 }`: Órdenes canalizadas por laboratorio.

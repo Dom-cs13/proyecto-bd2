@@ -1,6 +1,15 @@
 import { ObjectId } from 'mongodb';
 import { obtenerConexionMongo } from './connection.js';
-import { pacienteToDomain, consultaToDomain, historialToDomain, polizaToDomain, doctorToDomain } from './mapper.js';
+import {
+  pacienteToDomain,
+  consultaToDomain,
+  historialToDomain,
+  polizaToDomain,
+  doctorToDomain,
+  laboratorioToDomain,
+  tipoExamenToDomain,
+  ordenLaboratorioToDomain,
+} from './mapper.js';
 import { NoEncontrado, Conflicto } from '../../../domain/errores.js';
 
 export class MongoAdapter {
@@ -463,6 +472,238 @@ export class MongoAdapter {
 
     const doc = await db.collection('doctores').findOne(query);
     return doc ? doctorToDomain(doc) : null;
+  }
+
+  // --- MÓDULO DE LABORATORIOS Y EXÁMENES ---
+
+  async crearLaboratorio(datos) {
+    const db = await this._getDb();
+    const codigo = datos.codigo;
+
+    if (codigo) {
+      const duplicado = await db.collection('laboratorios').findOne({ codigo });
+      if (duplicado) {
+        throw new Conflicto('LABORATORIO_DUPLICADO', `Ya existe una unidad de laboratorio con el código ${codigo}`);
+      }
+    }
+
+    const doc = {
+      ...datos,
+      estado: datos.estado || 'activo',
+      institucionId: 'I1',
+      fechaCreacion: new Date(),
+    };
+
+    const resultado = await db.collection('laboratorios').insertOne(doc);
+    doc._id = resultado.insertedId;
+    return laboratorioToDomain(doc);
+  }
+
+  async listarLaboratorios(filtro = {}) {
+    const db = await this._getDb();
+    const query = {};
+
+    if (filtro.tipo) {
+      query.tipo = filtro.tipo;
+    }
+
+    if (filtro.estado) {
+      query.estado = filtro.estado;
+    }
+
+    if (filtro.texto) {
+      const regex = new RegExp(filtro.texto, 'i');
+      query.$or = [
+        { nombre: regex },
+        { codigo: regex },
+        { responsable: regex },
+        { tipo: regex },
+      ];
+    }
+
+    const docs = await db.collection('laboratorios').find(query).toArray();
+    return docs.map(laboratorioToDomain);
+  }
+
+  async obtenerLaboratorio(id) {
+    const db = await this._getDb();
+    const query = {
+      $or: [
+        { _id: this._parseId(id) },
+        { codigo: id },
+      ],
+    };
+
+    const doc = await db.collection('laboratorios').findOne(query);
+    return doc ? laboratorioToDomain(doc) : null;
+  }
+
+  async crearTipoExamen(datos) {
+    const db = await this._getDb();
+    const codigoExamen = datos.codigoExamen;
+
+    if (codigoExamen) {
+      const duplicado = await db.collection('tipos_examenes').findOne({ codigoExamen });
+      if (duplicado) {
+        throw new Conflicto('EXAMEN_DUPLICADO', `Ya existe un tipo de examen con el código ${codigoExamen}`);
+      }
+    }
+
+    let labNombre = datos.laboratorioNombre || '';
+    if (datos.laboratorioId && !labNombre) {
+      const lab = await this.obtenerLaboratorio(datos.laboratorioId);
+      if (lab) labNombre = lab.nombre;
+    }
+
+    const doc = {
+      ...datos,
+      laboratorioNombre: labNombre,
+      tiempoEstimadoHoras: Number(datos.tiempoEstimadoHoras) || 4,
+      parametrosBase: Array.isArray(datos.parametrosBase) ? datos.parametrosBase : [],
+      estado: datos.estado || 'activo',
+      institucionId: 'I1',
+      fechaCreacion: new Date(),
+    };
+
+    const resultado = await db.collection('tipos_examenes').insertOne(doc);
+    doc._id = resultado.insertedId;
+    return tipoExamenToDomain(doc);
+  }
+
+  async listarTiposExamenes(filtro = {}) {
+    const db = await this._getDb();
+    const query = {};
+
+    if (filtro.laboratorioId) {
+      query.$or = [
+        { laboratorioId: filtro.laboratorioId },
+        { laboratorioCodigo: filtro.laboratorioId },
+      ];
+    }
+
+    if (filtro.categoria) {
+      query.categoria = filtro.categoria;
+    }
+
+    if (filtro.estado) {
+      query.estado = filtro.estado;
+    }
+
+    if (filtro.texto) {
+      const regex = new RegExp(filtro.texto, 'i');
+      query.$or = [
+        { nombre: regex },
+        { codigoExamen: regex },
+        { categoria: regex },
+        { laboratorioNombre: regex },
+      ];
+    }
+
+    const docs = await db.collection('tipos_examenes').find(query).toArray();
+    return docs.map(tipoExamenToDomain);
+  }
+
+  async crearOrdenLaboratorio(datos) {
+    const db = await this._getDb();
+    const paciente = await this.obtenerPaciente(datos.pacienteId);
+
+    if (!paciente) {
+      throw new NoEncontrado('PACIENTE_NO_ENCONTRADO', `No existe el paciente con ID ${datos.pacienteId}`);
+    }
+
+    const expNum = Math.floor(1000 + Math.random() * 9000);
+    const codigoOrden = datos.codigoOrden || `ORD-${expNum}`;
+
+    const doc = {
+      ...datos,
+      codigoOrden,
+      pacienteId: paciente.id,
+      expediente: paciente.expediente,
+      pacienteNombre: `${paciente.nombre} ${paciente.apellidos}`,
+      fechaOrden: datos.fechaOrden ? new Date(datos.fechaOrden) : new Date(),
+      fechaResultado: datos.fechaResultado ? new Date(datos.fechaResultado) : null,
+      estado: datos.estado || 'En proceso',
+      prioridad: datos.prioridad || 'Normal',
+      valores: Array.isArray(datos.valores) ? datos.valores : [],
+      institucionId: 'I1',
+    };
+
+    const resultado = await db.collection('ordenes_laboratorio').insertOne(doc);
+    doc._id = resultado.insertedId;
+    return ordenLaboratorioToDomain(doc);
+  }
+
+  async listarOrdenesLaboratorio(filtro = {}) {
+    const db = await this._getDb();
+    const query = {};
+
+    if (filtro.pacienteId) {
+      query.pacienteId = filtro.pacienteId;
+    }
+
+    if (filtro.laboratorioId) {
+      query.laboratorioId = filtro.laboratorioId;
+    }
+
+    if (filtro.estado) {
+      query.estado = filtro.estado;
+    }
+
+    if (filtro.texto) {
+      const regex = new RegExp(filtro.texto, 'i');
+      query.$or = [
+        { codigoOrden: regex },
+        { pacienteNombre: regex },
+        { expediente: regex },
+        { tipoExamen: regex },
+        { solicitante: regex },
+        { laboratorioNombre: regex },
+      ];
+    }
+
+    const docs = await db.collection('ordenes_laboratorio').find(query).sort({ fechaOrden: -1 }).toArray();
+    return docs.map(ordenLaboratorioToDomain);
+  }
+
+  async obtenerPacientesPorLaboratorio() {
+    const db = await this._getDb();
+    const ordenes = await db.collection('ordenes_laboratorio').find({}).toArray();
+
+    const agrupado = {};
+    for (const ord of ordenes) {
+      const labKey = ord.laboratorioNombre || ord.laboratorioId || 'Laboratorio Central';
+      if (!agrupado[labKey]) {
+        agrupado[labKey] = {
+          laboratorio: labKey,
+          laboratorioId: ord.laboratorioId || '',
+          pacientes: {},
+          totalOrdenes: 0,
+        };
+      }
+      agrupado[labKey].totalOrdenes++;
+
+      const pacKey = ord.pacienteId || ord.expediente;
+      if (!agrupado[labKey].pacientes[pacKey]) {
+        agrupado[labKey].pacientes[pacKey] = {
+          pacienteId: ord.pacienteId,
+          pacienteNombre: ord.pacienteNombre,
+          expediente: ord.expediente,
+          examenes: [],
+        };
+      }
+      agrupado[labKey].pacientes[pacKey].examenes.push({
+        codigoOrden: ord.codigoOrden,
+        tipoExamen: ord.tipoExamen,
+        fechaOrden: ord.fechaOrden,
+        estado: ord.estado,
+      });
+    }
+
+    return Object.values(agrupado).map(g => ({
+      ...g,
+      pacientes: Object.values(g.pacientes),
+      totalPacientes: Object.keys(g.pacientes).length,
+    }));
   }
 }
 

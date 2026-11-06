@@ -1,6 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import { ObjectId } from 'mongodb';
-import { pacienteToDomain, consultaToDomain, historialToDomain, polizaToDomain, doctorToDomain } from '../../src/infrastructure/adapters/mongodb/mapper.js';
+import {
+  pacienteToDomain,
+  consultaToDomain,
+  historialToDomain,
+  polizaToDomain,
+  doctorToDomain,
+  laboratorioToDomain,
+  tipoExamenToDomain,
+  ordenLaboratorioToDomain,
+} from '../../src/infrastructure/adapters/mongodb/mapper.js';
 
 describe('MongoDB Mapper (Hospital General · I1)', () => {
   test('pacienteToDomain convierte _id a string y asegura camelCase', () => {
@@ -162,5 +171,63 @@ describe('MongoDB Mapper (Hospital General · I1)', () => {
     expect(dominio.nombre).toBe('Rodrigo');
     expect(dominio.especialidad).toBe('Cirugía General');
     expect(dominio.telefono).toBe('23456789');
+  });
+
+  test('laboratorioToDomain y tipoExamenToDomain mapean entidades de laboratorio cumpliendo LSP', () => {
+    const labOid = new ObjectId('654000000000000000000001');
+    const docLab = {
+      _id: labOid,
+      codigo: 'LAB-HEM',
+      nombre: 'Laboratorio de Hematología',
+      tipo: 'Hematología',
+      responsable: 'Licda. Karla Monroy',
+      ubicacion: 'Nivel 2',
+      telefono: 23456781,
+      correo: 'lab@hospital.com',
+      horario: '24 Horas',
+      estado: 'activo',
+    };
+
+    const labDominio = laboratorioToDomain(docLab);
+    expect(labDominio.id).toBe('654000000000000000000001');
+    expect(labDominio._id).toBeUndefined();
+    expect(labDominio.codigo).toBe('LAB-HEM');
+    expect(labDominio.telefono).toBe('23456781');
+
+    const exOid = new ObjectId('655000000000000000000001');
+    const docExamen = {
+      _id: exOid,
+      codigoExamen: 'EX-HEM-01',
+      laboratorioId: labOid,
+      laboratorioNombre: 'Laboratorio de Hematología',
+      nombre: 'Hematología Completa',
+      categoria: 'Hematología',
+      tipoMuestra: 'Sangre venosa',
+      tiempoEstimadoHoras: 2,
+      parametrosBase: ['Hemoglobina', 'Plaquetas'],
+      estado: 'activo',
+    };
+
+    const examenDominio = tipoExamenToDomain(docExamen);
+    expect(examenDominio.id).toBe('655000000000000000000001');
+    expect(examenDominio.laboratorioId).toBe('654000000000000000000001');
+    expect(examenDominio.tiempoEstimadoHoras).toBe(2);
+
+    const ordOid = new ObjectId('656000000000000000000001');
+    const docOrden = {
+      _id: ordOid,
+      codigoOrden: 'ORD-9921',
+      pacienteId: 'pac-01',
+      pacienteNombre: 'Mariana Soto',
+      tipoExamen: 'Hematología Completa',
+      fechaOrden: new Date('2026-10-25T10:00:00.000Z'),
+      estado: 'Completado',
+      valores: [{ parametro: 'Hemoglobina', valor: '13.2', referencia: '12-15', estado: 'normal' }],
+    };
+
+    const ordenDominio = ordenLaboratorioToDomain(docOrden);
+    expect(ordenDominio.id).toBe('656000000000000000000001');
+    expect(ordenDominio.fechaOrden).toBe('2026-10-25T10:00:00.000Z');
+    expect(ordenDominio.valores).toHaveLength(1);
   });
 });

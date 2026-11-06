@@ -6,10 +6,18 @@ import { renderPatientTable } from './components/patientTable.js';
 import { renderModalDrawer } from './components/modalDrawer.js';
 import { renderInicioCriticos } from './components/inicioCriticos.js';
 import { renderListaArchivar } from './components/listaArchivar.js';
-import { renderLaboratorioTable } from './components/laboratorioTable.js';
+import {
+  inicializarVistaLaboratorio,
+  renderLaboratorioTable,
+  actualizarMetricasLaboratorio,
+  poblarSelectsLaboratorio,
+  renderUnidadesLaboratorio,
+  renderCatalogoExamenes,
+  renderPacientesAsociadosTable,
+} from './components/laboratorioTable.js';
 import { inicializarVistaPolizas, renderPolizasTable, actualizarMetricasPolizas, poblarSelectsPolizas } from './components/polizasComponent.js';
 import { inicializarVistaDoctores, renderDoctoresTable, actualizarMetricasDoctores } from './components/doctoresComponent.js';
-import { mostrarToast, mostrarAlertaPersonalizada, mostrarModalNuevaOrdenLab } from './components/modalDialog.js';
+import { mostrarToast, mostrarAlertaPersonalizada } from './components/modalDialog.js';
 import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
 
 let vistaActual = 'principal'; // 'principal' | 'buscador' | 'gestion' | 'laboratorio' | 'polizas' | 'doctores'
@@ -53,8 +61,7 @@ async function cargarVista(nombreVista) {
       inicializarFormularioGestion();
       renderListaArchivar('lista-archivar-pacientes-container');
     } else if (nombreVista === 'laboratorio') {
-      renderLaboratorioTable('laboratorio-table-container');
-      inicializarBuscadorLaboratorio();
+      inicializarVistaLaboratorio();
     } else if (nombreVista === 'polizas') {
       inicializarVistaPolizas();
     } else if (nombreVista === 'doctores') {
@@ -68,61 +75,6 @@ async function cargarVista(nombreVista) {
         <p style="font-size: 0.95rem;">${err.message}</p>
       </div>
     `;
-  }
-}
-
-function inicializarBuscadorLaboratorio() {
-  const input = document.getElementById('lab-search-input');
-  if (input) {
-    input.addEventListener('input', (e) => {
-      store.setFiltroLabTexto(e.target.value);
-      renderLaboratorioTable('laboratorio-table-container');
-    });
-  }
-
-  const btnNuevaOrden = document.getElementById('btn-nueva-orden-lab');
-  if (btnNuevaOrden) {
-    btnNuevaOrden.addEventListener('click', () => {
-      const pacientesActivos = store.pacientes.filter(p => p.estadoArchivo === 'activo');
-      if (pacientesActivos.length === 0) {
-        mostrarAlertaPersonalizada({
-          titulo: 'Sin Pacientes Activos',
-          mensaje: 'No hay pacientes activos disponibles para emitir órdenes de laboratorio.',
-          tipo: 'warning'
-        });
-        return;
-      }
-
-      mostrarModalNuevaOrdenLab(pacientesActivos, ({ pacienteId, tipo, solicitante, observaciones }) => {
-        const paciente = store.pacientes.find(p => p.id === pacienteId);
-        if (!paciente) return;
-
-        const nuevaOrden = {
-          id: `lab-${Date.now()}`,
-          codigoOrden: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-          pacienteId: paciente.id,
-          expediente: paciente.expediente,
-          pacienteNombre: `${paciente.nombre} ${paciente.apellidos}`,
-          tipoExamen: tipo,
-          fechaOrden: new Date().toISOString(),
-          fechaResultado: null,
-          solicitante: solicitante || "Dr. Rodrigo Palma",
-          estado: "En proceso",
-          resultadoResumen: "Muestra recolectada y enviada a centrífuga",
-          valores: [],
-          observacionesTecnicas: observaciones || "Toma de muestra realizada en ayuno."
-        };
-
-        store.agregarOrdenLaboratorio(nuevaOrden);
-        renderLaboratorioTable('laboratorio-table-container');
-
-        mostrarToast({
-          titulo: 'Orden de Laboratorio Emitida',
-          mensaje: `Se generó la orden ${nuevaOrden.codigoOrden} para el paciente ${nuevaOrden.pacienteNombre}.`,
-          tipo: 'success'
-        });
-      });
-    });
   }
 }
 
@@ -304,7 +256,12 @@ document.addEventListener('DOMContentLoaded', () => {
       poblarSelectDoctoresEnGestion();
       renderListaArchivar('lista-archivar-pacientes-container');
     } else if (vistaActual === 'laboratorio') {
+      actualizarMetricasLaboratorio();
+      poblarSelectsLaboratorio();
       renderLaboratorioTable('laboratorio-table-container');
+      renderUnidadesLaboratorio('unidades-laboratorio-cards-container');
+      renderCatalogoExamenes('catalogo-examenes-table-container');
+      renderPacientesAsociadosTable('laboratorio-pacientes-asociados-container');
     } else if (vistaActual === 'polizas') {
       actualizarMetricasPolizas();
       poblarSelectsPolizas();

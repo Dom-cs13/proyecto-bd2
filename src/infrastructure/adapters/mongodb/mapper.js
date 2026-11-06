@@ -133,3 +133,72 @@ export function doctorToDomain(doc) {
   };
 }
 
+export function laboratorioToDomain(doc) {
+  if (!doc) return null;
+
+  return {
+    id: doc._id?.toString() || doc.id,
+    codigo: doc.codigo || '',
+    nombre: doc.nombre || '',
+    tipo: doc.tipo || 'General',
+    responsable: doc.responsable || '',
+    ubicacion: doc.ubicacion || '',
+    telefono: doc.telefono ? String(doc.telefono) : '',
+    correo: doc.correo || '',
+    horario: doc.horario || '24 Horas',
+    descripcion: doc.descripcion || '',
+    estado: doc.estado || 'activo',
+    institucionId: doc.institucionId || 'I1',
+  };
+}
+
+export function tipoExamenToDomain(doc) {
+  if (!doc) return null;
+
+  return {
+    id: doc._id?.toString() || doc.id,
+    codigoExamen: doc.codigoExamen || '',
+    laboratorioId: doc.laboratorioId?.toString() || doc.laboratorioId || '',
+    laboratorioCodigo: doc.laboratorioCodigo || '',
+    laboratorioNombre: doc.laboratorioNombre || '',
+    nombre: doc.nombre || '',
+    categoria: doc.categoria || 'General',
+    tipoMuestra: doc.tipoMuestra || 'Sangre venosa',
+    tiempoEstimadoHoras: Number(doc.tiempoEstimadoHoras) || 4,
+    indicacionesPaciente: doc.indicacionesPaciente || '',
+    parametrosBase: Array.isArray(doc.parametrosBase) ? doc.parametrosBase : [],
+    estado: doc.estado || 'activo',
+    institucionId: doc.institucionId || 'I1',
+  };
+}
+
+export function ordenLaboratorioToDomain(doc) {
+  if (!doc) return null;
+
+  return {
+    id: doc._id?.toString() || doc.id,
+    codigoOrden: doc.codigoOrden || '',
+    pacienteId: doc.pacienteId?.toString() || doc.pacienteId || '',
+    expediente: doc.expediente || '',
+    pacienteNombre: doc.pacienteNombre || '',
+    laboratorioId: doc.laboratorioId?.toString() || doc.laboratorioId || '',
+    laboratorioNombre: doc.laboratorioNombre || '',
+    tipoExamenId: doc.tipoExamenId?.toString() || doc.tipoExamenId || '',
+    tipoExamen: doc.tipoExamen || '',
+    fechaOrden: formatearFechaIso(doc.fechaOrden),
+    fechaResultado: doc.fechaResultado ? formatearFechaIso(doc.fechaResultado) : null,
+    solicitante: doc.solicitante || 'Dr. Rodrigo Palma',
+    prioridad: doc.prioridad || 'Normal',
+    estado: doc.estado || 'En proceso',
+    resultadoResumen: doc.resultadoResumen || 'Muestra recolectada',
+    valores: Array.isArray(doc.valores) ? doc.valores.map(v => ({
+      parametro: v.parametro || '',
+      valor: v.valor || '',
+      referencia: v.referencia || '',
+      estado: v.estado || 'normal',
+    })) : [],
+    observacionesTecnicas: doc.observacionesTecnicas || '',
+    institucionId: doc.institucionId || 'I1',
+  };
+}
+
