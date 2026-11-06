@@ -131,6 +131,13 @@ function configurarEventosDoctores() {
     });
   }
 
+  const colInp = document.getElementById('doc-inp-colegiado');
+  if (colInp) {
+    colInp.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  }
+
   const searchInp = document.getElementById('doc-search-input');
   if (searchInp) {
     searchInp.addEventListener('input', (e) => {
@@ -148,7 +155,26 @@ function configurarEventosDoctores() {
       if (!/^\d{8}$/.test(telVal)) {
         mostrarAlertaPersonalizada({
           titulo: 'Teléfono Inválido',
-          mensaje: 'El teléfono del médico debe contener exactamente 8 dígitos numéricos enteros.',
+          mensaje: 'El teléfono del médico debe contener exactamente 8 dígitos numéricos enteros (ej. 24891122).',
+          tipo: 'error'
+        });
+        return;
+      }
+
+      const correoVal = (document.getElementById('doc-inp-correo').value || '').trim();
+      if (!correoVal) {
+        mostrarAlertaPersonalizada({
+          titulo: 'Correo Obligatorio',
+          mensaje: 'El correo electrónico institucional es estrictamente obligatorio para todos los médicos y especialistas.',
+          tipo: 'warning'
+        });
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoVal)) {
+        mostrarAlertaPersonalizada({
+          titulo: 'Correo Inválido',
+          mensaje: 'Por favor ingrese una dirección de correo electrónico institucional válida (ej. doctor@hospital.com).',
           tipo: 'error'
         });
         return;
@@ -161,7 +187,7 @@ function configurarEventosDoctores() {
         apellidos: document.getElementById('doc-inp-apellidos').value.trim(),
         especialidad: document.getElementById('doc-inp-especialidad').value,
         telefono: telVal,
-        correo: document.getElementById('doc-inp-correo').value.trim(),
+        correo: correoVal,
         horario: document.getElementById('doc-inp-horario').value,
         estado: document.getElementById('doc-inp-estado').value,
         institucionId: 'I1'

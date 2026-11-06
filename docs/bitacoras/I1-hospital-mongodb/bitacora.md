@@ -135,3 +135,30 @@
 - **Evidencia:** `infra/database/mongodb/seeds/laboratorios.json`, `infra/database/mongodb/seeds/tipos_examenes.json`, `src/interfaces/http/routes/laboratorios.js`, `frontend/hospital/pages/laboratorio.html`, `frontend/hospital/js/components/laboratorioTable.js`, `tests/unit/mongoMapper.test.js`.
 - **Tiempo invertido:** 65 min
 - **Siguiente paso:** Pruebas visuales finales y entrega.
+
+## Sesión 8 · 2026-11-05 · Auditoría Integral de Delimitaciones, Sanitización de Campos y Normalización Git (I1-04)
+
+- **Objetivo de la sesión:** Realizar una auditoría completa de todos los formularios de la plataforma para verificar que los campos tengan delimitaciones estrictas (bloqueo en tiempo real de letras donde solo van números, rangos numéricos acotados, mayúsculas automáticas en códigos), ajustar la obligatoriedad de campos (correo electrónico obligatorio para médicos, opcional para pacientes) y resolver las advertencias de finales de línea LF/CRLF en Git y GitHub Desktop mediante `.gitattributes`.
+- **Qué hice:**
+  - En formularios de admisión de pacientes (`gestion-pacientes.html` y `app.js`):
+    - Se ajustó el correo electrónico a opcional tanto en interfaz visual como en la validación lógica de envío. Si no se ingresa, no bloquea el registro; si se ingresa, se valida formato de correo válido.
+    - Se mantuvo la obligatoriedad estricta de nombres, apellidos, fecha, género, DPI (13 dígitos numéricos enteros con filtrado regex en tiempo real), teléfono (8 dígitos numéricos con sanitización instantánea), dirección, servicio, estado, ubicación, tipo de sangre y médico asignado.
+  - En módulo de médicos (`doctores.html` y `doctoresComponent.js`):
+    - Se aseguró que el correo electrónico institucional sea estrictamente obligatorio y validado contra patrón RFC.
+    - Se aplicó sanitización en tiempo real para que el teléfono solo admita dígitos (8 dígitos) y el número de colegiado se convierta automáticamente a mayúsculas.
+  - En módulo de pólizas de seguro (`polizasComponent.js`):
+    - Añadida sanitización en tiempo real para que el porcentaje de cobertura solo admita dígitos y se delimite entre 1% y 100%.
+    - Bloqueo de caracteres no numéricos en el teléfono de la aseguradora (8 dígitos) y auto-capitalización del código de póliza.
+  - En módulo de laboratorios (`laboratorioTable.js`):
+    - Auto-capitalización del código de laboratorio (`lab-inp-codigo`) y código de examen (`ex-inp-codigo`).
+    - Sanitización del tiempo estimado de análisis para admitir únicamente números enteros positivos (`replace(/\D/g, '')`).
+  - En repositorio Git:
+    - Creado `.gitattributes` en la raíz del proyecto para normalizar automáticamente finales de línea a LF en todos los archivos de texto (`.js`, `.json`, `.html`, `.css`, `.md`, `.sql`), eliminando las alertas de conversión CRLF en GitHub Desktop y evitando diffs fantasma de saltos de línea.
+    - Ejecutado `git add --renormalize .` para dejar el árbol de trabajo sincronizado y limpio.
+- **Decisiones tomadas (y por qué):**
+  - Implementar sanitización de entrada directa en el evento `input` en lugar de esperar al `submit`, garantizando que el usuario físicamente no pueda tipear letras o caracteres no válidos en campos numéricos (DPI, teléfonos, tiempos, porcentajes).
+  - Adoptar `.gitattributes` con `eol=lf` para estandarizar el repositorio entre Windows y entornos Linux/macOS de despliegue continuo (CI).
+- **Problemas / bloqueos:** Ninguno. Validaciones de ESLint (0 errores), pruebas de Vitest (6 unitarias + 3 de integración) en verde.
+- **Evidencia:** `.gitattributes`, `frontend/hospital/pages/gestion-pacientes.html`, `frontend/hospital/js/app.js`, `frontend/hospital/js/components/doctoresComponent.js`, `frontend/hospital/js/components/laboratorioTable.js`, `frontend/hospital/js/components/polizasComponent.js`.
+- **Tiempo invertido:** 40 min
+- **Siguiente paso:** Entrega final y revisión de usuario.

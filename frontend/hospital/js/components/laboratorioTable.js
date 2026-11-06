@@ -523,6 +523,13 @@ export function inicializarVistaLaboratorio() {
   // 5. Formulario de Creación de Unidad de Laboratorio
   const formLab = document.getElementById('form-nuevo-laboratorio');
   if (formLab) {
+    const codInp = document.getElementById('lab-inp-codigo');
+    if (codInp) {
+      codInp.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+      });
+    }
+
     const telInp = document.getElementById('lab-inp-telefono');
     if (telInp) {
       telInp.addEventListener('input', (e) => {
@@ -583,6 +590,20 @@ export function inicializarVistaLaboratorio() {
   // 6. Formulario de Creación de Tipo de Examen
   const formEx = document.getElementById('form-nuevo-tipo-examen');
   if (formEx) {
+    const codExInp = document.getElementById('ex-inp-codigo');
+    if (codExInp) {
+      codExInp.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+      });
+    }
+
+    const tiempoInp = document.getElementById('ex-inp-tiempo');
+    if (tiempoInp) {
+      tiempoInp.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '');
+      });
+    }
+
     formEx.addEventListener('submit', async (e) => {
       e.preventDefault();
 

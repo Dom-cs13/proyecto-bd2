@@ -139,12 +139,21 @@ function inicializarFormularioGestion() {
     const sangreVal = (document.getElementById('g-inp-sangre').value || '').trim();
     const medicoVal = (document.getElementById('g-inp-medico').value || '').trim();
 
-    // Verificación estricta: todos los campos son obligatorios salvo póliza y antecedentes
-    if (!nombreVal || !apellidosVal || !fechaVal || !generoVal || !dpiVal || !telVal || !correoVal || !direccionVal || !servicioVal || !estadoVal || !ubicacionVal || !sangreVal || !medicoVal) {
+    // Verificación estricta: todos los campos son obligatorios salvo correo electrónico, póliza y antecedentes
+    if (!nombreVal || !apellidosVal || !fechaVal || !generoVal || !dpiVal || !telVal || !direccionVal || !servicioVal || !estadoVal || !ubicacionVal || !sangreVal || !medicoVal) {
       mostrarAlertaPersonalizada({
         titulo: 'Campos Obligatorios Incompletos',
         subtitulo: 'Admisión Hospitalaria',
-        mensaje: 'Todos los campos del paciente son obligatorios (incluyendo médico asignado, dirección, correo y ubicación), a excepción de la póliza y los antecedentes/observaciones.',
+        mensaje: 'Todos los campos del paciente son obligatorios (incluyendo médico asignado, dirección y ubicación), a excepción del correo electrónico, la póliza y los antecedentes/observaciones.',
+        tipo: 'warning'
+      });
+      return;
+    }
+
+    if (correoVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoVal)) {
+      mostrarAlertaPersonalizada({
+        titulo: 'Correo Inválido',
+        mensaje: 'El correo electrónico ingresado no tiene un formato válido (ej. usuario@dominio.com). Si el paciente no posee correo, puede dejar el campo vacío.',
         tipo: 'warning'
       });
       return;

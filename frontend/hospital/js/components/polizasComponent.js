@@ -189,6 +189,24 @@ function configurarEventosPolizas() {
     });
   }
 
+  // Filtrado de porcentaje de cobertura (solo dígitos, máximo 100)
+  const porcInp = document.getElementById('pol-inp-porcentaje');
+  if (porcInp) {
+    porcInp.addEventListener('input', (e) => {
+      let num = e.target.value.replace(/\D/g, '');
+      if (num && Number(num) > 100) num = '100';
+      e.target.value = num;
+    });
+  }
+
+  // Código de póliza a mayúsculas
+  const codPolInp = document.getElementById('pol-inp-codigo');
+  if (codPolInp) {
+    codPolInp.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  }
+
   // Búsqueda en catálogo
   const searchInput = document.getElementById('pol-search-input');
   if (searchInput) {
