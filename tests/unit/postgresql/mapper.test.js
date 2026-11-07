@@ -58,4 +58,8 @@ describe("I2-06 - Mapper PostgreSQL", () => {
     expect(consulta.fecha).toBe("2026-03-01T10:00:00.000Z");
     expect(consulta.detallesInstitucion.polizaId).toBeNull();
   });
+  it.each(['constructor', '__proto__', 'toString'])('un sexo heredado %s no filtra propiedades del prototipo', (sexo) => {
+    const paciente = pacienteDesdeFila({ id_paciente: 7, sexo });
+    expect(paciente.genero).toBe('Otro');
+  });
 });

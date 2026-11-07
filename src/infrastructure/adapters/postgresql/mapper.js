@@ -14,12 +14,16 @@ export function pacienteDesdeFila(fila) {
   return {
     id: String(fila.id_paciente),
     nombres: fila.nombres,
+    nombre: fila.nombres,
+    documentoIdentidad: fila.documento_identidad ?? null,
+    genero: ['F', 'Femenino'].includes(fila.sexo) ? 'Femenino'
+      : ['M', 'Masculino'].includes(fila.sexo) ? 'Masculino' : 'Otro',
     apellidos: fila.apellidos,
     fechaNacimiento: fechaISO(fila.fecha_nacimiento),
     sexo: fila.sexo,
-    telefono: fila.telefono,
-    correo: fila.correo,
-    direccion: fila.direccion,
+    telefono: fila.telefono ?? '',
+    correo: fila.correo ?? '',
+    direccion: fila.direccion ?? '',
     detallesInstitucion: {},
   };
 }
@@ -40,6 +44,36 @@ export function historialDesdeFila(fila) {
         }
       : null,
   };
+}
+
+export function diagnosticoDesdeFila(fila) {
+  return { id: String(fila.id_diagnostico), consultaId: String(fila.id_consulta),
+    descripcion: fila.descripcion, observaciones: fila.observaciones ?? null };
+}
+
+export function tratamientoDesdeFila(fila) {
+  return { id: String(fila.id_tratamiento), diagnosticoId: String(fila.id_diagnostico),
+    descripcion: fila.descripcion, fechaInicio: fechaISO(fila.fecha_inicio),
+    fechaFin: fechaISO(fila.fecha_fin), estado: fila.estado, observaciones: fila.observaciones ?? null };
+}
+
+export function recetaDesdeFila(fila) {
+  return { id: String(fila.id_receta), consultaId: String(fila.id_consulta),
+    fecha: fila.fecha?.toISOString?.() ?? fila.fecha,
+    indicacionesGenerales: fila.indicaciones_generales ?? null };
+}
+
+export function medicamentoDesdeFila(fila) {
+  return { id: String(fila.id_detalle_receta), medicamentoId: String(fila.id_medicamento),
+    nombre: fila.nombre, dosis: fila.dosis, frecuencia: fila.frecuencia,
+    duracion: fila.duracion ?? null, cantidad: fila.cantidad ?? null, indicaciones: fila.indicaciones ?? null };
+}
+
+export function servicioDesdeFila(fila) {
+  return { id: String(fila.id_consulta_servicio), servicioId: String(fila.id_servicio),
+    nombre: fila.nombre, piezaDental: fila.pieza_dental ?? null, superficie: fila.superficie ?? null,
+    precioAplicado: fila.precio_aplicado == null ? null : Number(fila.precio_aplicado),
+    observaciones: fila.observaciones ?? null };
 }
 
 export function consultaDesdeFila(fila) {

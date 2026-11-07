@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import pg from 'pg';
+import { crearPoolPostgres } from '../../../infrastructure/adapters/postgresql/connection.js';
 
 export const routerOdontologiaAuth = Router();
 
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: true },
-  connectionTimeoutMillis: 10000
-});
+let pool;
+const aliasDemo = new Map([
+  ['odontologo', 'odontologo.demo@example.invalid'],
+  ['secretaria', 'secretaria.demo@example.invalid'],
+]);
 
 routerOdontologiaAuth.post('/auth/login', async (req, res, next) => {
   const { institucion, usuario, password } = req.body ?? {};
@@ -21,17 +21,18 @@ routerOdontologiaAuth.post('/auth/login', async (req, res, next) => {
       typeof password !== 'string' ||
       !usuario.trim() || !password) {
     return res.status(400).json({
-      error: { mensaje: 'Usuario y contrasena requeridos' }
+      error: { codigo: 'VALIDACION', mensaje: 'Usuario y contrasena requeridos' }
     });
   }
 
   if (!process.env.JWT_SECRET || !process.env.DATABASE_URL) {
     return res.status(503).json({
-      error: { mensaje: 'Servicio no configurado' }
+      error: { codigo: 'MOTOR_NO_DISPONIBLE', mensaje: 'Servicio no configurado' }
     });
   }
 
   try {
+    pool ??= crearPoolPostgres({ ssl: { rejectUnauthorized: true } });
     const resultado = await pool.query(
       `SELECT u.id_usuario, u.correo, r.nombre AS rol
        FROM public.usuario u
@@ -42,17 +43,14 @@ routerOdontologiaAuth.post('/auth/login', async (req, res, next) => {
          AND r.nombre IN ('odontologo', 'secretaria')
        LIMIT 1`,
       [
-        ({
-          odontologo: 'odontologo.demo@example.invalid',
-          secretaria: 'secretaria.demo@example.invalid'
-        })[usuario.trim().toLowerCase()] ?? usuario.trim(),
+        aliasDemo.get(usuario.trim().toLowerCase()) ?? usuario.trim(),
         password
       ]
     );
 
     if (resultado.rowCount !== 1) {
       return res.status(401).json({
-        error: { mensaje: 'Credenciales incorrectas' }
+        error: { codigo: 'NO_AUTENTICADO', mensaje: 'Credenciales incorrectas' }
       });
     }
 
@@ -75,10 +73,9 @@ routerOdontologiaAuth.post('/auth/login', async (req, res, next) => {
     );
 
     return res.json({ token });
-  } catch (error) {
-    console.error('Error de autenticacion odontologica:', error.code || error.message);
+  } catch {
     return res.status(503).json({
-      error: { mensaje: 'No se pudo validar el acceso' }
+      error: { codigo: 'MOTOR_NO_DISPONIBLE', mensaje: 'No se pudo validar el acceso' }
     });
   }
 });
