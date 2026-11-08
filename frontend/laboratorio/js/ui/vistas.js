@@ -16,152 +16,175 @@ import { tablaExamenes, tablaPacientes } from './tablas.js';
 import { formOrden } from './formularios.js';
 
 export const vistas = {
+  /* ---------- 1. Vista de Inicio / Resumen de Carga ---------- */
   principal(onRefreshView) {
     const render = () => {
-      const n = (s) => examenes.filter((x) => x.estado === s).length;
-      const kpis = [
-        { label: 'Total Órdenes', valor: examenes.length, icon: '📋' },
-        { label: 'Pendientes', valor: n('pendiente'), icon: '⏳' },
-        { label: 'En Proceso', valor: n('en_proceso'), icon: '🔬' },
-        { label: 'Completados', valor: n('completado'), icon: '✅' },
-      ];
+      const nPend = examenes.filter((x) => x.estado === 'pendiente').length;
+      const nProc = examenes.filter((x) => x.estado === 'en_proceso').length;
+      const nComp = examenes.filter((x) => x.estado === 'completado').length;
 
-      const contKpis = $('#kpis');
+      // KPIs de inicio
+      const contKpis = $('#inicio-kpi-container') || $('#kpis');
       if (contKpis) {
-        contKpis.innerHTML = kpis
-          .map(
-            (k) => `
-            <div class="kpi-card">
-              <span class="kpi-icon">${k.icon}</span>
-              <div class="kpi-info">
-                <span class="kpi-label">${k.label}</span>
-                <span class="kpi-val">${k.valor}</span>
-              </div>
-            </div>`
-          )
-          .join('');
+        contKpis.innerHTML = `
+          <div class="kpi-dashboard-grid">
+            <div class="kpi-card-light">
+              <div class="kpi-top"><div class="kpi-icon-wrap">📋</div><span class="kpi-badge">Total</span></div>
+              <div class="kpi-label">Órdenes Registradas</div>
+              <div class="kpi-value">${examenes.length} <span>estudios</span></div>
+            </div>
+            <div class="kpi-card-light">
+              <div class="kpi-top"><div class="kpi-icon-wrap">⏳</div><span class="kpi-badge">En Cola</span></div>
+              <div class="kpi-label">Pendientes de Muestra</div>
+              <div class="kpi-value">${nPend} <span>órdenes</span></div>
+            </div>
+            <div class="kpi-card-light">
+              <div class="kpi-top"><div class="kpi-icon-wrap">🔬</div><span class="kpi-badge">Analizador</span></div>
+              <div class="kpi-label">En Procesamiento</div>
+              <div class="kpi-value">${nProc} <span>en curso</span></div>
+            </div>
+            <div class="kpi-card-light">
+              <div class="kpi-top"><div class="kpi-icon-wrap">✅</div><span class="kpi-badge">Finalizados</span></div>
+              <div class="kpi-label">Resultados Validados</div>
+              <div class="kpi-value">${nComp} <span>completados</span></div>
+            </div>
+          </div>
+        `;
       }
 
-      const ultimos = $('#ultimos-examenes');
-      if (ultimos) {
-        ultimos.innerHTML = tablaExamenes(examenes.slice(0, 5), { conPaciente: true, compacto: true });
+      // Tabla de órdenes pendientes y en proceso
+      const contPend = $('#inicio-pendientes-container') || $('#ultimos-examenes');
+      if (contPend) {
+        const pendientes = examenes.filter((x) => x.estado === 'pendiente' || x.estado === 'en_proceso');
+        contPend.innerHTML = tablaExamenes(pendientes.length ? pendientes : examenes.slice(0, 5));
       }
     };
+
+    // Botones de acción de inicio
+    const btnNuevo = $('#btn-nuevo-estudio-inicio');
+    if (btnNuevo) btnNuevo.onclick = () => formOrden(render);
+
+    const btnAgregar = $('#btn-agregar-estudio-general');
+    if (btnAgregar) btnAgregar.onclick = () => formOrden(render);
+
+    // Botones rápidos por especialidad
+    document.querySelectorAll('[data-nuevo-tipo]').forEach((btn) => {
+      btn.onclick = () => formOrden(render, null, null, btn.dataset.nuevoTipo);
+    });
 
     render();
     onRefreshView(render);
   },
 
+  /* ---------- 2. Base de Datos Clínica · Expedientes de Pacientes ---------- */
   expedientes(onRefreshView) {
     let q = '';
-    let fEstado = 'todos';
-    let fTipo = 'todos';
-    let pagina = 1;
-    const porPagina = 8;
+    let fEstado = 'activos'; // 'activos' | 'archivados'
 
     const render = () => {
+      // Actualizar contadores de KPI
+      const nComp = examenes.filter((x) => x.estado === 'completado').length;
+      const nProc = examenes.filter((x) => x.estado === 'en_proceso').length;
+      const nPend = examenes.filter((x) => x.estado === 'pendiente').length;
+      const nAct = pacientes.filter((p) => p.activo).length;
+      const nArch = pacientes.filter((p) => !p.activo).length;
+
+      const elTotal = $('#kpi-total-pacientes');
+      if (elTotal) elTotal.innerHTML = `${pacientes.length} <span>expedientes</span>`;
+      const elComp = $('#kpi-completados');
+      if (elComp) elComp.innerHTML = `${nComp} <span>órdenes</span>`;
+      const elProc = $('#kpi-en-proceso');
+      if (elProc) elProc.innerHTML = `${nProc} <span>en curso</span>`;
+      const elPend = $('#kpi-pendientes');
+      if (elPend) elPend.innerHTML = `${nPend} <span>en cola</span>`;
+
+      const elCntAct = $('#count-activos');
+      if (elCntAct) elCntAct.textContent = nAct;
+      const elCntArch = $('#count-archivados');
+      if (elCntArch) elCntArch.textContent = nArch;
+
+      // Filtrado
       const qN = norm(q);
-      const filtrados = examenes.filter((x) => {
-        if (fEstado !== 'todos' && x.estado !== fEstado) return false;
-        if (fTipo !== 'todos' && x.tipo !== fTipo) return false;
+      const filtrados = pacientes.filter((p) => {
+        if (fEstado === 'activos' && !p.activo) return false;
+        if (fEstado === 'archivados' && p.activo) return false;
         if (!qN) return true;
-        const p = buscarPaciente(x.pacienteCui);
-        const nom = p ? norm(`${p.nombre} ${p.apellidos}`) : '';
-        return (
-          norm(x.id).includes(qN) ||
-          norm(x.pacienteCui).includes(qN) ||
-          nom.includes(qN) ||
-          norm(x.medicoSolicitante || '').includes(qN)
-        );
+        const nombreCompleto = norm(`${p.nombre || ''} ${p.apellidos || ''}`);
+        const cui = norm(p.cui || p.documentoIdentidad || '');
+        const tel = norm(p.telefono || '');
+        const dir = norm(p.direccion || '');
+        const alergias = norm((p.alergias || []).join(' '));
+        return nombreCompleto.includes(qN) || cui.includes(qN) || tel.includes(qN) || dir.includes(qN) || alergias.includes(qN);
       });
 
-      const total = filtrados.length;
-      const paginas = Math.ceil(total / porPagina) || 1;
-      if (pagina > paginas) pagina = paginas;
-      const slice = filtrados.slice((pagina - 1) * porPagina, pagina * porPagina);
-
-      const cont = $('#tabla-expedientes');
-      if (cont) cont.innerHTML = tablaExamenes(slice, { conPaciente: true, acciones: true });
-
-      const pag = $('#paginacion-expedientes');
-      if (pag) {
-        pag.innerHTML = `
-          <span>Mostrando ${slice.length} de ${total} registros (Página ${pagina} de ${paginas})</span>
-          <div class="pag-btns">
-            <button class="btn btn-outline" ${pagina <= 1 ? 'disabled' : ''} data-pag="${pagina - 1}">◀ Anterior</button>
-            <button class="btn btn-outline" ${pagina >= paginas ? 'disabled' : ''} data-pag="${pagina + 1}">Siguiente ▶</button>
-          </div>
-        `;
-        pag.onclick = (e) => {
-          const b = e.target.closest('button[data-pag]');
-          if (b && !b.disabled) {
-            pagina = parseInt(b.dataset.pag, 10);
-            render();
-          }
-        };
+      const tableInfo = $('#table-info');
+      if (tableInfo) {
+        tableInfo.textContent = `Mostrando ${filtrados.length} de ${pacientes.length} pacientes registrados`;
       }
+
+      const cont = $('#table-container') || $('#tabla-expedientes');
+      if (cont) cont.innerHTML = tablaPacientes(filtrados);
     };
 
-    const inputQ = $('#filtro-expedientes-q');
-    if (inputQ) {
-      inputQ.oninput = debounce((e) => {
+    // Búsqueda en vivo con debounce
+    const inputBuscar = $('#exp-buscar') || $('#filtro-expedientes-q');
+    if (inputBuscar) {
+      inputBuscar.oninput = debounce((e) => {
         q = e.target.value;
-        pagina = 1;
         render();
       }, 250);
     }
 
-    const selEstado = $('#filtro-expedientes-estado');
-    if (selEstado) {
-      selEstado.onchange = (e) => {
-        fEstado = e.target.value;
-        pagina = 1;
-        render();
-      };
-    }
-
-    const selTipo = $('#filtro-expedientes-tipo');
-    if (selTipo) {
-      selTipo.onchange = (e) => {
-        fTipo = e.target.value;
-        pagina = 1;
-        render();
-      };
+    // Chips de filtrado activos / archivados
+    const chipsCont = $('#exp-chips');
+    if (chipsCont) {
+      chipsCont.querySelectorAll('.chip').forEach((ch) => {
+        ch.onclick = () => {
+          chipsCont.querySelectorAll('.chip').forEach((c) => c.classList.remove('activo'));
+          ch.classList.add('activo');
+          fEstado = ch.dataset.f;
+          render();
+        };
+      });
     }
 
     render();
     onRefreshView(render);
   },
 
+  /* ---------- 3. Registro y Archivado de Pacientes ---------- */
   pacientes(onRefreshView) {
-    const selGen = $('#form-paciente-genero');
+    // Llenar selectores
+    const selGen = $('#sel-genero') || $('#form-paciente-genero');
     if (selGen) selGen.innerHTML = GENEROS.map((g) => `<option value="${g}">${g}</option>`).join('');
 
-    const selSan = $('#form-paciente-sangre');
+    const selSan = $('#sel-sangre') || $('#form-paciente-sangre');
     if (selSan) selSan.innerHTML = TIPOS_SANGRE.map((s) => `<option value="${s}">${s}</option>`).join('');
 
     const renderArchivar = () => {
       const cont = $('#lista-archivar');
       if (!cont) return;
       const activos = pacientes.filter((p) => p.activo);
-      cont.innerHTML = activos
-        .map(
-          (p) => `
+      cont.innerHTML = activos.length
+        ? activos
+            .map(
+              (p) => `
           <div class="archivar-item">
             <div>
               <strong>${p.nombre} ${p.apellidos}</strong>
-              <div class="meta">CUI: ${p.cui} · ${p.genero} · ${p.tipoSangre}</div>
+              <div class="meta" style="font-size:0.75rem; color:#64748b;">CUI: ${p.cui || p.documentoIdentidad} · ${p.genero} · ${p.tipoSangre}</div>
             </div>
-            <div class="archivar-accion">
-              <select class="input input-sm">
+            <div class="archivar-accion" style="display:flex; gap:8px; align-items:center;">
+              <select class="form-control" style="font-size:0.8rem; padding:6px 8px; width:auto;">
                 ${MOTIVOS_BAJA.map((m) => `<option value="${m}">${m}</option>`).join('')}
               </select>
-              <button class="btn btn-danger btn-sm" data-archivar="${p.cui}">Archivar</button>
+              <button class="btn btn-outline btn-small" data-archivar="${p.cui || p.documentoIdentidad}" style="color:#b91c1c; border-color:#fca5a5;">Archivar</button>
             </div>
           </div>
         `
-        )
-        .join('');
+            )
+            .join('')
+        : '<p class="vacio" style="font-size:0.85rem; color:#94a3b8; padding:12px 0;">No hay pacientes activos para archivar.</p>';
 
       const contTabla = $('#tabla-pacientes');
       if (contTabla) contTabla.innerHTML = tablaPacientes(pacientes);
@@ -172,7 +195,8 @@ export const vistas = {
       listaArchivar.onclick = async (e) => {
         const b = e.target.closest('[data-archivar]');
         if (!b) return;
-        const p = buscarPaciente(b.dataset.archivar);
+        const cui = b.dataset.archivar;
+        const p = buscarPaciente(cui);
         if (!p) return;
         const motivo = b.previousElementSibling.value;
         if (!confirm(`¿Archivar el expediente de ${p.nombre} ${p.apellidos}?\nMotivo formal: ${motivo}`)) return;
@@ -180,8 +204,8 @@ export const vistas = {
         p.motivoBaja = motivo;
         p.fechaBaja = hoy();
         guardarEstado();
-        archivarPacienteApi(p.cui, motivo);
-        toast('Expediente archivado con justificación');
+        archivarPacienteApi(cui, motivo);
+        toast('Expediente archivado con justificación formal');
         renderArchivar();
       };
     }
@@ -229,29 +253,58 @@ export const vistas = {
     onRefreshView(renderArchivar);
   },
 
+  /* ---------- 4. Órdenes y Resultados de Exámenes ---------- */
   examenes(onRefreshView) {
-    let filtro = 'todos';
+    let fEstado = 'todos';
+    let q = '';
 
     const render = () => {
-      const filtrados = filtro === 'todos' ? examenes : examenes.filter((x) => x.tipo === filtro);
-      const cont = $('#grid-ordenes');
-      if (cont) cont.innerHTML = tablaExamenes(filtrados, { conPaciente: true, acciones: true });
+      const qN = norm(q);
+      const filtrados = examenes.filter((x) => {
+        if (fEstado !== 'todos' && x.estado !== fEstado) return false;
+        if (!qN) return true;
+        const p = buscarPaciente(x.pacienteCui);
+        const nom = p ? norm(`${p.nombre} ${p.apellidos}`) : '';
+        return (
+          norm(x.id).includes(qN) ||
+          norm(x.pacienteCui).includes(qN) ||
+          nom.includes(qN) ||
+          norm(x.medicoSolicitante || '').includes(qN) ||
+          norm(x.tipo || x.tipoLaboratorio || '').includes(qN)
+        );
+      });
+
+      const cont = $('#laboratorio-table-container') || $('#grid-ordenes');
+      if (cont) cont.innerHTML = tablaExamenes(filtrados);
     };
 
+    // Búsqueda
+    const inputBuscar = $('#lab-buscar');
+    if (inputBuscar) {
+      inputBuscar.oninput = debounce((e) => {
+        q = e.target.value;
+        render();
+      }, 250);
+    }
+
+    // Chips de estado
+    const chipsCont = $('#lab-chips');
+    if (chipsCont) {
+      chipsCont.querySelectorAll('.chip').forEach((ch) => {
+        ch.onclick = () => {
+          chipsCont.querySelectorAll('.chip').forEach((c) => c.classList.remove('activo'));
+          ch.classList.add('activo');
+          fEstado = ch.dataset.f;
+          render();
+        };
+      });
+    }
+
+    // Botón nueva orden
     const btnNueva = $('#btn-nueva-orden');
     if (btnNueva) {
       btnNueva.onclick = () => formOrden(render);
     }
-
-    const tabs = document.querySelectorAll('.tipo-tab');
-    tabs.forEach((t) => {
-      t.onclick = () => {
-        tabs.forEach((x) => x.classList.remove('active'));
-        t.classList.add('active');
-        filtro = t.dataset.tipo;
-        render();
-      };
-    });
 
     render();
     onRefreshView(render);

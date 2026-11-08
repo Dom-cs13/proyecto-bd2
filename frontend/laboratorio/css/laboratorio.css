@@ -257,3 +257,266 @@ dialog[open] { animation: dialogIn .2s ease-out; }
   .view-header { flex-direction: column; align-items: stretch; }
   .filters-row { flex-direction: column; align-items: flex-start; }
 }
+
+/* =========================================================
+   VISUALIZADORES CLÍNICOS ESPECIALIZADOS (I3-11)
+   ========================================================= */
+.esp-panel {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 12px;
+}
+.esp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+.esp-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+}
+.esp-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.esp-grid-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.esp-kpi-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.esp-kpi-box .kpi-lbl {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+.esp-kpi-box .kpi-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+.esp-kpi-box .kpi-val small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.esp-kpi-box .kpi-val.kpi-alerta {
+  color: #dc2626;
+}
+.esp-kpi-box .kpi-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.esp-subpanel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+/* 1. Hematología: Barra leuco */
+.formula-leuco-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e2e8f0;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.formula-leuco-bar div {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.formula-leuco-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 0.75rem;
+  color: #475569;
+  margin-top: 8px;
+}
+.formula-leuco-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.formula-leuco-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* 2. Química: Rango visual interactivo */
+.rango-visual-wrap {
+  width: 100%;
+}
+.rango-barra {
+  position: relative;
+  height: 16px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: visible;
+  border: 1px solid #cbd5e1;
+}
+.rango-zona-normal {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 0;
+  bottom: 0;
+  background: rgba(34, 197, 94, 0.25);
+  border-left: 2px solid #16a34a;
+  border-right: 2px solid #16a34a;
+}
+.rango-indicador {
+  position: absolute;
+  top: -4px;
+  width: 10px;
+  height: 24px;
+  background: #dc2626;
+  border: 2px solid #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+  z-index: 2;
+}
+.rango-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* 3. Urianálisis / Inmunología */
+.esp-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.esp-mini-table tr {
+  border-bottom: 1px solid #edf2f7;
+}
+.esp-mini-table tr:last-child {
+  border-bottom: 0;
+}
+.esp-mini-table td {
+  padding: 6px 4px;
+  vertical-align: middle;
+}
+.reactivo-banner {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.reactivo-banner.positivo,
+.reactivo-banner.reactivo {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+.reactivo-banner.negativo,
+.reactivo-banner.no-reactivo {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+.reactivo-banner.indeterminado {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+/* 5. Antibiograma */
+.antibiograma-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.antibiograma-tabla th {
+  background: transparent;
+  color: #64748b;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 8px 6px;
+  border-bottom: 2px solid #e9d5ff;
+}
+.antibiograma-tabla td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #f3e8ff;
+}
+.sens-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.sensible-badge {
+  background: #dcfce7;
+  color: #15803d;
+}
+.resistente-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.intermedio-badge {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* 7. Banco de Sangre */
+.blood-type-badge {
+  background: linear-gradient(135deg, #be123c, #9f1239);
+  color: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(190, 18, 60, 0.25);
+}
+.blood-lbl {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+.blood-val {
+  font-size: 2.8rem;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 4px 0;
+}
+.blood-rh {
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
