@@ -31,6 +31,14 @@ export const fmt = (d) =>
 
 export const hoy = () => new Date().toISOString().slice(0, 10);
 
+export function debounce(fn, ms = 200) {
+  let timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
 export function toast(msg, tipo = 'ok') {
   const t = $('#toast');
   if (!t) return;

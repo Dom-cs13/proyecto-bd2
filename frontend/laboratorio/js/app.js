@@ -3,13 +3,20 @@
    ============================================================
    Módulo desacoplado de tamaño reducido. Orquesta:
    - Carga de plantillas HTML y enrutamiento por hash
-   - Estado y persistencia con datos.js
+   - Estado y persistencia con datos.js conectada a Firestore
    - Vistas modulares en ui/vistas.js
    - Formularios dinámicos de los 8 laboratorios en ui/formularios.js
    ============================================================ */
 
 import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
-import { cargarEstado, guardarEstado, reiniciarDemo, pacientes, examenes } from './datos.js';
+import {
+  cargarEstado,
+  guardarEstado,
+  reiniciarDemo,
+  pacientes,
+  examenes,
+  registrarListenerActualizacion,
+} from './datos.js';
 import { $, esc, toast, inicializarBackdropModal } from './ui/modal.js';
 import { formOrden, detalleExamen, detallePaciente } from './ui/formularios.js';
 import { vistas } from './ui/vistas.js';
@@ -80,6 +87,16 @@ async function navegar() {
   document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('activo', a.hash === `#${nombre}`));
   document.querySelectorAll('.topbar-tab').forEach((a) => a.classList.toggle('active', a.hash === `#${nombre}`));
 
+  // Actualizar indicador de sección actual
+  const nombresSeccion = {
+    principal: 'Panel General',
+    expedientes: 'Buscador y Base de Datos',
+    pacientes: 'Alta y Archivado',
+    examenes: 'Órdenes de Exámenes',
+  };
+  const seccionActual = document.getElementById('seccion-actual');
+  if (seccionActual) seccionActual.textContent = nombresSeccion[nombre] || 'Panel General';
+
   // Actualizar insignias del sidebar
   const badgePac = document.getElementById('badge-pacientes');
   if (badgePac) badgePac.textContent = pacientes.length;
@@ -99,6 +116,18 @@ async function navegar() {
 }
 
 /* ---------- Inicialización ---------- */
+registrarListenerActualizacion(() => {
+  const badgePac = document.getElementById('badge-pacientes');
+  if (badgePac) badgePac.textContent = pacientes.length;
+  const badgeOrd = document.getElementById('badge-ordenes');
+  if (badgeOrd) badgeOrd.textContent = examenes.length;
+  const pill = document.querySelector('.status-pill');
+  if (pill) {
+    pill.innerHTML = '<span class="dot" style="background:#22c55e;"></span> BD Firestore <span class="version">Conectada</span>';
+  }
+  refreshView();
+});
+
 cargarEstado();
 inicializarBackdropModal();
 wireReset();

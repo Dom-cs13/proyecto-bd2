@@ -20,8 +20,10 @@ import {
   obtenerMuestrasDeOrden,
   buscarPaciente,
   nombreDeCui,
+  crearOrdenApi,
 } from '../datos.js';
 import { tablaExamenes, badgeEstado, badgeAnormalidad } from './tablas.js';
+import { renderResultadosEspecializados } from './visualizadores.js';
 import {
   validarCamposObligatorios,
   obtenerRangoReferencia,
@@ -88,16 +90,6 @@ export function detalleExamen(id, onRefresh) {
   const t = TIPOS_LABORATORIO[e.tipo || e.tipoLaboratorio] || { icono: '🔬', nombre: e.tipo, campos: [] };
   const ms = obtenerMuestrasDeOrden(e.id);
 
-  const items = t.campos
-    .filter(([k]) => e.resultados && e.resultados[k] !== undefined)
-    .map(([k, l, u]) => {
-      const v = e.resultados[k];
-      return `<div class="res-item"><span>${esc(l)}</span><b>${esc(Array.isArray(v) ? v.join(', ') || 'Ninguno' : v)}${
-        u ? ` <small style="display:inline">${esc(u)}</small>` : ''
-      }</b></div>`;
-    })
-    .join('');
-
   const m = abrirModal(
     `${t.icono} ${esc(t.nombre)} · #${esc(e.id)}`,
     `
@@ -133,24 +125,8 @@ export function detalleExamen(id, onRefresh) {
       }
     </div>
 
-    <h4 style="font-size:0.85rem; margin:10px 0 8px; color:#475569;">📊 Resultados específicos del laboratorio:</h4>
-    ${items ? `<div class="res-grid">${items}</div>` : '<p class="vacio">Aún sin resultados registrados.</p>'}
-    
-    ${
-      e.resultados?.antibiograma?.length
-        ? `<div style="margin-top:12px; background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px; padding:10px;">
-        <b style="font-size:0.85rem; color:#6b21a8">🧫 Antibiograma detallado:</b>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:6px; margin-top:6px; font-size:0.8rem;">
-          ${e.resultados.antibiograma
-            .map(
-              (a) =>
-                `<div><b>${esc(a.antibiotico_nombre)}:</b> <span class="badge ${esc(a.antibiotico_sensibilidad)}">${esc(a.antibiotico_sensibilidad)}</span> ${a.antibiotico_cmi ? `(${esc(a.antibiotico_cmi)} µg/mL)` : ''}</div>`
-            )
-            .join('')}
-        </div>
-      </div>`
-        : ''
-    }
+    <h4 style="font-size:0.85rem; margin:14px 0 8px; color:#475569;">📊 Resultados Especializados del Estudio:</h4>
+    ${renderResultadosEspecializados(e, buscarPaciente(e.pacienteCui))}
 
     <h4 style="font-size:0.85rem; margin:12px 0 6px; color:#475569;">🧾 JSON estructurado de salida (LSP):</h4>
     <pre class="json">${esc(
@@ -572,6 +548,17 @@ export function formOrden(onGuardar, existente = null, preseCui = null, preseTip
         resultados,
       });
       toast('Orden de examen registrada con éxito');
+      crearOrdenApi({
+        id: ordenId,
+        numeroOrden: ordenId,
+        pacienteId: f.pacienteCui.value,
+        tipoLaboratorio: tipoKey,
+        fechaSolicitud: f.fechaSolicitud.value || hoy(),
+        medicoSolicitante: medico,
+        prioridad: f.prioridad.value,
+        estadoOrden: estado,
+        examenesSolicitados: [{ codigo: tipoKey.toUpperCase(), nombre: `Examen de ${tipoKey}`, tipoLaboratorio: tipoKey }],
+      });
     }
 
     guardarEstado();
