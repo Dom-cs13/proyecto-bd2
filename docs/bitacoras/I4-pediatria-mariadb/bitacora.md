@@ -180,6 +180,7 @@
   - Creé `scripts/seed-pediatria.js` y `scripts/verificar-aislamiento.js` verificando la no-fuga de datos entre instituciones y la resiliencia aislada ante fallos (`503`), integrados en `package.json` (`I4-09`).
   - Creé `frontend/shared/js/api/pediatria.js` y `frontend/pediatria/js/portalApi.js` conectando las operaciones del portal pediátrico con la API REST (`I4-10` e `I4-11`).
   - Desarrollé suites de prueba en `tests/integration/` y `tests/unit/`, alcanzando un total de 243 pruebas automáticas pasando al 100%.
+  - Se optimizó el timeout de conexión a 15000 ms en `connection.js` para tolerar cold-starts en SkySQL Serverless y se añadió fallback seguro en `obtenerCatalogos` para tablas de medicamentos sin columna presentacion.
 - **Decisiones tomadas (y por qué):**
   - Implementar endpoints dedicados para crecimiento y vacunas (`POST /pacientes/:id/crecimiento` y `POST /pacientes/:id/vacunas`) garantiza apego fiel a la naturaleza clínica pediátrica y modularidad para enfermería y pediatras.
   - Mantener la delegación por `next('route')` en routers Express permite que cada centro médico preserve su soberanía arquitectónica sin colisionar en endpoints comunes como `/pacientes` y `/consultas`.

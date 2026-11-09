@@ -1180,7 +1180,18 @@ export class MariaDbAdapter {
     const conn = await this._obtenerConexion();
     try {
       const vacunas = await conn.query("SELECT id_vacuna, nombre, descripcion, dosis_requeridas FROM vacuna ORDER BY nombre");
-      const medicamentos = await conn.query("SELECT id_medicamento, nombre, presentacion FROM medicamento WHERE estado = 'activo' OR estado = 1 OR estado = true ORDER BY nombre");
+
+      let medicamentos;
+      try {
+        medicamentos = await conn.query("SELECT id_medicamento, nombre, presentacion FROM medicamento WHERE estado = 'activo' OR estado = 1 OR estado = true ORDER BY nombre");
+      } catch (errMed) {
+        if (errMed.code === "ER_BAD_FIELD_ERROR" || errMed.message?.includes("Unknown column")) {
+          medicamentos = await conn.query("SELECT id_medicamento, nombre FROM medicamento WHERE estado = 'activo' OR estado = 1 OR estado = true ORDER BY nombre");
+        } else {
+          throw errMed;
+        }
+      }
+
       const alergias = await conn.query("SELECT id_alergia, nombre, descripcion FROM alergia WHERE estado = 'activo' OR estado = 1 OR estado = true ORDER BY nombre");
 
       const filasVacunas = Array.isArray(vacunas) ? vacunas : vacunas.rows ?? [];
