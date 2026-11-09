@@ -1,3 +1,3 @@
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpbnN0aXR1Y2lvbiI6ImxhYm9yYXRvcmlvIiwicm9sIjoibGFib3JhdG9yaXN0YSIsInVzdWFyaW8iOiJsYWJvcmF0b3Jpc3RhLmRlbW9AZXhhbXBsZS5pbnZhbGlkIiwiaWF0IjoxNzYyMzc5ODQ2LCJleHAiOjE3NjIzODcwNDZ9.sample-token"
+  "token": "token-jwt-de-ejemplo.payload-demo.firma-demo"
 }
