@@ -6,6 +6,10 @@ export const idOdontologia = z.string().regex(/^[1-9]\d*$/).refine(
   'Identificador fuera de rango',
 );
 
+export const responsableOdontologia = z.object({
+  nombres: texto(100), apellidos: texto(100), dpi: texto(20).optional(),
+  telefono: texto(20).optional(), parentesco: texto(50), esPrincipal: z.boolean(),
+}).strict();
 // Entrada institucional compatible con la persistencia existente. No modifica Zod compartido.
 const pacienteAnterior = z.object({
   nombres: texto(100),
@@ -16,9 +20,25 @@ const pacienteAnterior = z.object({
   telefono: texto(20).optional(),
   correo: z.email().max(150).optional(),
   direccion: texto(200).optional(),
+  detallesInstitucion: z.object({ responsableLegal: responsableOdontologia }).strict().optional(),
 }).strict();
 
 const documento = texto(50);
+export const editarPacienteOdontologia = pacienteAnterior.omit({ nombres: true, apellidos: true, fechaNacimiento: true, sexo: true }).partial()
+  .refine((datos) => Object.keys(datos).length > 0, 'Indica al menos un dato de contacto');
+export const citaOdontologia = z.object({
+  pacienteId: idOdontologia, usuarioId: idOdontologia, fecha: z.iso.date(),
+  hora: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), motivo: texto(250),
+}).strict();
+export const cambioCitaOdontologia = z.object({
+  fecha: z.iso.date(), hora: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  estado: z.enum(['programada', 'confirmada', 'cancelada', 'no_asistio']),
+}).strict();
+export const alergiaOdontologia = z.object({
+  alergiaId: idOdontologia, nivelSeveridad: texto(50), reaccion: texto(500),
+  observaciones: texto(500).optional(),
+}).strict();
+export const agendaOdontologia = z.object({ fecha: z.iso.date() }).strict();
 const pacienteCanonico = pacienteAnterior.omit({ nombres: true, sexo: true }).extend({
   nombre: texto(100), genero: z.enum(['Femenino', 'Masculino', 'Otro']), documentoIdentidad: documento,
 }).strict().transform(({ nombre, genero, ...datos }) => ({ ...datos, nombres: nombre, sexo: genero }));

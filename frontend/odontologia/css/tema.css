@@ -196,3 +196,100 @@ td small { display: block; font-size: 10px; color: var(--text-muted); margin-top
 .api-table th, .api-table td { text-align: left; padding: 12px; border-bottom: 1px solid #dce5ec; }
 .api-consulta { padding: 20px 0; border-top: 1px solid #dce5ec; overflow-wrap: anywhere; }
 .api-consulta .button, .route-panel > .button { margin: 6px; }
+
+/* Portal funcional: misma identidad Alba, con jerarquía y controles de trabajo. */
+:root { --focus-ring: #2878b7; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid var(--focus-ring); outline-offset: 3px;
+}
+.button { transition: background .15s, border-color .15s; }
+.page-heading { padding-bottom: 18px; border-bottom: 1px solid var(--border-color); }
+.route-panel { box-shadow: 0 6px 24px #17395006; }
+.route-panel > h2 { font-size: 20px; margin: 16px 0; }
+.route-panel > .button { margin: 4px 8px 12px 0; }
+.route-panel > p { line-height: 1.75; }
+.route-panel:has(> .dashboard-zone) { background: transparent; border: 0; box-shadow: none; padding: 0; overflow: visible; }
+.route-panel > .dashboard-zone { background: white; border: 1px solid var(--border-color); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+.route-panel > .dashboard-zone:first-child { background: linear-gradient(110deg, #f0f6fc, #fff 80%); }
+.dashboard-zone > h2, .dashboard-zone > .zone-heading { margin-bottom: 16px; }
+.dashboard-zone > p { color: var(--text-muted); font-size: 13px; line-height: 1.75; }
+.dashboard-zone .quick-grid { margin: 0; }
+.dashboard-zone > .quick-grid:has(> .button) { display: flex; flex-wrap: wrap; }
+.dashboard-zone .agenda { padding: 0; }
+.dashboard-zone .api-form { margin: 12px 0 20px; max-width: 440px; grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+.api-form { max-width: 920px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; font-size: 13px; }
+.api-form > fieldset, .api-form > div, .api-form > .odontograma, .api-form > p { grid-column: 1 / -1; }
+.api-form > button[type="submit"] { grid-column: 1 / -1; padding-inline: 24px; margin-top: 4px; }
+.api-form label { line-height: 1.6; color: #29465d; }
+.api-form input, .api-form select { min-height: 46px; border-color: #c9d7e3; box-shadow: 0 1px 2px #18384f04; }
+.api-form input:hover, .api-form select:hover { border-color: #83a9c9; }
+.api-form input:focus, .api-form select:focus { border-color: var(--primary); background: #fcfdff; }
+.api-form fieldset { margin: 0; border-color: var(--border-color); background: #fafcfe; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.api-form legend { padding: 0 8px; font-size: 12px; color: var(--primary); font-weight: 700; }
+.api-form #servicios-api, .api-form #medicamentos-api { display: grid; gap: 18px; }
+.api-form .service-active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+.form-help { color: var(--text-muted); font-size: 13px; line-height: 1.75; }
+.api-table { border: 1px solid var(--border-color); border-radius: 10px; }
+.api-table th { padding: 14px 16px; font-size: 11px; background: #f3f7fb; }
+.api-table td { padding: 16px; font-size: 13px; }
+.api-table tbody tr:hover { background: #f7fafe; }
+.api-consulta { border: 1px solid var(--border-color); border-left: 3px solid var(--primary); border-radius: 10px; background: #fcfdff; padding: 22px; margin: 18px 0; }
+.api-consulta h3 { font-size: 15px; margin: 0 0 12px; }
+.api-consulta h4 { font-size: 12px; letter-spacing: .3px; margin: 24px 0 8px; color: var(--primary); }
+.api-consulta p, .api-consulta li { font-size: 13px; line-height: 1.8; }
+.detail-grid > div { padding: 14px 16px; background: #f6f9fc; border-radius: 8px; overflow-wrap: anywhere; }
+.section-intro { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.empty-state { background: #f6f9fc; border: 1px dashed #bdcfdf; border-radius: 12px; padding: 28px; line-height: 1.8; }
+.empty-state p { color: var(--text-muted); font-size: 13px; }
+.network-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.network-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; }
+.network-card p { color: var(--text-muted); font-size: 13px; line-height: 1.8; }
+.network-patient { display: grid; gap: 8px; padding: 16px 0; border-top: 1px solid var(--border-color); }
+.network-patient small { color: var(--text-muted); }
+.network-patient .button { justify-self: start; }
+.odontograma { border: 1px solid var(--border-color); border-radius: 12px; background: white; padding: 22px; margin: 22px 0; }
+.dental-scroll { overflow-x: auto; padding: 8px 4px; }
+.dental-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; min-width: 600px; }
+.dental-quadrant { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+.dental-tooth { display: grid; justify-items: center; gap: 6px; padding: 8px 1px; border: 1px solid transparent; border-radius: 8px; color: #3a566d; background: #f5f8fb; font-size: 11px; font-weight: 700; }
+.dental-tooth svg { width: 30px; height: 42px; fill: white; stroke: #7c97ae; stroke-width: 1.5; }
+.dental-tooth .tooth-detail { fill: none; }
+.dental-tooth:hover { background: #e9f2fb; border-color: #a5c4de; }
+.dental-tooth.has-record svg { fill: #dbeafa; stroke: var(--primary); }
+.dental-tooth[aria-pressed="true"] { background: var(--primary); color: white; border-color: var(--primary); }
+.dental-tooth[aria-pressed="true"] svg { stroke: var(--primary); }
+.dental-tooth:disabled { cursor: default; opacity: 1; }
+.dental-orientation { display: flex; justify-content: space-between; gap: 16px; color: var(--text-muted); font-size: 10px; margin: 6px 0 18px; }
+.surface-toolbar { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 18px; border-top: 1px solid var(--border-color); }
+.surface-button { min-height: 42px; border: 1px solid #c5d5e3; border-radius: 8px; padding: 8px 12px; background: white; color: var(--primary); font-size: 11px; }
+.surface-button[aria-pressed="true"] { background: var(--primary-light); border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.dental-selection { margin: 16px 0 0; background: #f0f6fc; border-radius: 8px; padding: 12px; color: var(--primary); font-weight: 600; font-size: 12px; }
+.dental-mobile-hint { display: none; }
+.api-form, .api-form > *, .api-form fieldset, .odontograma, .dental-scroll { min-width: 0; max-width: 100%; }
+.api-form fieldset { min-inline-size: 0; }
+.route-panel h2 { overflow-wrap: anywhere; }
+#fecha-agenda > button[type="submit"] { grid-column: auto; margin-top: 0; min-height: 46px; }
+.sidebar-bottom { flex-direction: column; align-items: flex-start; }
+.sidebar-bottom > div { display: flex; align-items: center; gap: 6px; width: 100%; }
+.sidebar-bottom > a { padding: 8px 0; }
+@media (max-width: 700px) {
+  .api-form, .api-form fieldset, .network-grid { grid-template-columns: minmax(0, 1fr); }
+  .route-panel > .dashboard-zone, .odontograma { padding: 16px; }
+  .api-consulta { padding: 16px; }
+  .section-intro { align-items: flex-start; flex-wrap: wrap; }
+  .dashboard-zone .api-form { grid-template-columns: minmax(0, 1fr); }
+  .api-form .button { width: 100%; }
+  .dental-orientation { font-size: 9px; }
+  .surface-button { flex: 1 1 auto; }
+  .api-table table { white-space: normal; min-width: 360px; }
+  .sidebar-bottom { display: flex; padding: 6px 0 0; margin-top: 6px; align-items: flex-end; }
+  .sidebar-bottom > div { display: none; }
+  .topbar > div { min-width: 0; }
+  .profile { flex-shrink: 0; }
+  .sidebar nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .sidebar .nav-link { white-space: normal; gap: 8px; font-size: 11px; }
+  .dental-mobile-hint { display: block; font-size: 11px; line-height: 1.6; color: var(--primary); }
+}
+@media (prefers-reduced-motion: reduce) { .button, .quick-card { transition: none; } }

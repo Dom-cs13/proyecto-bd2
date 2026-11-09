@@ -151,7 +151,7 @@ if ((esDemo || sesion?.institucion === 'odontologia') && ['secretaria', 'odontol
   document.querySelectorAll('[data-icon]').forEach((elemento) => { elemento.innerHTML = icono(elemento.dataset.icon); });
   if (!esDemo) {
     const { iniciarPortalOdontologia } = await import('./portalApi.js');
-    iniciarPortalOdontologia({ sesion, contenido });
+    iniciarPortalOdontologia({ sesion, contenido, icono });
   }
   if (esDemo) {
     document.getElementById('demo').hidden = false;

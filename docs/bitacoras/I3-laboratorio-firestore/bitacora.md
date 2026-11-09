@@ -128,4 +128,3 @@
 - **Evidencia:** 31 archivos de pruebas pasando (306/306 pruebas en verde con Vitest) incluyendo los 36 tests de contrato (4 motores), y 0 errores en ESLint.
 - **Tiempo invertido:** 45 min
 - **Siguiente paso:** Aprobación del PR y merge en `main`.
-

@@ -1,15 +1,16 @@
 import express from 'express';
-import authRoutes from './interfaces/http/routes/auth.js';
-import pacientesRoutes from './interfaces/http/routes/pacientes.js';
-import polizasRoutes from './interfaces/http/routes/polizas.js';
-import doctoresRoutes from './interfaces/http/routes/doctores.js';
-import laboratoriosRoutes from './interfaces/http/routes/laboratorios.js';
 import { routerPediatriaAuth } from './interfaces/http/routes/pediatriaAuth.js';
 import { routerOdontologiaAuth } from './interfaces/http/routes/odontologiaAuth.js';
 import { routerLaboratorioAuth } from './interfaces/http/routes/laboratorioAuth.js';
 import { routerLaboratorio } from './interfaces/http/routes/laboratorioRoutes.js';
 import { crearRouterOdontologia } from './interfaces/http/routes/odontologiaPacientes.js';
 import { crearRouterPediatria } from './interfaces/http/routes/pediatriaPacientes.js';
+import { crearRouterRed } from './interfaces/http/routes/consultaEnRed.js';
+import authRoutes from './interfaces/http/routes/auth.js';
+import pacientesRoutes from './interfaces/http/routes/pacientes.js';
+import polizasRoutes from './interfaces/http/routes/polizas.js';
+import doctoresRoutes from './interfaces/http/routes/doctores.js';
+import laboratoriosRoutes from './interfaces/http/routes/laboratorios.js';
 import { autenticarJwt } from './interfaces/http/middleware/auth.js';
 import { errorHandler, noEncontrado } from './interfaces/http/middleware/errorHandler.js';
 
@@ -21,6 +22,7 @@ export function crearApp(opciones = {}) {
 
   app.use(routerPediatriaAuth);
   app.use(routerOdontologiaAuth);
+  app.use(crearRouterRed(opciones.red));
   app.use(routerLaboratorioAuth);
 
   const soloOdonto = opciones.odontologia && !opciones.pediatria;

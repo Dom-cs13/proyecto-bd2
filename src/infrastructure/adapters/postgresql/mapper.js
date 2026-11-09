@@ -8,6 +8,16 @@
   return String(valor).slice(0, 10);
 }
 
+export const identificadorDental = (valor) => ({ id: String(valor) });
+export const profesionalDesdeFila = (r) => ({ id: String(r.id_usuario), nombre: `${r.nombres} ${r.apellidos}` });
+export const citaDesdeFila = (r) => ({ id: String(r.id_cita), pacienteId: String(r.id_paciente),
+  usuarioId: String(r.id_usuario), nombre: `${r.nombres} ${r.apellidos}`, fecha: fechaISO(r.fecha),
+  hora: String(r.hora).slice(0, 5), motivo: r.motivo, estado: r.estado });
+export const responsableDesdeFila = (r) => ({ id: String(r.id_responsable), nombres: r.nombres,
+  apellidos: r.apellidos, telefono: r.telefono, dpi: r.dpi, parentesco: r.parentesco, esPrincipal: r.es_principal });
+export const alergiaDesdeFila = (r) => ({ id: String(r.id_alergia), nombre: r.nombre,
+  nivelSeveridad: r.nivel_severidad, reaccion: r.reaccion, observaciones: r.observaciones });
+
 export function pacienteDesdeFila(fila) {
   if (!fila) return null;
 

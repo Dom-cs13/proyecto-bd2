@@ -73,21 +73,23 @@ violaciones de unicidad 409, y los errores de validación 400, siempre con
 
 ## Dependencias que impiden cerrar I2-03
 
-- La migración de documento e índice único está programada, pero no ejecutada.
+- La migración de documento e índice único fue ejecutada solo en Docker desechable.
   Su despliegue y la normalización de filas antiguas requieren revisión por PR.
   El registro/búsqueda por documento responde 503 si falta la columna.
 - Hay diferencias preexistentes del contrato compartido (estado del historial
   anidado frente a la definición del puerto, campos adicionales de paciente y
   entradas clínicas poco especificadas). No se modificaron el puerto ni los
   esquemas de otros motores para resolverlas unilateralmente.
-- No hay `RepositoryFactory.obtenerTodos()` ni clasificación de campos de red
-  en esta rama. No se implementa `/red/...` ni se inicializan otros motores.
+- La lectura en red ya usa una composición diferida de obtenerTodos y fábricas
+  institucionales, con clasificación conservadora basada en I4-01 (ver abajo).
+  El registro de Laboratorio y la identidad canónica de Pediatría siguen pendientes
+  en esta base local. No se inventan instancias disponibles.
 - La suite de contrato compartida todavía no está implementada en esta rama
   (`tests/contract/` solo contiene `.gitkeep`). Las pruebas HTTP no la sustituyen.
 
-## Compatibilidad con PR #23
+## Compatibilidad con PR #23 · revisión histórica
 
-Revisado [PR #23](https://github.com/Dom-cs13/proyecto-bd2/pull/23), abierto,
+En la revisión original se consultó el [PR #23](https://github.com/Dom-cs13/proyecto-bd2/pull/23), entonces abierto,
 head `edd0e5f649a38949752b38e33978631c49784bd5`.
 Agrega `infrastructure/config/RepositoryFactory.js`, middleware JWT global y
 rutas genéricas `/pacientes` para Laboratorio. Esta rama usa archivos propios de
@@ -155,3 +157,115 @@ suite. También hay pruebas de formularios con jsdom y API simulada. No utiliza
 archivos de entorno ni conecta a Supabase. Resultados por fase y límites en
 `docs/odontologia-avance-I2-01-a-I2-13.md`; revisión posterior en
 `docs/odontologia-estabilizacion.md`.
+
+## Extensiones institucionales de esta entrega
+
+Todas requieren Bearer JWT dental válido (HS256, issuer, audience, exp y sub).
+La institución se toma del JWT; no se admite elegir otra base desde el cuerpo.
+Errores conservan `{ error: { codigo, mensaje } }`. No se cambia el contrato común.
+
+| Método y ruta | Entrada | Roles |
+|---|---|---|
+| GET /odontologia/agenda | query `fecha` YYYY-MM-DD; máximo 500 citas por día | Secretaría; odontólogo ve únicamente sus citas |
+| GET /odontologia/equipo | Sin cuerpo; profesionales activos | Secretaría |
+| POST /odontologia/citas | pacienteId, usuarioId, fecha, hora HH:mm, motivo | Secretaría |
+| PATCH /odontologia/citas/:id | fecha, hora, estado programada/confirmada/cancelada/no_asistio | Secretaría |
+| PATCH /odontologia/pacientes/:id/contacto | Uno o más: telefono, correo, direccion | Secretaría |
+| GET /odontologia/pacientes/:id/responsables | Sin cuerpo | Secretaría y odontólogo |
+| POST /odontologia/pacientes/:id/responsables | nombres, apellidos, parentesco, esPrincipal boolean; dpi y telefono opcionales | Secretaría |
+| GET /odontologia/pacientes/:id/alergias | Devuelve items y catalogo activo | Odontólogo |
+| POST /odontologia/pacientes/:id/alergias | alergiaId, nivelSeveridad, reaccion; observaciones opcionales | Odontólogo |
+| PATCH /odontologia/consultas/:id/finalizar | Sin datos adicionales | Odontólogo autor |
+
+Listados devuelven `{ items: [...] }`; agenda contiene id, pacienteId, usuarioId,
+nombre, fecha, hora, motivo y estado. Escrituras de citas, contacto y relaciones
+devuelven un objeto con id string; contacto devuelve el paciente y finalización
+devuelve la consulta. POST responde 201, las restantes operaciones 200.
+
+Registro de menor mediante POST /pacientes exige
+`detallesInstitucion.responsableLegal` con la misma estructura del POST de
+responsables y `esPrincipal: true`. Alta y vínculo se guardan en una transacción;
+el incumplimiento responde 400 RESPONSABLE_REQUERIDO. Las escrituras sobre un
+historial archivado se rechazan. La receta sigue siendo clínica; no se autoriza
+a secretaría a consultar notas ni prescribir.
+
+Solo se reprograman citas programadas/confirmadas sin consulta asociada. El cierre
+finaliza consulta y completa cita atómicamente. Una consulta con cita requiere
+que paciente y profesional coincidan con los de la cita activa. Los conflictos
+de horario, vínculos duplicados o estado responden 409. Los objetos de entrada
+son estrictos y no aceptan propiedades extra.
+
+Pruebas y límites de aceptación, incluida integración pendiente de Laboratorio:
+[matriz funcional](odontologia-aceptacion-funcional.md).
+
+## I2-02/I2-03/I2-10 · lectura en red implementada
+
+Actualización: el PR #23 ya está fusionado remotamente, head
+`07e5ee8421e4d4c7a638b69c30abb384be7dadb9`. No se incorporó a esta rama ni se
+modificaron los adaptadores ajenos. La matriz funcional registra las diferencias
+con su contrato v1.0, emisores de JWT y registro compartido.
+
+`GET /red/pacientes?documento=...&texto=...&pagina=1&limite=10`
+
+- Requiere documento o al menos dos caracteres de nombre, con paginación acotada.
+- Devuelve `{ resultados: [{ institucion, estado, items, total }] }` con las cuatro
+  instituciones en orden estable. estado es `ok` o `no_disponible`.
+- Ejecuta únicamente listarPacientes, con Promise.allSettled y límite de espera.
+  200 con resultados parciales; 503 cuando ninguna fuente se puede consultar.
+  Un registro ausente, error, contrato de identidad inválido o timeout se informa
+  como no_disponible; esto no constituye una medición de salud del motor.
+- Se proyectan id, documentoIdentidad, nombre, apellidos, fechaNacimiento y genero
+  cuando están presentes. Se valida id/nombre/apellidos con la selección del Zod
+  común. No se reparan alias heredados de otros mappers ni se expone contacto.
+
+`GET /red/:institucion/pacientes/:id/historial`
+
+- institución es hospital/odontologia/laboratorio/pediatria; id es un identificador
+  opaco acotado, no se limita globalmente a enteros SQL.
+- Ejecuta exclusivamente obtenerHistorial en el repositorio seleccionado.
+- 200 con historial autorizado, 404 si no existe, 503 si no se puede consultar.
+- Terceros reciben paciente demográfico, historial administrativo y consultas
+  vacío. Se omiten motivos de archivo, contacto, tutores, alergias, auditorías,
+  notas, recetas y detalles institucionales. En la institución propia, odontólogo
+  y pediatra/enfermería conservan lectura clínica mediante lista positiva.
+- Se usa la forma anidada historial.estado indicada por AGENTS/plan. La proyección
+  de permisos acepta la forma preexistente raíz del adaptador de Hospital sin
+  modificarlo; sigue pendiente armonizar el contrato compartido.
+
+| Institución del JWT | Roles aceptados en red |
+|---|---|
+| Hospital | admin |
+| Odontología | odontologo, secretaria |
+| Laboratorio | laboratorista, tecnico, validador, admin |
+| Pediatría | pediatra, enfermeria, recepcion |
+
+Firma HS256 y exp obligatorios, sin fallback a decode ni clave de demostración.
+Se verifica issuer/audience salvo el token administrativo actual de Hospital que
+no los emite; si los incluye, deben ser los institucionales. La clave se obtiene
+de configuración en ejecución, sin leer archivos de entorno.
+
+POST/PUT/PATCH/DELETE bajo /red responden 403 ESCRITURA_EN_RED_PROHIBIDA antes
+de resolver repositorios. Las escrituras locales conservan su institución del
+JWT y no usan el mapa de red. Usuarios ajenos reciben 403 en rutas dentales.
+
+Pruebas: MockAdapter, Supertest de cuatro perfiles con fuentes simuladas,
+DOM de ambos roles y lectura HTTP de Odontología contra PostgreSQL desechable.
+No se consultaron las cuatro bases reales ni Supabase.
+
+## I2-11 · odontograma y presentación
+
+El formulario de consulta incluye 32 piezas FDI: 11–18, 21–28, 31–38 y 41–48.
+El odontólogo selecciona pieza/superficie O/I/M/D/V/L/P y un servicio del catálogo.
+La selección se escribe en la fila activa; se pueden agregar otras piezas y
+servicios. El envío usa el POST /consultas existente y
+`detallesInstitucion.servicios`, sin nuevo endpoint o cambio de esquema.
+
+El expediente muestra piezas con procedimientos persistidos, en solo lectura.
+No se infiere un diagnóstico a partir del color de la pieza. Secretaría no tiene
+editor ni permiso para guardar clínica. DOM y persistencia Docker están probados.
+
+CSS conserva Alba y agrega formularios agrupados, tablas, foco visible, navegación
+contextual y menú móvil completo. Se verificaron seis vistas en Chrome con
+fixtures explícitos, viewport real 1440/390 px y sin desbordamiento de página;
+el mapa dental conserva desplazamiento interno. Script reproducible:
+`node scripts/verificar-odontologia-visual.js` (requiere Chrome).

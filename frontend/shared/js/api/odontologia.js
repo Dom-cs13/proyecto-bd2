@@ -28,6 +28,21 @@ export function crearApiOdontologia({ cliente = apiClient, sesion = obtenerSesio
     return encodeURIComponent(valor);
   };
   return {
+    buscarEnRed: (filtro, signal) => solicitar(`/red/pacientes?${new URLSearchParams(Object.entries(filtro).filter(([,v]) => v !== '' && v !== undefined))}`, { signal }),
+    historialEnRed: (institucion, valor, signal) => {
+      if (!['hospital', 'odontologia', 'laboratorio', 'pediatria'].includes(institucion) || !/^[A-Za-z0-9_-]{1,128}$/.test(String(valor))) throw new Error('Selecciona un expediente de red válido');
+      return solicitar(`/red/${institucion}/pacientes/${encodeURIComponent(valor)}/historial`, { signal });
+    },
+    actualizarContacto: (valor, datos) => solicitar(`/odontologia/pacientes/${id(valor)}/contacto`, { method: 'PATCH', datos }),
+    agenda: (fecha, signal) => solicitar(`/odontologia/agenda?${new URLSearchParams({ fecha })}`, { signal }),
+    equipo: (signal) => solicitar('/odontologia/equipo', { signal }),
+    crearCita: (datos) => solicitar('/odontologia/citas', { method: 'POST', datos }),
+    cambiarCita: (valor, datos) => solicitar(`/odontologia/citas/${id(valor)}`, { method: 'PATCH', datos }),
+    responsables: (valor, signal) => solicitar(`/odontologia/pacientes/${id(valor)}/responsables`, { signal }),
+    responsable: (valor, datos) => solicitar(`/odontologia/pacientes/${id(valor)}/responsables`, { method: 'POST', datos }),
+    alergias: (valor, signal) => solicitar(`/odontologia/pacientes/${id(valor)}/alergias`, { signal }),
+    alergia: (valor, datos) => solicitar(`/odontologia/pacientes/${id(valor)}/alergias`, { method: 'POST', datos }),
+    finalizar: (valor) => solicitar(`/odontologia/consultas/${id(valor)}/finalizar`, { method: 'PATCH', datos: {} }),
     listar: (filtro = {}, signal) => solicitar(`/pacientes?${new URLSearchParams(Object.entries(filtro)
       .filter(([, valor]) => valor !== '' && valor !== undefined))}`, { signal }),
     registrar: (datos) => solicitar('/pacientes', { method: 'POST', datos }),

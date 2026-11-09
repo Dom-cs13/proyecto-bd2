@@ -207,6 +207,3 @@
 - **Evidencia:** rama `feat/I4-11-enlace-vistas-pediatricas`, commits asociados, 300 pruebas unitarias/integración aprobadas y ESLint con 0 errores.
 - **Tiempo invertido:** 40 min
 - **Siguiente paso:** Tarea I4-12 (Comparativo de motor MariaDB para Pediatría).
-
-
-
