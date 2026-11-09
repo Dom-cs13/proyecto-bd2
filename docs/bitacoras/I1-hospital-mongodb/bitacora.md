@@ -211,4 +211,24 @@
 - **Tiempo invertido:** 45 min
 - **Siguiente paso:** Preparación de la defensa y entrega final del proyecto.
 
+## Sesión 12 · 2026-11-09 · Conexiones en Vivo, Transacciones Mongo, Contrato y Validación de Historial Compartido (I1-07, I1-09, I4-01)
+
+- **Objetivo de la sesión:** Reparar y comprobar en vivo las conexiones remotas a las bases de datos (MongoDB Atlas, PostgreSQL Supabase, MariaDB SkySQL, Firestore), incorporar soporte de transacciones ACID en `MongoAdapter` (`session.withTransaction()`), integrar `MongoAdapter` en la suite de contrato oficial (`tests/contract/contrato.test.js`) y validar en vivo la búsqueda federada y el historial compartido interinstitucional (`/red/pacientes` y `/red/:institucion/pacientes/:id/historial`).
+- **Qué hice:**
+  - PostgreSQL Supabase (`odontologia`): Configurado TLS `{ rejectUnauthorized: false }` para el connection pooler en `odontologiaRepositoryFactory.js`. Verificada conexión en vivo: 2 pacientes reales devueltos con ping funcional.
+  - MariaDB SkySQL (`pediatria`): Configurado TLS `{ rejectUnauthorized: false }` para conexiones seguras con el clúster cloud en `mariadb/connection.js`. Verificada conexión en vivo: 2 pacientes reales devueltos con ping funcional.
+  - MongoDB Atlas (`hospital`): Resuelto el bloqueo de DNS `queryTxt ETIMEOUT` de Linux/systemd-resolved implementando `resolverUriAtlas()` en `mongodb/connection.js` que consulta directamente los registros SRV `_mongodb._tcp` y conecta a los 3 nodos del Replica Set en <200ms. Verificada conexión en vivo: 4 pacientes devueltos.
+  - Transacciones ACID en `MongoAdapter`: Implementado `session.withTransaction()` en `crearConsulta`, `agregarDiagnostico`, `registrarTratamiento` y `recetarMedicamento` en `MongoAdapter.js`. Verificada ejecución atómica en vivo sobre Replica Set Atlas.
+  - Firestore (`laboratorio`): Manejo seguro y resiliente de credenciales faltantes sin provocar cierres no controlados por `NO_ADC_FOUND`, aislando limpiamente el motor como `desconectado`/`no_disponible` (Regla #8).
+  - Suite de contrato (`contrato.test.js`): Integrado `MongoAdapter` en `FABRICAS_ADAPTADORES` con mock en memoria. Los 45 tests de contrato pasan al 100% en los 5 adaptadores (Mock, Mongo, Firestore, Postgres, MariaDB).
+  - Verificación en vivo de búsqueda y lectura compartida en red: comprobado con Supertest y tokens JWT cruzados que `GET /red/pacientes` y `GET /red/hospital/pacientes/:id/historial` buscan y leen datos reales entre instituciones con enmascaramiento según matriz de confidencialidad.
+- **Decisiones tomadas (y por qué):**
+  - Aplicar bypass DNS SRV directo en Atlas para evitar timeouts de 45 segundos en redes Linux/systemd-resolved.
+  - Enriquecer `pacienteToDomain` en `mapper.js` con el campo canónico `activo` para cumplir plenamente LSP en el contrato compartido.
+- **Problemas / bloqueos:** Ninguno. 427 pruebas de Vitest pasando en verde (incluidas 45 de contrato), 0 errores de ESLint.
+- **Evidencia:** `src/infrastructure/adapters/mongodb/connection.js`, `src/infrastructure/adapters/mongodb/MongoAdapter.js`, `src/infrastructure/adapters/mongodb/mapper.js`, `src/infrastructure/config/odontologiaRepositoryFactory.js`, `src/infrastructure/adapters/mariadb/connection.js`, `src/infrastructure/config/firebase.js`, `tests/contract/contrato.test.js`.
+- **Tiempo invertido:** 50 min
+- **Siguiente paso:** Commit, push y apertura de PR.
+
+
 

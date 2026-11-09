@@ -6,7 +6,9 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { ObjectId } from 'mongodb';
 import { MockAdapter } from '../../src/infrastructure/adapters/mock/MockAdapter.js';
+import { MongoAdapter } from '../../src/infrastructure/adapters/mongodb/MongoAdapter.js';
 import { FirestoreAdapter } from '../../src/infrastructure/adapters/firestore/FirestoreAdapter.js';
 import { PostgresAdapter } from '../../src/infrastructure/adapters/postgresql/PostgresAdapter.js';
 import { MariaDbAdapter } from '../../src/infrastructure/adapters/mariadb/MariaDbAdapter.js';
@@ -599,8 +601,192 @@ function crearMariaDbEnMemoria() {
   return new MariaDbAdapter(pool);
 }
 
+function crearMongoEnMemoria() {
+  const pacientes = new Map();
+  const consultas = new Map();
+
+  const mockDb = {
+    async command() {
+      return { ok: 1 };
+    },
+    collection(nombre) {
+      if (nombre === 'pacientes') {
+        return {
+          async findOne(query) {
+            const all = Array.from(pacientes.values());
+            if (query?._id) {
+              const strId = String(query._id);
+              return all.find((p) => String(p._id) === strId) || null;
+            }
+            if (query?.$or) {
+              for (const p of all) {
+                for (const cond of query.$or) {
+                  if (cond._id && String(p._id) === String(cond._id)) return p;
+                  if (cond.expediente && p.expediente === cond.expediente) return p;
+                  if (cond.documentoIdentidad && p.documentoIdentidad === cond.documentoIdentidad) return p;
+                  if (cond.curp && p.curp === cond.curp) return p;
+                }
+              }
+              return null;
+            }
+            return null;
+          },
+          async insertOne(doc) {
+            const _id = new ObjectId();
+            const nuevo = { ...doc, _id };
+            pacientes.set(String(_id), nuevo);
+            return { insertedId: _id };
+          },
+          async updateOne(query, update) {
+            let p = null;
+            const all = Array.from(pacientes.values());
+            if (query?._id) {
+              p = all.find((item) => String(item._id) === String(query._id));
+            } else if (query?.$or) {
+              for (const item of all) {
+                for (const cond of query.$or) {
+                  if (cond._id && String(item._id) === String(cond._id)) { p = item; break; }
+                  if (cond.expediente && item.expediente === cond.expediente) { p = item; break; }
+                }
+                if (p) break;
+              }
+            }
+            if (p && update?.$set) {
+              Object.assign(p, update.$set);
+            }
+            return { modifiedCount: p ? 1 : 0 };
+          },
+          find(filtro = {}) {
+            let items = Array.from(pacientes.values());
+            if (filtro?.estado) {
+              items = items.filter((p) => (p.estado || 'activo') === filtro.estado);
+            }
+            if (filtro?.$or) {
+              const regexCond = filtro.$or.find((c) => c.nombre && (c.nombre.$regex || c.nombre instanceof RegExp));
+              if (regexCond) {
+                const rx = regexCond.nombre.$regex ? new RegExp(regexCond.nombre.$regex, 'i') : regexCond.nombre;
+                items = items.filter((p) => rx.test(p.nombre || '') || rx.test(p.apellidos || ''));
+              }
+            }
+            return {
+              sort() { return this; },
+              skip(n) { items = items.slice(n); return this; },
+              limit(n) { items = items.slice(0, n); return this; },
+              async toArray() { return items; },
+            };
+          },
+          async countDocuments(filtro = {}) {
+            let items = Array.from(pacientes.values());
+            if (filtro?.estado) {
+              items = items.filter((p) => (p.estado || 'activo') === filtro.estado);
+            }
+            if (filtro?.$or) {
+              const regexCond = filtro.$or.find((c) => c.nombre && (c.nombre.$regex || c.nombre instanceof RegExp));
+              if (regexCond) {
+                const rx = regexCond.nombre.$regex ? new RegExp(regexCond.nombre.$regex, 'i') : regexCond.nombre;
+                items = items.filter((p) => rx.test(p.nombre || '') || rx.test(p.apellidos || ''));
+              }
+            }
+            return items.length;
+          },
+        };
+      }
+
+      if (nombre === 'consultas') {
+        return {
+          async findOne(query) {
+            const all = Array.from(consultas.values());
+            if (query?._id) {
+              return all.find((c) => String(c._id) === String(query._id)) || null;
+            }
+            if (query?.$or) {
+              for (const c of all) {
+                for (const cond of query.$or) {
+                  if (cond['diagnostico.idDiagnostico'] && c.diagnostico?.idDiagnostico === cond['diagnostico.idDiagnostico']) return c;
+                  if (cond['diagnostico.id'] && c.diagnostico?.id === cond['diagnostico.id']) return c;
+                }
+              }
+            }
+            return null;
+          },
+          async insertOne(doc) {
+            const _id = new ObjectId();
+            const nuevo = { ...doc, _id };
+            consultas.set(String(_id), nuevo);
+            return { insertedId: _id };
+          },
+          async updateOne(query, update) {
+            let c = null;
+            const all = Array.from(consultas.values());
+            if (query?._id) {
+              c = all.find((item) => String(item._id) === String(query._id));
+            } else if (query?.$or) {
+              for (const item of all) {
+                for (const cond of query.$or) {
+                  if (cond['diagnostico.idDiagnostico'] && item.diagnostico?.idDiagnostico === cond['diagnostico.idDiagnostico']) { c = item; break; }
+                  if (cond['diagnostico.id'] && item.diagnostico?.id === cond['diagnostico.id']) { c = item; break; }
+                }
+                if (c) break;
+              }
+            }
+            if (c && update?.$set) {
+              for (const [k, v] of Object.entries(update.$set)) {
+                if (k.includes('.')) {
+                  const partes = k.split('.');
+                  let ref = c;
+                  for (let i = 0; i < partes.length - 1; i++) {
+                    ref[partes[i]] = ref[partes[i]] || {};
+                    ref = ref[partes[i]];
+                  }
+                  ref[partes[partes.length - 1]] = v;
+                } else {
+                  c[k] = v;
+                }
+              }
+            }
+            return { modifiedCount: c ? 1 : 0 };
+          },
+          find(query = {}) {
+            let all = Array.from(consultas.values());
+            if (query?.$or) {
+              all = all.filter((c) => query.$or.some((cond) => {
+                if (cond.pacienteId && c.pacienteId === cond.pacienteId) return true;
+                if (cond.expediente && c.expediente === cond.expediente) return true;
+                return false;
+              }));
+            }
+            return {
+              sort() { return this; },
+              async toArray() { return all; },
+            };
+          },
+        };
+      }
+
+      return {
+        async findOne() { return null; },
+        async insertOne() { return { insertedId: new ObjectId() }; },
+        async updateOne() { return { modifiedCount: 1 }; },
+        find() { return { sort() { return this; }, async toArray() { return []; } }; },
+      };
+    },
+  };
+
+  const mockCliente = {
+    startSession() {
+      return {
+        async withTransaction(fn) { return fn(); },
+        async endSession() {},
+      };
+    },
+  };
+
+  return new MongoAdapter(mockDb, mockCliente);
+}
+
 const FABRICAS_ADAPTADORES = [
   ['MockAdapter', () => new MockAdapter()],
+  ['MongoAdapter', () => crearMongoEnMemoria()],
   ['FirestoreAdapter', () => crearFirestoreEnMemoria()],
   ['PostgresAdapter', () => crearPostgresEnMemoria()],
   ['MariaDbAdapter', () => crearMariaDbEnMemoria()],
