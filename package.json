@@ -11,7 +11,10 @@
     "lint": "eslint .",
     "test": "vitest run",
     "skills:sync": "node scripts/sync-skills.js",
-    "skills:check": "node scripts/sync-skills.js --check"
+    "skills:check": "node scripts/sync-skills.js --check",
+    "seed:pediatria": "node --env-file-if-exists=.env scripts/seed-pediatria.js",
+    "seed:all": "npm run seed:pediatria",
+    "verificar:aislamiento": "node scripts/verificar-aislamiento.js"
   },
   "dependencies": {
     "express": "^5.3.0",
@@ -26,6 +29,7 @@
     "@eslint/js": "^10.0.1",
     "eslint": "^10.13.0",
     "globals": "^17.13.0",
+    "jsdom": "^29.1.1",
     "supertest": "^7.3.1",
     "vitest": "^5.0.5"
   }

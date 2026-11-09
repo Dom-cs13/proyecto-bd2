@@ -1,0 +1,25 @@
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: bd2_mariadb_pediatria
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root_dev_password_2026
+      MARIADB_DATABASE: sistema_pediatria
+      MARIADB_USER: pediatria_user
+      MARIADB_PASSWORD: pediatria_dev_password_2026
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./infra/database/mariadb/ddl/pediatria_i4_04_i4_05.sql:/docker-entrypoint-initdb.d/01_ddl.sql:ro
+      - ./infra/database/mariadb/indices/indices_pediatria.sql:/docker-entrypoint-initdb.d/02_indices.sql:ro
+      - ./infra/database/mariadb/seeds/seeds_pediatria.sql:/docker-entrypoint-initdb.d/03_seeds.sql:ro
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  mariadb_data:

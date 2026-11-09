@@ -1,4 +1,4 @@
-# Bitácora · I2 · Clínica Odontológica · PostgreSQL (Supabase)
+﻿# Bitácora · I2 · Clínica Odontológica · PostgreSQL (Supabase)
 
 <!-- Agrega una entrada por sesión, en el mismo PR de la tarea. -->
 
@@ -21,3 +21,114 @@
 - **Evidencia:** [PR #8](https://github.com/Dom-cs13/proyecto-bd2/pull/8), commit [`19b637bd9b8b4bf46722d76f27c4c1c3e5429c9f`](https://github.com/Dom-cs13/proyecto-bd2/commit/19b637bd9b8b4bf46722d76f27c4c1c3e5429c9f). En la validación previa del avance se comprobaron ambas vistas en Chrome a 1440 y 390 px, 11 recorridos administrativos y 9 clínicos, el selector temporal, la conservación del contexto del paciente y la separación visual por rol; sin errores JavaScript, recursos 404 ni desbordamiento horizontal. También pasaron `node --check`, la revisión de rutas e imports y `git diff --check`. ESLint y Vitest no se ejecutaron localmente porque no estaban instaladas las dependencias. Estas pruebas corresponden al avance publicado y no a una nueva ejecución de pruebas de frontend en esta sesión documental.
 - **Tiempo invertido:** No registrado.
 - **Siguiente paso:** Publicar esta entrada en la misma rama, verificar la nueva ejecución del CI y atender únicamente observaciones dentro del alcance de I2. Continuar la siguiente etapa del frontend después de revisar el resultado con el equipo.
+
+## Sesión 2 · 2026-10-31 · Tareas I2-04 e I2-05
+
+- **Objetivo de la sesión:** Revisar el modelo odontológico y preparar una propuesta relacional/DDL compatible con el contrato y el checklist vigente, sin conectarse a Supabase.
+- **Qué hice:** Comparé el modelo de 18 tablas y el SQL original con el borrador I2-05, `contratos/API.md`, `AGENTS.md` y las secciones 3.4 y 7.2 de la planificación. Preparé el DDL propuesto de 20 tablas, un diagrama ER Mermaid y un documento de decisiones y diferencias. Se conservaron intactos los borradores recibidos.
+- **Decisiones tomadas (y por qué):** Se propone seguir el checklist: identity `GENERATED ALWAYS`, archivo como `historial_clinico.estado`, FK compuesta cita-consulta, cita única por usuario/fecha/hora, columnas FDI 11–48 y superficie opcional en `consulta_servicio`, más aseguradora/póliza. Se dejó RLS habilitado sin políticas para denegar acceso por defecto hasta I2-08. No se modificó el contrato compartido; las decisiones clínicas y los estados siguen sujetos a aprobación.
+- **Problemas / bloqueos:** No fue posible ejecutar validación sintáctica ni creación en PostgreSQL temporal porque el terminal del entorno no está disponible. No se ejecutó SQL en Supabase. Requieren aprobación la póliza y su vínculo a paciente, los estados, dentición/superficies, zona horaria, semántica de usuario de cita y las políticas/roles RLS.
+- **Evidencia:** Rama `feat/I2-05-ddl-odontologia`, basada en `main`/`origin/main` `b0b97fc`. Inspección estática: 20 tablas, 18 columnas identity, 21 FKs y 20 activaciones RLS; no hay `BY DEFAULT`, borrado en cascada ni tabla dental separada del borrador. Archivos propuestos: `infra/database/postgresql/ddl/odontologia_i2_04_i2_05.sql` y `infra/database/postgresql/ddl/odontologia_modelo_i2_04.md`. Sin PR ni commit; no se solicitó commit.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar y aprobar las decisiones pendientes; ejecutar pruebas de sintaxis y creación en PostgreSQL local temporal; completar roles y políticas RLS en I2-08 antes de habilitar acceso.
+
+## Sesión 3 · 2026-10-31 · Tarea I2-05
+
+- **Objetivo de la sesión:** Registrar los resultados de las pruebas locales del DDL PostgreSQL y dejar constancia de las restricciones funcionales y de seguridad aún pendientes.
+- **Qué hice:** Actualicé la documentación de I2-04/I2-05 con los resultados reportados de PostgreSQL 16 y precisé las decisiones pendientes sobre citas canceladas, odontograma y RLS. No cambié las 20 tablas ni las reglas funcionales.
+- **Decisiones tomadas (y por qué):** Se conservan sin cambios `UNIQUE (id_usuario, fecha, hora)`, el alcance FDI 11–48 y RLS habilitado sin políticas; alterar estos comportamientos requiere aprobación. Se registra explícitamente que las pruebas no validan roles/políticas RLS.
+- **Problemas / bloqueos:** Falta aprobación del comportamiento de horarios cancelados, cardinalidad y superficies dentales, y diseño de rol/políticas RLS. No se ejecutó SQL en Supabase. No pude verificar el estado Git actual desde este entorno porque PowerShell no está disponible.
+- **Evidencia:** Resultados comunicados por el equipo para PostgreSQL 16 local: 20 tablas, 21 FKs, 18 columnas identity, 15 `CHECK`, 20 tablas con RLS y 17 índices explícitos. Integridad: cuatro rondas (4/4, 4/4, 4/4, 3/3), total 15 comprobaciones exitosas; todas finalizaron con `ROLLBACK`. Los resultados no se presentan como una ejecución propia de esta sesión. Rama reportada: `feat/I2-05-ddl-odontologia`; sin commit, push ni merge.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Confirmar los resultados en el estado local de la rama y aprobar las reglas funcionales/seguridad antes de editar el DDL o preparar la versión final para Supabase.
+
+### Ajustes del modelo odontologico - I2-05
+
+- Se modifico la restriccion de horarios para permitir reutilizar citas canceladas.
+- Se vincularon las polizas directamente con los pacientes.
+- Se agrego una FK compuesta para validar la poliza de cada consulta.
+- Se realizaron cuatro pruebas adicionales de integridad en PostgreSQL 16 mediante Docker; todas fueron exitosas y finalizaron con ROLLBACK.
+- No se realizaron modificaciones en Supabase ni en los modulos de otras instituciones.
+## Sesion 2 - 2026-11-01 - Tarea I2-06
+
+- **Objetivo de la sesion:** Implementar la primera parte del adaptador PostgreSQL para Odontologia.
+- **Que hice:** Cree connection.js, mapper.js y PostgresAdapter.js. Implemente registro, busqueda y consulta de pacientes, lectura basica del historial y archivado con motivo. El registro crea el historial inicial dentro de una transaccion.
+- **Decisiones tomadas:** Utilizar el driver oficial pg, consultas parametrizadas y transacciones SQL. Mantener el codigo dentro del adaptador de Odontologia, sin modificar los contratos compartidos ni otros motores.
+- **Pruebas realizadas:** Conexion real mediante pg.Pool, registro y consulta de pacientes, archivado persistente y recuperacion de consultas basicas en PostgreSQL 16 local. Vitest: 8/8 pruebas aprobadas. ESLint sin errores.
+- **Problemas o bloqueos:** El puerto HistorialRepository y los esquemas Zod definitivos todavia no estan implementados en esta copia del repositorio. Falta comprobar compatibilidad contractual e integracion HTTP. El historial aun no incluye los detalles completos de diagnosticos, tratamientos y recetas; corresponden a I2-07.
+- **Evidencia:** Rama feat/I2-06-postgres-adapter-p1, pruebas unitarias en tests/unit/postgresql/ y pruebas locales con Docker.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar las pruebas y el contrato, publicar PR de I2-06 y continuar posteriormente con I2-07. No se realizaron cambios en Supabase.
+
+## Sesion 3 - 2026-11-01 - Tarea I2-07
+
+- **Objetivo:** Implementar las operaciones clinicas del adaptador PostgreSQL de Odontologia.
+- **Trabajo realizado:** Se implementaron crearConsulta(), crearDiagnostico(), crearTratamiento(), crearReceta() y registrarAtencionCompleta().
+- **Validaciones:** Las consultas requieren un historial activo. Los diagnosticos, tratamientos y recetas comprueban que los registros correspondientes esten disponibles.
+- **Transacciones:** La receta guarda sus medicamentos en una sola transaccion. registrarAtencionCompleta() registra consulta, diagnosticos, tratamientos y receta dentro de una transaccion conjunta.
+- **Pruebas realizadas:** PostgreSQL 16 local mediante Docker. Se verificaron registros individuales, atencion completa, COMMIT y ROLLBACK por error de clave foranea. Vitest: 15/15 pruebas aprobadas. ESLint sin errores.
+- **Archivos modificados:** PostgresAdapter.js y tres archivos nuevos de pruebas unitarias.
+- **Pendientes:** Validar compatibilidad con el contrato compartido, revisar integracion HTTP y seguridad de Supabase.
+- **Decisiones:** No modificar otros motores, interfaces compartidas ni la base de datos de Supabase.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar los cambios y publicar el PR de I2-07 en Draft, dependiente de I2-06.
+
+## Sesión · 2026-11-06 · Tarea I2-03 (avance parcial)
+
+- **Objetivo de la sesión:** Implementar la integración HTTP de pacientes e historial exclusivamente para Odontología, con JWT y pruebas sin conexiones reales.
+- **Qué hice:** Agregué rutas, controladores delgados, casos de uso con repositorio inyectado, validadores institucionales Zod y resolución diferida de PostgresAdapter mediante `obtenerRepositorio(req.user.institucion)`. Implementé registro, listado, búsqueda por texto, ficha, lectura y archivado con motivo estructurado. El archivo relee el historial para conservar las consultas. Separé permisos: secretaría registra y consulta fichas; odontólogo consulta fichas, lee expedientes y archiva. Verifiqué firma HS256, emisor, audiencia, sujeto, caducidad, institución y rol del JWT. Reutilicé connection.js y mapper.js; el login ahora comparte la fábrica del pool, conserva validación TLS y devuelve códigos de error consistentes. Añadí documentación de uso y bloqueos en `docs/odontologia-api-I2-03.md`.
+- **Decisiones tomadas (y por qué):** No modificar contratos, entidades compartidas, DDL ni otros módulos. Conservar la entrada/salida persistible actual del adaptador (`nombres`/`sexo`) y rechazar campos y filtros no soportados, evitando pérdida silenciosa de datos. La fábrica institucional usa un archivo propio para no ocupar el archivo compartido propuesto por I3. La clave de JWT se consulta en ejecución y las pruebas usan una clave ficticia inyectada.
+- **Problemas / bloqueos:** El registro canónico y búsqueda por documento requieren persistir `documentoIdentidad` y acordar la normalización `nombre`/`genero`; PostgreSQL no tiene ese campo ni unicidad de documento. El filtro de estado no está implementado en el adaptador. El historial actual solo carga consultas básicas, sin consolidar diagnósticos, tratamientos y recetas. `/red/...` depende de la fábrica compartida `obtenerTodos()` y clasificación de campos. La suite compartida de contrato no existe todavía en esta rama: no se certifica LSP ni se declara I2-03 terminada. El PR #23 propone routers genéricos y middleware global: antes de integrarlo hay que despachar por institución verificada y resolver diferencias de archivado; no basta montar ambos routers en orden.
+- **Evidencia:** Rama `feat/I2-03-integracion-api`, verificada después de `git fetch origin`: `HEAD...origin/feat/I2-03-integracion-api` = `0 0`. Revisé metadatos y diff del [PR #23](https://github.com/Dom-cs13/proyecto-bd2/pull/23), abierto, head `edd0e5f649a38949752b38e33978631c49784bd5`, sin incorporar sus cambios. `git log main..HEAD --oneline` no mostró commits propios. Cambios locales sin commit/PR nuevo. Validación final real: `npm run lint` sin errores y `npm test` con **16 archivos, 110/110 pruebas aprobadas**, incluidas **51 pruebas Supertest de Odontología**. Cubren JWT, roles, aislamiento, validación, 404/409/503, archivado y recorrido HTTP → caso de uso → adaptador → mapper con pool simulado, más login → JWT → ruta protegida con consulta simulada. La primera ejecución de Vitest fue bloqueada por `spawn EPERM` del sandbox; se repitió con permiso. Se corrigió un fallo real de validación de ID alfabético detectado por la suite. No se ejecutó SQL en Supabase ni se leyeron archivos de credenciales; los archivos locales no rastreados preexistentes se conservaron.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar los cambios locales y acordar con I3 la integración de fábrica/rutas/contrato, persistencia de documento e historial completo antes de cerrar I2-03. No se hicieron commits, push ni merges.
+
+## Sesión · 2026-11-06 · Fase 1 · I2-02, I2-03, I2-06, I2-07
+
+- **Objetivo de la sesión:** Continuar sobre los cambios locales de I2-03 y completar la programación clínica independiente de Odontología.
+- **Qué hice:** Verifiqué rama y Git sin reiniciar ni sobrescribir el avance previo. Revisé I2-01 a I2-13 mediante `leer-plan.js` y las skills de adaptador/contrato/bitácora. Implementé consulta, diagnóstico, tratamiento y receta en HTTP/casos de uso, tomando usuario e institución del JWT. Agregué métodos del puerto mediante delegación a las operaciones existentes del adaptador, catálogo y estado locales, filtro por estado y consolidación de diagnósticos/tratamientos/recetas/servicios del expediente. Guardé servicios y piezas dentales con la consulta en la misma transacción. El adaptador traduce errores de conexión a MotorNoDisponible y los controladores traducen conflictos/FK sin revelar SQL.
+- **Decisiones tomadas (y por qué):** Conservar métodos y transacciones anteriores; no cambiar contratos compartidos ni registrar motores ajenos. Los datos dentales permanecen en detallesInstitucion. Citas y red no se implementan unilateralmente.
+- **Problemas / bloqueos:** Falta la suite contractual compartida y la coordinación de routers/fábrica del PR #23. Las pruebas de pool simulado no certifican PostgreSQL real.
+- **Evidencia:** Sin commits nuevos; cambios locales en adaptador/mapper, controladores, validadores, rutas y casos de uso. `npm run lint`: código 0. `npm test`: 149/149 en 18 archivos. Pruebas nuevas en `tests/integration/odontologiaClinica.test.js` y `tests/unit/postgresql/PostgresLecturaClinica.test.js`, más suite anterior conservada.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Conectar el portal con API simulable y probar formularios.
+
+## Sesión · 2026-11-06 · Fase 2 · I2-09 e I2-11
+
+- **Objetivo de la sesión:** Sustituir los recorridos de maqueta por operaciones reales de API en sesiones autenticadas, preservando preview explícito.
+- **Qué hice:** Agregué el cliente institucional que reutiliza apiClient, bearer, errores/expiración y cancelación. Implementé pantallas de pacientes, búsqueda/paginación, registro, ficha/expediente, consulta clínica, diagnóstico, tratamiento, recetas, archivo y estado técnico. Las escrituras tienen control de doble envío; los datos se escapan al renderizar; las respuestas antiguas no reemplazan una pantalla nueva. Conservé el código de maqueta para `?preview=secretaria`/`?preview=odontologo` local sin sesión.
+- **Decisiones tomadas (y por qué):** Ningún fetch en el portal; todas las llamadas están en frontend/shared/js/api. Ninguna página de otra institución fue modificada. Añadí jsdom como dependencia de desarrollo para probar formularios sin navegador ni red real.
+- **Problemas / bloqueos:** Sin prueba visual de navegador; los datos reales y la base desplegada no se tocaron. npm reportó 9 vulnerabilidades moderadas del árbol y advertencia del rango de Node de Vitest; no ejecuté audit fix ni cambié dependencias ajenas.
+- **Evidencia:** `tests/unit/odontologiaFrontend.test.js`: API y DOM simulados, registro, pieza dental, múltiples medicamentos, archivo, doble envío, 503/reintento, HTML y navegación obsoleta. Lint quedó aprobado tras corregir globals del test. `npm test`: 163/163 en 19 archivos. Sin commits.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Resolver soporte de documento sin cambiar el contrato compartido y preparar seguridad como SQL revisable.
+
+## Sesión · 2026-11-06 · Fase 3 · I2-05, I2-06 e I2-08
+
+- **Objetivo de la sesión:** Programar persistencia/búsqueda por documento y preparar migración, seeds y seguridad sin ejecutar SQL.
+- **Qué hice:** Preparé `odontologia_documento_i2.sql` con columna nullable e índice único parcial, soporte de documento en registro/búsqueda y normalización `nombre`/`genero` en mapper, conservando alias/entrada anterior. El portal registra con nombres canónicos; los contactos SQL null se normalizan a strings vacíos. Agregué seeds sintéticos con guardia de entorno de pruebas, propuesta de grupo mínimo NOLOGIN/RLS y comprobación manual de privilegios/archivo con rollback, además del README de aplicación local.
+- **Decisiones tomadas (y por qué):** No inventar documentos de filas antiguas ni imponer NOT NULL sin completar datos reales. No cambiar Zod compartido. Esquema antiguo al intentar documento produce 503 saneado. El seed no crea contraseñas predeterminadas y el SQL no se ejecuta desde npm test.
+- **Problemas / bloqueos:** Pendientes revisión/aplicación de migración, backfill y pruebas reales de SQL/RLS. No se afirma seguridad de producción ni equivalencia contractual de filas antiguas. No se accedió a Supabase.
+- **Evidencia:** Lint aprobado; `npm test`: 168/168 en 19 archivos. Pruebas de SQL parametrizado combinando estado/documento, entrada canónica, error de columna ausente y salida de paciente validada con el Zod compartido. Los archivos SQL son propuestas, no evidencia de ejecución.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Completar componentes compartidos y cerrar documentación por tarea con los límites de la entrega.
+
+## Sesión · 2026-11-06 · Fases 4 y 5 · I2-01, I2-07, I2-09, I2-10, I2-11, I2-12 e I2-13
+
+- **Objetivo de la sesión:** Consolidar componentes reutilizables, múltiples piezas dentales, compatibilidad del método clínico anterior y evidencia por tarea.
+- **Qué hice:** Extraje los componentes puros de registro/búsqueda/tabla/detalle a `frontend/shared/js/components/pacientes.js` y los reutilicé desde Odontología. Permití varias piezas/servicios por consulta con sus precios y varias medicaciones por receta. Hice que registrarAtencionCompleta conserve servicios dentro de su transacción reutilizando guardarServicios. Agregué diccionario odontológico, informe I2-01 a I2-13, comparativo preliminar con matriz de evidencias y documentación actualizada de API y pendientes.
+- **Decisiones tomadas (y por qué):** I2-01 no se declara cerrada para las cuatro instituciones; I2-10 prueba denegación de los otros tres usuarios, no una red real. El plan 3.1 reserva crearCita/listarCitas para P2 coordinado de los cuatro adaptadores. No se agregaron citas ni rutas de red parciales. I2-12 es preliminar e I2-13 requiere revisión cruzada humana. Sugerir ADR coordinado para resolver forma de Historial, alias de paciente y despacho de routers antes de integrar PR #23; no alterar esos contratos unilateralmente.
+- **Problemas / bloqueos:** PR #23 continúa abierto, mismo head `edd0e5f649a38949752b38e33978631c49784bd5`, verificado otra vez por GitHub. Faltan coordinación de contrato/red, SQL real, retroalimentación de Entrega I, revisión visual y validación operativa. No se ejecutaron bases reales ni archivos de credenciales.
+- **Evidencia:** Fase 4: lint aprobado y 169/169 tests, 19 archivos. Fase 5 final: `npm run lint` código 0; `npm test` **170/170, 19 archivos**, Vitest reportó inicio 2026-11-06 20:00:13 y duración 5.69 s. La prueba adicional induce fallo de servicio en registrarAtencionCompleta y comprueba rollback/sin commit/liberación. El informe `docs/odontologia-avance-I2-01-a-I2-13.md` detalla cada tarea, archivos y restricciones. `git diff --check` sin errores antes del cierre documental. `git log main..HEAD --oneline` sin commits propios. Cambios exclusivamente locales; ningún commit, push o merge.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar el diff local; coordinar el PR #23 y el contrato; validar SQL en entorno desechable por el flujo del equipo y completar documentos antiguos antes de certificar el módulo para despliegue.
+
+## Sesión · 2026-11-06 · Estabilización integral de Odontología
+
+- **Objetivo de la sesión:** Revisar y estabilizar el avance local completo sin reiniciarlo, comparar con main remoto/PR #23 y corregir incompatibilidades exclusivamente odontológicas.
+- **Qué hice:** Verifiqué rama/estado y actualicé referencias con fetch sin merge ni rebase. HEAD y origin/main siguen en `bab0a9555706f065e99e3f5817ef16f180f5ccb7`, diferencia `0 0`. Revisé el PR #23 (abierto, mismo head `edd0e5f649a38949752b38e33978631c49784bd5`); sus archivos base de PostgresAdapter, mapper, connection y login dental tienen los mismos blobs que main. Corregí captura de prefijos genéricos, despacho a routers posteriores sin autorización por decode, verificación estricta independiente de req.user y rango del sujeto JWT. Alineé formularios con el motivo SQL de 250 y el rango integer, impedí formularios clínicos con registro de otro expediente o consulta finalizada y corregí respuestas/códigos de error. El expediente ahora usa una transacción de lectura consistente; el archivo prepara su respuesta antes de commit y revierte si falla la consolidación. Reduje los bloqueos clínicos a historial para no exigir UPDATE sobre consulta/diagnóstico al rol mínimo. Ajusté TLS por defecto, DATE como string, errores de pool/TLS y accesos a propiedades heredadas en mapper/login. Fortalecí las precondiciones y resolución de secuencias del SQL propuesto, sin ejecutarlo.
+- **Decisiones tomadas (y por qué):** Mantener contratos, dominio y módulos ajenos intactos. Decodificar destino solo permite ceder al siguiente router; nunca autentica ni habilita escrituras. Cada router posterior debe verificar su JWT. No adoptar el fallback inseguro a decode del middleware del PR #23. No aumentar privilegios clínicos para resolver bloqueos. Mantener evidencia histórica y actualizar la documentación actual de API, SQL y comparativo. Se recomienda ADR coordinado para selector/middleware global y forma del historial antes de integrar PR #23.
+- **Problemas / bloqueos:** Sin SQL real, validación visual de navegador ni conexión Supabase. Faltan aplicación/backfill de documento, pruebas efectivas de SQL/RLS/TLS/concurrencia y suite común de contrato. El middleware y orden de routers del PR #23 requieren coordinación fuera del módulo; citas P2 y red siguen pendientes. Las pruebas de routers posteriores usan dobles seguros, no certifican los otros motores.
+- **Evidencia:** `npm run lint` código 0; `npm test` **206/206 en 21 archivos**, inicio reportado 2026-11-06 20:29:55, duración 5.15 s. Las rondas anteriores de esta estabilización aprobaron 196 y 203 tests; no quedaron fallos. Son 36 regresiones adicionales frente a las 170 anteriores. Supertest/DOM/pools simulados; constructor de Pool probado sin adquirir clientes. `node --check` sobre 15 archivos aprobado y `git diff --check` sin errores. Comparación específica con origin/main no mostró cambios en contratos, dominio, otros adaptadores/frontends, login pediátrico ni auth/client compartidos preexistentes. Detalles y archivos en `docs/odontologia-estabilizacion.md`. No se ejecutó SQL ni se leyeron archivos de credenciales. Sin commits nuevos, push, merge, rebase o eliminación de archivos locales.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Revisar el diff local y coordinar autenticación/despacho/contrato del PR #23; validar los artefactos SQL y el entorno real por el flujo autorizado antes de afirmar cierre o despliegue.

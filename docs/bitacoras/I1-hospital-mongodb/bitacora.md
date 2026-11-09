@@ -47,7 +47,21 @@
 - **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
 
 
-## Sesión 4 · 2026-11-05 · Implementación MongoDB Atlas y Compass (I1-04)
+## Sesión 4 · 2026-11-03 · Trigger `ready_for_review` y soporte de Drafts en CI (I1-01)
+
+- **Objetivo de la sesión:** Configurar el CI para que detecte de forma automática cuando un Pull Request pasa de Borrador (Draft) a Listo para revisión (`ready_for_review`) y ejecute el auto-merge en el acto.
+- **Qué hice:**
+  - Añadí `ready_for_review` a la lista de eventos `types:` en `.github/workflows/ci.yml`.
+  - Pasé la variable `PR_IS_DRAFT` al job de diagnóstico para diferenciar los PRs en borrador.
+  - Modifiqué `scripts/notificar-pr.js` para que los PRs en borrador reciban una notificación amigable de espera y solo se auto-fusionen una vez que se desactive el estado Draft.
+- **Decisiones tomadas (y por qué):**
+  - Manejar el estado Draft explícitamente evita errores HTTP 405 de la API de GitHub al intentar fusionar borradores.
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** `.github/workflows/ci.yml`, `scripts/notificar-pr.js`.
+- **Tiempo invertido:** 25 min
+- **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
+
+## Sesión 5 · 2026-11-05 · Implementación MongoDB Atlas y Compass (I1-04)
 
 - **Objetivo de la sesión:** Implementar el modelo documental del Hospital General, configurar conexión a MongoDB Atlas mediante MongoDB Compass, crear el adaptador `MongoAdapter`, `mapper.js`, esquemas JSON y semillas de datos.
 - **Qué hice:**
@@ -65,7 +79,7 @@
 - **Tiempo invertido:** 75 min
 - **Siguiente paso:** Integración con rutas de Express y `RepositoryFactory`.
 
-## Sesión 5 · 2026-11-05 · Restricciones de Validación y Módulo de Pólizas (I1-04)
+## Sesión 6 · 2026-11-05 · Restricciones de Validación y Módulo de Pólizas (I1-04)
 
 - **Objetivo de la sesión:** Implementar restricciones estrictas en el formulario de alta de pacientes (género biológico Femenino/Masculino, DPI de 13 dígitos y teléfono de 8 dígitos) y desarrollar el módulo completo de gestión y asociación de pólizas de seguro (ER Hospital General) tanto en frontend como en base de datos MongoDB Atlas.
 - **Qué hice:**
@@ -88,7 +102,7 @@
 - **Tiempo invertido:** 85 min
 - **Siguiente paso:** Pruebas e2e de navegación y commit a la rama.
 
-## Sesión 6 · 2026-11-05 · Campos Obligatorios y Módulo de Personal Médico (I1-04)
+## Sesión 7 · 2026-11-05 · Campos Obligatorios y Módulo de Personal Médico (I1-04)
 
 - **Objetivo de la sesión:** Hacer obligatorios todos los campos de registro de un paciente (salvo pólizas y antecedentes/observaciones), permitir asignar médico tratante a cada paciente y crear el módulo completo de administración y registro de personal médico (doctores).
 - **Qué hice:**
@@ -107,7 +121,7 @@
 - **Tiempo invertido:** 45 min
 - **Siguiente paso:** Verificación final en el navegador e integración de consultas.
 
-## Sesión 7 · 2026-11-05 · Red de Laboratorios Diagnósticos, Catálogo de Exámenes y Pacientes Asociados (I1-04)
+## Sesión 8 · 2026-11-05 · Red de Laboratorios Diagnósticos, Catálogo de Exámenes y Pacientes Asociados (I1-04)
 
 - **Objetivo de la sesión:** Transformar el módulo de laboratorio para soportar múltiples unidades de laboratorio especializadas (Hematología, Bioquímica, Microbiología, Inmunología, etc.), administrar la creación de laboratorios, crear y administrar tipos de exámenes vinculados a cada unidad diagnóstica, emitir órdenes clínicas relacionando pacientes a exámenes y laboratorios, y visualizar qué pacientes están asociados a uno o varios laboratorios.
 - **Qué hice:**
@@ -136,7 +150,7 @@
 - **Tiempo invertido:** 65 min
 - **Siguiente paso:** Pruebas visuales finales y entrega.
 
-## Sesión 8 · 2026-11-05 · Auditoría Integral de Delimitaciones, Sanitización de Campos y Normalización Git (I1-04)
+## Sesión 9 · 2026-11-05 · Auditoría Integral de Delimitaciones, Sanitización de Campos y Normalización Git (I1-04)
 
 - **Objetivo de la sesión:** Realizar una auditoría completa de todos los formularios de la plataforma para verificar que los campos tengan delimitaciones estrictas (bloqueo en tiempo real de letras donde solo van números, rangos numéricos acotados, mayúsculas automáticas en códigos), ajustar la obligatoriedad de campos (correo electrónico obligatorio para médicos, opcional para pacientes) y resolver las advertencias de finales de línea LF/CRLF en Git y GitHub Desktop mediante `.gitattributes`.
 - **Qué hice:**
