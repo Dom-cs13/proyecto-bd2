@@ -129,5 +129,3 @@
 - **Tiempo invertido:** 45 min
 - **Siguiente paso:** Aprobación del PR y merge en `main`.
 
-
-

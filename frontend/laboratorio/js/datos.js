@@ -547,7 +547,6 @@ export async function registrarResultadoApi(resultadoDatos) {
   }
   return null;
 }
-
 /* ---------- Helpers de consulta y generación de claves ---------- */
 export const buscarPaciente = (cui) => pacientes.find((p) => p.cui === cui || p.documentoIdentidad === cui || p.id === cui);
 export const existeCui = (cui) => pacientes.some((p) => p.cui === cui || p.documentoIdentidad === cui || p.id === cui);
