@@ -1,0 +1,14 @@
+{
+  "pacienteId": "2987654320101",
+  "medicoSolicitante": "Dr. Rodrigo Palma",
+  "especialidadSolicitante": "Hematología",
+  "tipoLaboratorio": "hematologia",
+  "examenesSolicitados": [
+    {
+      "codigo": "HEM-01",
+      "nombre": "Hemograma completo",
+      "tipoLaboratorio": "hematologia"
+    }
+  ],
+  "prioridad": "rutina"
+}

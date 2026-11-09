@@ -189,4 +189,21 @@
 - **Tiempo invertido:** 75 min
 - **Siguiente paso:** Entrega I y comparativo tecnológico de MariaDB para Pediatría.
 
+## Sesión 9 · 2026-11-08 · Tarea I4-11 (Enlace SPA de Vistas Pediátricas: Crecimiento, Vacunas y Buscador)
 
+- **Qué hice:**
+  - Conecté las vistas complementarias `pages/crecimiento-vacunas.html` y `pages/buscador.html` con la arquitectura SPA del portal pediátrico (`frontend/pediatria/js/portalApi.js`).
+  - Añadí scripts de delegación SPA en `pages/crecimiento-vacunas.html` y `pages/buscador.html` para redirigir suavemente accesos directos al contenedor SPA (`index.html#crecimiento-vacunas` o `index.html#buscador`) sin provocar recargas de página repetitivas.
+  - Implementé en `portalApi.js` el soporte reactivo para las secciones `#buscador`, `#pacientes`, `#crecimiento-vacunas` (con alias `#crecimiento` y `#vacunas`), y corregí la condición de enrutamiento para `#pacientes/:id` y `#expediente/:id`.
+  - Desarrollé en `portalApi.js` la interfaz interactiva para el carnet de vacunación y control de crecimiento: selector dinámico de menor activo (`#sel-paciente-crecimiento`), cuadros de resumen antropométrico (peso, talla, perímetro cefálico, IMC), tabla histórica y carnet de vacunas.
+  - Habilité en `portalApi.js` y `components/crecimientoVacunas.js` el registro reactivo de mediciones antropométricas (`#form-registrar-crecimiento` -> `api.crecimiento`) y aplicación de vacunas (`#form-aplicar-vacuna` -> `api.vacuna`), con re-renderizado automático sin recargar la página (`location.reload`).
+  - Apliqué reglas de seguridad y autorización por rol: `recepcion` cuenta con modo consulta de solo lectura sin formularios de escritura; `enfermeria` y `pediatra` pueden registrar crecimiento y vacunas; expedientes con `historial.estado === 'archivado'` bloquean mutaciones clínicas mostrando advertencia.
+  - Enlacé la navegación por hash en `frontend/pediatria/js/app.js` sincronizando la barra superior y sidebar con el hash del navegador.
+  - Creé 12 pruebas unitarias adicionales en `tests/unit/pediatriaFrontend.test.js` cubriendo la navegación SPA, selector, renderizado antropométrico, carnet de vacunación, envío de formularios y autorización por rol, alcanzando 300/300 pruebas verdes en el repositorio.
+- **Decisiones tomadas (y por qué):**
+  - Mantener los formularios reactivos con `alEnviar` y recarga selectiva del subárbol DOM vía `renderizar()` en lugar de recargar la página completa (`location.reload()`), preservando la fluidez y el estado de sesión SPA.
+  - Permitir a enfermería la gestión completa de inmunizaciones y control de crecimiento sin otorgarle permisos de alta ni archivado de expedientes, cumpliendo con la matriz de roles y seguridad institucional de I4-01.
+- **Problemas / bloqueos:** Ninguno. Todo verificado con Vitest y ESLint en verde.
+- **Evidencia:** rama `feat/I4-11-enlace-vistas-pediatricas`, commits asociados, 300 pruebas unitarias/integración aprobadas y ESLint con 0 errores.
+- **Tiempo invertido:** 40 min
+- **Siguiente paso:** Tarea I4-12 (Comparativo de motor MariaDB para Pediatría).

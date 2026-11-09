@@ -136,8 +136,10 @@ describe('I2-02/I2-03/I2-10 · red HTTP (cuatro repositorios simulados)', () => 
     repos.pediatria.listarPacientes.mockResolvedValue({ items: [anterior], total: 1 });
     const res = await autorizar(request(app).get('/red/pacientes?texto=Pa'), 'odontologia', 'odontologo');
     expect(res.status).toBe(200);
-    expect(res.body.resultados.find((r) => r.institucion === 'pediatria').estado).toBe('no_disponible');
-    expect(anterior.nombre).toBeUndefined();
+    const resultadoPediatria = res.body.resultados.find((r) => r.institucion === 'pediatria');
+    expect(resultadoPediatria.estado).toBe('ok');
+    expect(resultadoPediatria.items[0].nombre).toBe('Paciente');
+    expect(anterior.nombre).toBe('Paciente');
   });
 });
 

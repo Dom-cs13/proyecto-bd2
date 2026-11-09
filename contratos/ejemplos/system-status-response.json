@@ -1,0 +1,8 @@
+{
+  "motores": {
+    "hospital": { "estado": "conectado", "motor": "mongodb", "latenciaMs": 14 },
+    "odontologia": { "estado": "conectado", "motor": "postgresql", "latenciaMs": 28 },
+    "laboratorio": { "estado": "conectado", "motor": "firestore", "latenciaMs": 35 },
+    "pediatria": { "estado": "conectado", "motor": "mariadb", "latenciaMs": 8 }
+  }
+}

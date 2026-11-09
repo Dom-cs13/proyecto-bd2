@@ -1,0 +1,15 @@
+{
+  "ordenId": "ord-0001",
+  "muestraId": "mue-0001",
+  "examenCodigo": "HEM-01",
+  "examenNombre": "Hemograma completo",
+  "tipoLaboratorio": "hematologia",
+  "tecnicoIngreso": "Dra. Sofía Cordero",
+  "valorResultado": {
+    "hemoglobina": 13.5,
+    "hematocrito": 41.0,
+    "eritrocitos": 4.5,
+    "leucocitos": 6800,
+    "plaquetas": 240000
+  }
+}

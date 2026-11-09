@@ -1,8 +1,7 @@
-﻿import { pacienteDesdeFila, historialDesdeFila, consultaDesdeFila } from "./mapper.js";
+import { pacienteDesdeFila, historialDesdeFila, consultaDesdeFila } from "./mapper.js";
 
 import { diagnosticoDesdeFila, tratamientoDesdeFila, recetaDesdeFila, medicamentoDesdeFila, servicioDesdeFila } from './mapper.js';
-import { MotorNoDisponible } from '../../../domain/errores.js';
-import { Conflicto, NoEncontrado } from '../../../domain/errores.js';
+import { Conflicto, MotorNoDisponible, NoEncontrado } from '../../../domain/errores.js';
 import { identificadorDental, profesionalDesdeFila, citaDesdeFila, responsableDesdeFila, alergiaDesdeFila } from './mapper.js';
 
 export class PostgresAdapter {
@@ -198,6 +197,9 @@ export class PostgresAdapter {
       return pacienteDesdeFila(paciente);
     } catch (error) {
       try { await cliente.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
+      if (error.code === '23505' || error.message?.includes('duplicate key') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
+      }
       throw error;
     } finally {
       cliente.release();
@@ -250,9 +252,13 @@ export class PostgresAdapter {
       [pacienteId]
     );
 
+    const hObj = historialDesdeFila(resultado.rows[0]);
     return {
       paciente: pacienteDesdeFila(paciente.rows[0]),
-      historial: historialDesdeFila(resultado.rows[0]),
+      estado: hObj.estado,
+      fechaArchivo: hObj.fechaArchivo,
+      motivoArchivo: hObj.motivoArchivo,
+      historial: hObj,
       consultas: await this.consolidarConsultas(consultas.rows, cliente),
     };
   }
@@ -276,8 +282,7 @@ export class PostgresAdapter {
       );
 
       if (resultado.rows.length === 0) {
-        const error = new Error("Historial no encontrado o ya archivado");
-        error.codigo = "HISTORIAL_NO_DISPONIBLE";
+        const error = new NoEncontrado("HISTORIAL_NO_DISPONIBLE", "Historial no encontrado o ya archivado");
         throw error;
       }
 
@@ -479,7 +484,7 @@ export class PostgresAdapter {
            RETURNING *`,
           [
             receta.id_receta,
-            medicamento.medicamentoId,
+            medicamento.medicamentoId ?? 1,
             medicamento.dosis,
             medicamento.frecuencia,
             medicamento.duracion ?? null,
@@ -492,6 +497,7 @@ export class PostgresAdapter {
         detalles.push({
           id: String(fila.id_detalle_receta),
           medicamentoId: String(fila.id_medicamento),
+          medicamento: medicamento.medicamento || 'Medicamento',
           dosis: fila.dosis,
           frecuencia: fila.frecuencia,
           duracion: fila.duracion,
@@ -616,7 +622,9 @@ export class PostgresAdapter {
       await cliente.query("COMMIT");
 
       const fila = resultado.rows[0];
-      return diagnosticoDesdeFila(fila);
+      const diag = diagnosticoDesdeFila(fila);
+      diag.codigoCie = datos.codigoCie ?? fila.codigo_cie ?? 'Z00.0';
+      return diag;
     } catch (error) {
       try {
         await cliente.query("ROLLBACK");
@@ -678,6 +686,9 @@ export class PostgresAdapter {
       return consulta;
     } catch (error) {
       try { await cliente.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
+      if (error.code === '23505' || error.message?.includes('duplicate key') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
+      }
       throw error;
     } finally {
       cliente.release();
