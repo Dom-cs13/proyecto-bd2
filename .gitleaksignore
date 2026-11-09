@@ -1,1 +1,5 @@
 edd0e5f649a38949752b38e33978631c49784bd5:contratos/ejemplos/auth-login-response.json:jwt:2
+# Falso positivo: SHA-256 de los estilos inline de un componente JS.
+# Verificado por tests/unit/disenoExistente.test.js; no es una credencial.
+# Excepción limitada al hallazgo de este commit, archivo, regla y línea.
+210e7b1bf81bfe52ccbcd37e7826a87f95109a61:tests/fixtures/estilos-js-existentes.json:generic-api-key:26

@@ -16,6 +16,7 @@ La búsqueda en red conserva el origen y las proyecciones autorizadas. No fusion
 - `npm test`: 483 aprobadas; 13 omitidas expresamente por requerir infraestructura.
 - Contratos, conservación de diseño y prohibición de auto-merge de esta rama: 49/49 aprobadas por separado.
 - `npm run verificar:aislamiento`, `npm run skills:check` y `git diff --check`: aprobados.
+- El primer CI marcó como `generic-api-key` un SHA-256 del fixture de conservación de estilos. Se comprobó su origen con la prueba de diseño y se añadió una excepción limitada a ese fingerprint histórico; no se excluyen archivos ni reglas completas de Gitleaks.
 - Las 13 pruebas desechables pasaron también por separado, en cuatro archivos (65,41 s), incluidos ocho recorridos con Chrome real. Tres motores reales locales: PostgreSQL 16, MariaDB 11 y MongoDB 7; Firestore en el emulador oficial. No equivalen a bases de producción.
 - Los cuatro formularios devolvieron 201 y se confirmó persistencia con drivers; se verificaron tutor, historial automático, adulto y menor odontológicos, doble envío y fallo de recarga posterior.
 - Cuatro lecturas clínicas locales y 16 búsquedas/aperturas desde los cuatro portales, incluidas 12 entre instituciones distintas, sin filtrar notas ajenas. Persistencia tras reinicios de Node, rollback/RLS SQL y caída aislada de MongoDB desechable.
