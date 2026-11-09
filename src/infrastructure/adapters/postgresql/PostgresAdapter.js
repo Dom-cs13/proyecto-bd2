@@ -1,8 +1,31 @@
 ﻿import { pacienteDesdeFila, historialDesdeFila, consultaDesdeFila } from "./mapper.js";
 
+import { diagnosticoDesdeFila, tratamientoDesdeFila, recetaDesdeFila, medicamentoDesdeFila, servicioDesdeFila } from './mapper.js';
+import { MotorNoDisponible } from '../../../domain/errores.js';
+
 export class PostgresAdapter {
   constructor(pool) {
-    this.pool = pool;
+    const ejecutar = async (operacion) => {
+      try { return await operacion(); } catch (error) {
+        if (/^(08|53|57)/.test(error.code ?? '') ||
+            ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EHOSTUNREACH', 'EAI_AGAIN',
+              'CERT_HAS_EXPIRED', 'DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN',
+              'ERR_TLS_CERT_ALTNAME_INVALID', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'].includes(error.code) ||
+            /connection.*(timeout|terminated)|timeout.*connect/i.test(error.message ?? '')) {
+          throw new MotorNoDisponible('odontologia');
+        }
+        throw error;
+      }
+    };
+    this.pool = {
+      query: (...args) => ejecutar(() => pool.query(...args)),
+      connect: async () => {
+        let cliente;
+        try { cliente = await pool.connect(); }
+        catch { throw new MotorNoDisponible('odontologia'); }
+        return { query: (...args) => ejecutar(() => cliente.query(...args)), release: () => cliente.release() };
+      },
+    };
   }
 
   async crearPaciente(datos) {
@@ -13,17 +36,18 @@ export class PostgresAdapter {
 
       const resultado = await cliente.query(
         `INSERT INTO public.paciente
-          (nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, direccion)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+          (nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, direccion${datos.documentoIdentidad ? ', documento_identidad' : ''})
+         VALUES ($1, $2, $3, $4, $5, $6, $7${datos.documentoIdentidad ? ', $8' : ''})
          RETURNING *`,
         [
-          datos.nombres,
+          datos.nombres ?? datos.nombre,
           datos.apellidos,
           datos.fechaNacimiento,
-          datos.sexo ?? null,
+          datos.sexo ?? datos.genero ?? null,
           datos.telefono ?? null,
           datos.correo ?? null,
           datos.direccion ?? null,
+          ...(datos.documentoIdentidad ? [datos.documentoIdentidad] : []),
         ]
       );
 
@@ -37,7 +61,7 @@ export class PostgresAdapter {
       await cliente.query("COMMIT");
       return pacienteDesdeFila(paciente);
     } catch (error) {
-      await cliente.query("ROLLBACK");
+      try { await cliente.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
       throw error;
     } finally {
       cliente.release();
@@ -54,7 +78,22 @@ export class PostgresAdapter {
   }
 
   async obtenerHistorial(pacienteId) {
-    const resultado = await this.pool.query(
+    const cliente = await this.pool.connect();
+    try {
+      await cliente.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      const historial = await this.leerHistorial(cliente, pacienteId);
+      await cliente.query('COMMIT');
+      return historial;
+    } catch (error) {
+      try { await cliente.query('ROLLBACK'); } catch { /* Conservar el error original. */ }
+      throw error;
+    } finally {
+      cliente.release();
+    }
+  }
+
+  async leerHistorial(cliente, pacienteId) {
+    const resultado = await cliente.query(
       `SELECT *
        FROM public.historial_clinico
        WHERE id_paciente = $1`,
@@ -65,9 +104,9 @@ export class PostgresAdapter {
       return null;
     }
 
-    const paciente = await this.obtenerPaciente(pacienteId);
+    const paciente = await cliente.query('SELECT * FROM public.paciente WHERE id_paciente = $1', [pacienteId]);
 
-    const consultas = await this.pool.query(
+    const consultas = await cliente.query(
       `SELECT *
        FROM public.consulta
        WHERE id_paciente = $1
@@ -76,15 +115,14 @@ export class PostgresAdapter {
     );
 
     return {
-      paciente,
+      paciente: pacienteDesdeFila(paciente.rows[0]),
       historial: historialDesdeFila(resultado.rows[0]),
-      consultas: consultas.rows.map(consultaDesdeFila),
+      consultas: await this.consolidarConsultas(consultas.rows, cliente),
     };
   }
 
   async archivarHistorial(pacienteId, motivo) {
     const cliente = await this.pool.connect();
-    let historialArchivado;
 
     try {
       await cliente.query("BEGIN");
@@ -107,8 +145,10 @@ export class PostgresAdapter {
         throw error;
       }
 
-      historialArchivado = resultado.rows[0];
+      // Leer antes del COMMIT: un fallo al consolidar revierte el archivo.
+      const historialArchivado = await this.leerHistorial(cliente, pacienteId);
       await cliente.query("COMMIT");
+      return historialArchivado;
     } catch (error) {
       try {
         await cliente.query("ROLLBACK");
@@ -120,11 +160,6 @@ export class PostgresAdapter {
       cliente.release();
     }
 
-    return {
-      paciente: await this.obtenerPaciente(pacienteId),
-      historial: historialDesdeFila(historialArchivado),
-      consultas: [],
-    };
   }
 
   async registrarAtencionCompleta(datos) {
@@ -160,6 +195,8 @@ export class PostgresAdapter {
       );
 
       const consulta = consultaDesdeFila(consultaResultado.rows[0]);
+      const servicios = await this.guardarServicios(cliente, consulta.id, datos.detallesInstitucion?.servicios);
+      if (servicios.length) consulta.detallesInstitucion.servicios = servicios;
       const diagnosticos = [];
 
       for (const diagnostico of datos.diagnosticos ?? []) {
@@ -274,7 +311,7 @@ export class PostgresAdapter {
          WHERE c.id_consulta = $1
            AND c.estado = 'borrador'
            AND h.estado = 'activo'
-         FOR UPDATE OF c, h`,
+         FOR UPDATE OF h`,
         [datos.consultaId]
       );
 
@@ -364,7 +401,7 @@ export class PostgresAdapter {
          WHERE d.id_diagnostico = $1
            AND c.estado = 'borrador'
            AND h.estado = 'activo'
-         FOR UPDATE OF d, c, h`,
+         FOR UPDATE OF h`,
         [datos.diagnosticoId]
       );
 
@@ -391,15 +428,7 @@ export class PostgresAdapter {
       await cliente.query("COMMIT");
 
       const fila = resultado.rows[0];
-      return {
-        id: String(fila.id_tratamiento),
-        diagnosticoId: String(fila.id_diagnostico),
-        descripcion: fila.descripcion,
-        fechaInicio: fila.fecha_inicio,
-        fechaFin: fila.fecha_fin,
-        estado: fila.estado,
-        observaciones: fila.observaciones,
-      };
+      return tratamientoDesdeFila(fila);
     } catch (error) {
       try {
         await cliente.query("ROLLBACK");
@@ -426,7 +455,7 @@ export class PostgresAdapter {
          WHERE c.id_consulta = $1
            AND h.estado = 'activo'
            AND c.estado = 'borrador'
-         FOR UPDATE OF c, h`,
+         FOR UPDATE OF h`,
         [datos.consultaId]
       );
 
@@ -451,12 +480,7 @@ export class PostgresAdapter {
       await cliente.query("COMMIT");
 
       const fila = resultado.rows[0];
-      return {
-        id: String(fila.id_diagnostico),
-        consultaId: String(fila.id_consulta),
-        descripcion: fila.descripcion,
-        observaciones: fila.observaciones,
-      };
+      return diagnosticoDesdeFila(fila);
     } catch (error) {
       try {
         await cliente.query("ROLLBACK");
@@ -504,14 +528,78 @@ export class PostgresAdapter {
         ]
       );
 
+      const servicios = await this.guardarServicios(cliente, resultado.rows[0].id_consulta, datos.detallesInstitucion?.servicios);
       await cliente.query("COMMIT");
-      return consultaDesdeFila(resultado.rows[0]);
+      const consulta = consultaDesdeFila(resultado.rows[0]);
+      if (servicios.length) consulta.detallesInstitucion.servicios = servicios;
+      return consulta;
     } catch (error) {
-      await cliente.query("ROLLBACK");
+      try { await cliente.query("ROLLBACK"); } catch { /* Conservar el error original. */ }
       throw error;
     } finally {
       cliente.release();
     }
+  }
+
+  async guardarServicios(cliente, consultaId, datos = []) {
+    const servicios = [];
+    for (const servicio of datos) {
+      const registro = await cliente.query(`INSERT INTO public.consulta_servicio
+        (id_consulta, id_servicio, pieza_dental, superficie, precio_aplicado, observaciones)
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [consultaId, servicio.servicioId, servicio.piezaDental ?? null,
+        servicio.superficie ?? null, servicio.precioAplicado ?? null, servicio.observaciones ?? null]);
+      servicios.push(servicioDesdeFila(registro.rows[0]));
+    }
+    return servicios;
+  }
+
+  async consolidarConsultas(filas, cliente = this.pool) {
+    const consultas = filas.map(consultaDesdeFila);
+    if (!consultas.length) return consultas;
+    const ids = consultas.map((consulta) => consulta.id);
+    const diagnosticos = await cliente.query('SELECT * FROM public.diagnostico WHERE id_consulta = ANY($1::integer[]) ORDER BY id_diagnostico', [ids]);
+    const tratamientos = await cliente.query(`SELECT t.* FROM public.tratamiento t
+      JOIN public.diagnostico d USING (id_diagnostico) WHERE d.id_consulta = ANY($1::integer[]) ORDER BY t.id_tratamiento`, [ids]);
+    const recetas = await cliente.query('SELECT * FROM public.receta WHERE id_consulta = ANY($1::integer[]) ORDER BY id_receta', [ids]);
+    const medicamentos = await cliente.query(`SELECT dr.*, m.nombre FROM public.detalle_receta dr
+      JOIN public.receta r USING (id_receta) JOIN public.medicamento m USING (id_medicamento)
+      WHERE r.id_consulta = ANY($1::integer[]) ORDER BY dr.id_detalle_receta`, [ids]);
+    const servicios = await cliente.query(`SELECT cs.*, s.nombre FROM public.consulta_servicio cs
+      JOIN public.servicio_odontologico s USING (id_servicio)
+      WHERE cs.id_consulta = ANY($1::integer[]) ORDER BY cs.id_consulta_servicio`, [ids]);
+    for (const consulta of consultas) {
+      consulta.diagnosticos = diagnosticos.rows.filter((d) => String(d.id_consulta) === consulta.id).map((d) => ({
+        ...diagnosticoDesdeFila(d), tratamientos: tratamientos.rows
+          .filter((t) => String(t.id_diagnostico) === String(d.id_diagnostico)).map(tratamientoDesdeFila),
+      }));
+      consulta.recetas = recetas.rows.filter((r) => String(r.id_consulta) === consulta.id).map((r) => ({
+        ...recetaDesdeFila(r), medicamentos: medicamentos.rows
+          .filter((m) => String(m.id_receta) === String(r.id_receta)).map(medicamentoDesdeFila),
+      }));
+      consulta.detallesInstitucion.servicios = servicios.rows
+        .filter((s) => String(s.id_consulta) === consulta.id).map(servicioDesdeFila);
+    }
+    return consultas;
+  }
+
+  agregarDiagnostico(consultaId, datos) { return this.crearDiagnostico({ ...datos, consultaId }); }
+  registrarTratamiento(diagnosticoId, datos) { return this.crearTratamiento({ ...datos, diagnosticoId }); }
+  recetarMedicamento(consultaId, datos) { return this.crearReceta({ ...datos, consultaId }); }
+
+  async ping() {
+    const inicio = performance.now();
+    await this.pool.query('SELECT 1');
+    return { ok: true, motor: 'postgresql', latenciaMs: Math.round(performance.now() - inicio) };
+  }
+
+  async obtenerCatalogos() {
+    const medicamentos = await this.pool.query('SELECT id_medicamento, nombre, presentacion FROM public.medicamento WHERE estado = true ORDER BY nombre');
+    const servicios = await this.pool.query('SELECT id_servicio, nombre, precio_base FROM public.servicio_odontologico WHERE estado = true ORDER BY nombre');
+    return {
+      medicamentos: medicamentos.rows.map((m) => ({ id: String(m.id_medicamento), nombre: m.nombre, presentacion: m.presentacion })),
+      servicios: servicios.rows.map((s) => ({ id: String(s.id_servicio), nombre: s.nombre, precioBase: s.precio_base == null ? null : Number(s.precio_base) })),
+    };
   }
 
   async listarPacientes(filtro = {}) {
@@ -520,22 +608,28 @@ export class PostgresAdapter {
     const limite = Math.min(100, Math.max(1, Number(filtro.limite) || 10));
     const offset = (pagina - 1) * limite;
 
+    const parametros = [texto];
+    const condicionEstado = filtro.estado ? (parametros.push(filtro.estado),
+      ` AND EXISTS (SELECT 1 FROM public.historial_clinico h
+        WHERE h.id_paciente = paciente.id_paciente AND h.estado = $2)`) : '';
+    const condicionDocumento = filtro.documento ? (parametros.push(filtro.documento),
+      ` AND documento_identidad = $${parametros.length}`) : '';
     const condicion = `
       WHERE ($1 = ''
         OR nombres ILIKE '%' || $1 || '%'
         OR apellidos ILIKE '%' || $1 || '%')
-    `;
+    ${condicionEstado}${condicionDocumento}`;
 
     const totalResultado = await this.pool.query(
       `SELECT COUNT(*)::integer AS total FROM public.paciente ${condicion}`,
-      [texto]
+      parametros
     );
 
     const resultado = await this.pool.query(
       `SELECT * FROM public.paciente ${condicion}
        ORDER BY apellidos, nombres, id_paciente
-       LIMIT $2 OFFSET $3`,
-      [texto, limite, offset]
+       LIMIT $${parametros.length + 1} OFFSET $${parametros.length + 2}`,
+      [...parametros, limite, offset]
     );
 
     return {

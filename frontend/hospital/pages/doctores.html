@@ -1,0 +1,199 @@
+<!-- Vista: Gestión de Personal Médico y Doctores (Hospital General · I1) -->
+<div class="view-doctores">
+  <div class="section-block">
+    <div class="section-header">
+      <span class="welcome-badge">Cuerpo Facultativo · Hospital General</span>
+      <h1 class="page-main-title">Personal Médico y Doctores Tratantes</h1>
+      <p class="section-desc">
+        Administración del cuerpo médico hospitalario, número de colegiado, asignación de especialidades y vinculación a pacientes (Modelo ER).
+      </p>
+    </div>
+  </div>
+
+  <!-- Métricas Rápidas del Cuerpo Médico -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Total Médicos</span>
+        <div class="kpi-icon-wrap" style="background-color: var(--primary-light); color: var(--primary);">👨‍⚕️</div>
+      </div>
+      <div class="kpi-value" id="kpi-doctores-total">4</div>
+      <div class="kpi-trend" style="color: var(--text-muted); font-size: 0.8rem;">Registrados en el sistema</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Médicos de Turno</span>
+        <div class="kpi-icon-wrap" style="background-color: #ecfdf5; color: #047857;">🩺</div>
+      </div>
+      <div class="kpi-value" id="kpi-doctores-turno" style="color: #047857;">3</div>
+      <div class="kpi-trend" style="color: #047857; font-size: 0.8rem;">Disponibles para atención</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Especialidades</span>
+        <div class="kpi-icon-wrap" style="background-color: var(--badge-cyan-bg); color: var(--badge-cyan-text);">🏥</div>
+      </div>
+      <div class="kpi-value" id="kpi-doctores-especialidades" style="color: var(--badge-cyan-text);">4</div>
+      <div class="kpi-trend" style="color: var(--text-muted); font-size: 0.8rem;">Áreas clínicas cubiertas</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Pacientes en Seguimiento</span>
+        <div class="kpi-icon-wrap" style="background-color: #fef3c7; color: #b45309;">👥</div>
+      </div>
+      <div class="kpi-value" id="kpi-doctores-pacientes" style="color: #b45309;">3</div>
+      <div class="kpi-trend" style="color: var(--text-muted); font-size: 0.8rem;">Con médico titular asignado</div>
+    </div>
+  </div>
+
+  <div class="gestion-grid-layout" style="margin-bottom: 24px;">
+    <!-- Formulario Crear Nuevo Doctor -->
+    <div class="kpi-card" style="padding: 28px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+        <div class="kpi-icon-wrap" style="background-color: var(--primary-light); color: var(--primary); font-size: 1.3rem;">➕</div>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Registrar Nuevo Médico / Especialista</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Alta en el catálogo de facultativos de MongoDB Atlas.</p>
+        </div>
+      </div>
+
+      <form id="form-nuevo-doctor" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre(s) *</label>
+            <input type="text" id="doc-inp-nombre" class="form-control" required placeholder="Ej. Walter" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apellidos *</label>
+            <input type="text" id="doc-inp-apellidos" class="form-control" required placeholder="Ej. Méndez Castillo" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">No. de Colegiado Médico *</label>
+            <input type="text" id="doc-inp-colegiado" class="form-control" required placeholder="Ej. COL-12940" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Especialidad Médica *</label>
+            <select id="doc-inp-especialidad" class="form-control" required>
+              <option value="Medicina General">Medicina General</option>
+              <option value="Cirugía General">Cirugía General</option>
+              <option value="Traumatología y Ortopedia">Traumatología y Ortopedia</option>
+              <option value="Medicina Interna">Medicina Interna</option>
+              <option value="Pediatría">Pediatría</option>
+              <option value="Ginecología y Obstetricia">Ginecología y Obstetricia</option>
+              <option value="Anestesiología">Anestesiología</option>
+              <option value="Cardiología">Cardiología</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Teléfono (8 dígitos numéricos) *</label>
+            <input
+              type="tel"
+              id="doc-inp-telefono"
+              class="form-control"
+              required
+              maxlength="8"
+              minlength="8"
+              pattern="\d{8}"
+              inputmode="numeric"
+              placeholder="Ej. 24891122"
+              title="Debe ingresar exactamente 8 dígitos enteros"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico Institucional *</label>
+            <input type="email" id="doc-inp-correo" class="form-control" required placeholder="doctor@hospital.com" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Turno / Horario Asignado *</label>
+            <select id="doc-inp-horario" class="form-control" required>
+              <option value="Turno Completo">Turno Completo (Matutino / Vespertino)</option>
+              <option value="Matutino (07:00 - 15:00)">Matutino (07:00 - 15:00)</option>
+              <option value="Vespertino (13:00 - 20:00)">Vespertino (13:00 - 20:00)</option>
+              <option value="Nocturno (20:00 - 07:00)">Nocturno (20:00 - 07:00)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estado Inicial *</label>
+            <select id="doc-inp-estado" class="form-control" required>
+              <option value="activo">Activo</option>
+              <option value="de turno">De Turno</option>
+              <option value="vacaciones">Vacaciones / Permiso</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">
+            <span>👨‍⚕️</span> Registrar Médico en MongoDB Atlas
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Panel Informativo de Asignación Médica -->
+    <div class="kpi-card" style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+          <div class="kpi-icon-wrap" style="background-color: var(--primary-light); color: var(--primary); font-size: 1.3rem;">📋</div>
+          <div>
+            <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--primary);">Responsabilidad Clínica (ER)</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              Vínculo entre el médico tratante y el expediente clínico del paciente.
+            </p>
+          </div>
+        </div>
+
+        <div style="background-color: var(--bg-subtle); border-left: 3px solid var(--primary); padding: 14px; border-radius: var(--radius-md); margin-bottom: 20px;">
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 4px;">Asignación Inmediata</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45;">
+            Cada médico registrado aparece instantáneamente en el selector de <strong>Médico Tratante</strong> en la pantalla de alta de pacientes. Al asociarlo, el médico queda a cargo de emitir las consultas, recetas y diagnósticos en el expediente.
+          </p>
+        </div>
+
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: var(--radius-md);">
+          <div style="font-weight: 700; font-size: 0.82rem; color: #166534; margin-bottom: 4px;">✓ Validez Colegiada</div>
+          <p style="font-size: 0.78rem; color: #15803d; line-height: 1.4;">
+            El número de colegiado se registra con índice único en MongoDB Atlas para certificar la prescripción legal de medicamentos en farmacia hospitalaria.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Directorio Médico -->
+  <div class="section-block" style="margin-top: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">Directorio Médico Hospitalario</h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted);">Listado en tiempo real de médicos y especialistas habilitados.</p>
+      </div>
+
+      <div class="search-input-wrapper" style="min-width: 280px;">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          id="doc-search-input" 
+          class="search-input" 
+          placeholder="Buscar por médico, colegiado o especialidad..."
+        />
+      </div>
+    </div>
+
+    <div id="doctores-table-container">
+      <!-- Inyectado dinámicamente -->
+    </div>
+  </div>
+</div>
+

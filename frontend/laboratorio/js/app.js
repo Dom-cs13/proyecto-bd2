@@ -92,7 +92,7 @@ async function navegar() {
     principal: 'Panel General',
     expedientes: 'Buscador y Base de Datos',
     pacientes: 'Alta y Archivado',
-    examenes: 'Órdenes de Exámenes'
+    examenes: 'Órdenes de Exámenes',
   };
   const seccionActual = document.getElementById('seccion-actual');
   if (seccionActual) seccionActual.textContent = nombresSeccion[nombre] || 'Panel General';

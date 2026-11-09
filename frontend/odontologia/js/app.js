@@ -1,10 +1,10 @@
 import { exigirSesion, obtenerSesion } from '../../shared/js/api/auth.js';
 
 // Único interruptor de la maqueta: solo localhost y sin una sesión existente.
-// La entrada local sin parámetros abre secretaría; preview permite cambiar la vista.
-// Retirar este bloque al integrar los roles oficiales del backend.
+// La vista previa requiere ?preview=secretaria o ?preview=odontologo.
+// Las sesiones autenticadas siempre usan la API.
 const esLocal = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-const vistaSolicitada = new URLSearchParams(location.search).get('preview') ?? 'secretaria';
+const vistaSolicitada = new URLSearchParams(location.search).get('preview');
 const esDemo = esLocal && ['secretaria', 'odontologo'].includes(vistaSolicitada) && !obtenerSesion();
 const sesion = esDemo ? null : exigirSesion('odontologia');
 let rol = esDemo ? vistaSolicitada : sesion?.rol;
@@ -131,6 +131,7 @@ function recorrido(seccion, paciente) {
 }
 
 function renderizar() {
+  if (!esDemo) return;
   const [solicitada = 'inicio', pacienteId] = (location.hash.slice(1) || 'inicio').split('/');
   const paciente = ejemplos.find(p => p.id === pacienteId) || ejemplos[0];
   // Separación visual de recorridos. La autorización real sigue perteneciendo al backend.
@@ -145,9 +146,13 @@ function renderizar() {
   contenido.innerHTML = seccion === 'inicio' ? inicio() : recorrido(seccion, paciente);
 }
 
-if ((esDemo || sesion?.institucion === 'odontologia') && opciones[rol]) {
+if ((esDemo || sesion?.institucion === 'odontologia') && ['secretaria', 'odontologo'].includes(rol)) {
   document.getElementById('portal').hidden = false;
   document.querySelectorAll('[data-icon]').forEach((elemento) => { elemento.innerHTML = icono(elemento.dataset.icon); });
+  if (!esDemo) {
+    const { iniciarPortalOdontologia } = await import('./portalApi.js');
+    iniciarPortalOdontologia({ sesion, contenido });
+  }
   if (esDemo) {
     document.getElementById('demo').hidden = false;
     const selector = document.getElementById('vista-previa');

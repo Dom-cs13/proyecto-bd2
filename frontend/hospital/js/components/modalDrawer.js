@@ -1,4 +1,5 @@
 import { store } from '../state.js';
+import { mostrarModalArchivarPaciente, mostrarAlertaPersonalizada, mostrarToast } from './modalDialog.js';
 
 export function renderModalDrawer(containerId = 'drawer-container') {
   const container = document.getElementById(containerId);
@@ -195,21 +196,20 @@ export function renderModalDrawer(containerId = 'drawer-container') {
     panel.classList.add('open');
   };
 
-  // 3. CONFIRMAR ARCHIVADO FORMAL
+  // 3. CONFIRMAR ARCHIVADO FORMAL CON MODAL PERSONALIZADO
   window.confirmarArchivado = (id) => {
     const paciente = store.pacientes.find(p => p.id === id);
     if (!paciente) return;
 
-    const motivoTipo = prompt(
-      `Archivado clínico para ${paciente.nombre} ${paciente.apellidos}.\nSelecciona el tipo de motivo: traslado / fallecimiento / administrativo / otro`,
-      "administrativo"
-    );
-    if (!motivoTipo) return;
-
-    const detalle = prompt("Ingresa el detalle explicativo del archivado:", "Baja administrativa por término de tratamiento hospitalario.");
-    store.archivarPaciente(id, { tipo: motivoTipo, detalle: detalle || '' });
-    alert(`Expediente ${paciente.expediente} archivado correctamente.`);
-    cerrarDrawer();
+    mostrarModalArchivarPaciente(paciente, ({ tipo, detalle }) => {
+      store.archivarPaciente(id, { tipo, detalle });
+      mostrarToast({
+        titulo: 'Expediente Archivado',
+        mensaje: `El expediente ${paciente.expediente} (${paciente.nombre} ${paciente.apellidos}) ha sido archivado con motivo justificado.`,
+        tipo: 'warning'
+      });
+      cerrarDrawer();
+    });
   };
 
   // 4. MODAL EDITAR
@@ -234,8 +234,8 @@ export function renderModalDrawer(containerId = 'drawer-container') {
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Teléfono</label>
-            <input type="tel" id="edit-telefono" class="form-control" value="${paciente.telefono}" />
+            <label class="form-label">Teléfono (8 dígitos)</label>
+            <input type="tel" id="edit-telefono" class="form-control" maxlength="8" pattern="\\d{8}" inputmode="numeric" value="${paciente.telefono || ''}" placeholder="Ej. 77612345" />
           </div>
           <div class="form-group">
             <label class="form-label">Estado Clínico</label>
@@ -253,8 +253,16 @@ export function renderModalDrawer(containerId = 'drawer-container') {
             <input type="text" id="edit-ubicacion" class="form-control" value="${paciente.ubicacion}" />
           </div>
           <div class="form-group">
-            <label class="form-label">Médico Tratante</label>
-            <input type="text" id="edit-medico" class="form-control" value="${paciente.medicoTratante}" />
+            <label class="form-label">Médico Tratante Asignado *</label>
+            <select id="edit-medico" class="form-control">
+              <option value="">-- Seleccionar Médico Tratante --</option>
+              ${store.doctores.map(d => {
+                const nombreCompleto = `Dr(a). ${d.nombre} ${d.apellidos}`;
+                const selected = (paciente.medicoTratante && (paciente.medicoTratante.includes(d.nombre) || paciente.medicoTratante === nombreCompleto)) ? 'selected' : '';
+                return `<option value="${nombreCompleto}" ${selected}>${nombreCompleto} · ${d.especialidad} (${d.idColegiado})</option>`;
+              }).join('')}
+              ${paciente.medicoTratante && !store.doctores.some(d => paciente.medicoTratante.includes(d.nombre)) ? `<option value="${paciente.medicoTratante}" selected>${paciente.medicoTratante} (Personalizado)</option>` : ''}
+            </select>
           </div>
         </div>
       </form>
@@ -265,15 +273,39 @@ export function renderModalDrawer(containerId = 'drawer-container') {
       <button class="btn btn-primary" id="btn-actualizar-datos">Actualizar Expediente</button>
     `;
 
+    const telInp = document.getElementById('edit-telefono');
+    if (telInp) {
+      telInp.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+      });
+    }
+
     document.getElementById('btn-actualizar-datos').addEventListener('click', () => {
+      const telVal = (document.getElementById('edit-telefono').value || '').trim();
+      if (telVal && !/^\d{8}$/.test(telVal)) {
+        mostrarAlertaPersonalizada({
+          titulo: 'Validación de Teléfono',
+          mensaje: 'El teléfono debe tener exactamente 8 dígitos numéricos enteros (formato estándar de Guatemala).',
+          tipo: 'warning'
+        });
+        return;
+      }
+
       store.actualizarPaciente(id, {
         nombre: document.getElementById('edit-nombre').value,
         apellidos: document.getElementById('edit-apellidos').value,
-        telefono: document.getElementById('edit-telefono').value,
+        telefono: telVal,
         estadoClinico: document.getElementById('edit-estado').value,
         ubicacion: document.getElementById('edit-ubicacion').value,
         medicoTratante: document.getElementById('edit-medico').value
       });
+
+      mostrarToast({
+        titulo: 'Expediente Actualizado',
+        mensaje: `Los datos del expediente ${paciente.expediente} se actualizaron correctamente.`,
+        tipo: 'success'
+      });
+
       window.abrirDrawerDetalle(store.pacientes.find(p => p.id === id));
     });
   };

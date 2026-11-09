@@ -6,10 +6,21 @@ import { renderPatientTable } from './components/patientTable.js';
 import { renderModalDrawer } from './components/modalDrawer.js';
 import { renderInicioCriticos } from './components/inicioCriticos.js';
 import { renderListaArchivar } from './components/listaArchivar.js';
-import { renderLaboratorioTable } from './components/laboratorioTable.js';
+import {
+  inicializarVistaLaboratorio,
+  renderLaboratorioTable,
+  actualizarMetricasLaboratorio,
+  poblarSelectsLaboratorio,
+  renderUnidadesLaboratorio,
+  renderCatalogoExamenes,
+  renderPacientesAsociadosTable,
+} from './components/laboratorioTable.js';
+import { inicializarVistaPolizas, renderPolizasTable, actualizarMetricasPolizas, poblarSelectsPolizas } from './components/polizasComponent.js';
+import { inicializarVistaDoctores, renderDoctoresTable, actualizarMetricasDoctores } from './components/doctoresComponent.js';
+import { mostrarToast, mostrarAlertaPersonalizada } from './components/modalDialog.js';
 import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
 
-let vistaActual = 'principal'; // 'principal' | 'buscador' | 'gestion' | 'laboratorio'
+let vistaActual = 'principal'; // 'principal' | 'buscador' | 'gestion' | 'laboratorio' | 'polizas' | 'doctores'
 const plantillasCargadas = {};
 
 // Mapeo del identificador de vista al nombre del archivo en /pages/
@@ -17,7 +28,9 @@ const MAPA_ARCHIVOS_VISTAS = {
   principal: 'principal',
   buscador: 'buscador',
   gestion: 'gestion-pacientes',
-  laboratorio: 'laboratorio'
+  laboratorio: 'laboratorio',
+  polizas: 'polizas',
+  doctores: 'doctores'
 };
 
 async function cargarVista(nombreVista) {
@@ -48,8 +61,11 @@ async function cargarVista(nombreVista) {
       inicializarFormularioGestion();
       renderListaArchivar('lista-archivar-pacientes-container');
     } else if (nombreVista === 'laboratorio') {
-      renderLaboratorioTable('laboratorio-table-container');
-      inicializarBuscadorLaboratorio();
+      inicializarVistaLaboratorio();
+    } else if (nombreVista === 'polizas') {
+      inicializarVistaPolizas();
+    } else if (nombreVista === 'doctores') {
+      inicializarVistaDoctores();
     }
   } catch (err) {
     console.error(err);
@@ -62,56 +78,115 @@ async function cargarVista(nombreVista) {
   }
 }
 
-function inicializarBuscadorLaboratorio() {
-  const input = document.getElementById('lab-search-input');
-  if (input) {
-    input.addEventListener('input', (e) => {
-      store.setFiltroLabTexto(e.target.value);
-      renderLaboratorioTable('laboratorio-table-container');
-    });
+function poblarSelectDoctoresEnGestion() {
+  const sel = document.getElementById('g-inp-medico');
+  if (!sel) return;
+
+  const valorActual = sel.value;
+  const doctoresDisponibles = store.doctores && store.doctores.length > 0 ? store.doctores : [];
+
+  if (doctoresDisponibles.length === 0) {
+    sel.innerHTML = `<option value="">-- No hay doctores registrados en el sistema --</option>`;
+    return;
   }
 
-  const btnNuevaOrden = document.getElementById('btn-nueva-orden-lab');
-  if (btnNuevaOrden) {
-    btnNuevaOrden.addEventListener('click', () => {
-      const paciente = store.pacientes.find(p => p.estadoArchivo === 'activo');
-      if (!paciente) {
-        alert("No hay pacientes activos disponibles.");
-        return;
-      }
-
-      const tipo = prompt("Tipo de análisis clínico (ej. Hematología Completa, Química Sanguínea, Examen General de Orina):", "Química Sanguínea (Glucosa)");
-      if (!tipo) return;
-
-      const nuevaOrden = {
-        id: `lab-${Date.now()}`,
-        codigoOrden: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-        pacienteId: paciente.id,
-        expediente: paciente.expediente,
-        pacienteNombre: `${paciente.nombre} ${paciente.apellidos}`,
-        tipoExamen: tipo,
-        fechaOrden: new Date().toISOString(),
-        fechaResultado: null,
-        solicitante: "Dr. Rodrigo Palma",
-        estado: "En proceso",
-        resultadoResumen: "Muestra recolectada y enviada a centrífuga",
-        valores: [],
-        observacionesTecnicas: "Toma de muestra realizada en ayuno."
-      };
-
-      store.agregarOrdenLaboratorio(nuevaOrden);
-      alert(`Orden ${nuevaOrden.codigoOrden} generada para ${nuevaOrden.pacienteNombre}.`);
-      renderLaboratorioTable('laboratorio-table-container');
-    });
-  }
+  sel.innerHTML = `
+    <option value="">-- Seleccionar Médico Tratante Asignado * --</option>
+    ${doctoresDisponibles.map(d => {
+      const nombreCompleto = `Dr(a). ${d.nombre} ${d.apellidos}`;
+      const isSelected = valorActual === nombreCompleto ? 'selected' : '';
+      return `<option value="${nombreCompleto}" ${isSelected}>${nombreCompleto} · ${d.especialidad} (${d.idColegiado})</option>`;
+    }).join('')}
+  `;
 }
 
 function inicializarFormularioGestion() {
   const form = document.getElementById('form-gestion-nuevo-paciente');
   if (!form) return;
 
-  form.addEventListener('submit', (e) => {
+  poblarSelectDoctoresEnGestion();
+
+  const curpInput = document.getElementById('g-inp-curp');
+  if (curpInput) {
+    curpInput.addEventListener('input', (e) => {
+      // Filtrar a números enteros y restringir a 13 dígitos
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 13);
+    });
+  }
+
+  const telInput = document.getElementById('g-inp-telefono');
+  if (telInput) {
+    telInput.addEventListener('input', (e) => {
+      // Filtrar a números enteros y restringir a 8 dígitos
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    const nombreVal = (document.getElementById('g-inp-nombre').value || '').trim();
+    const apellidosVal = (document.getElementById('g-inp-apellidos').value || '').trim();
+    const fechaVal = (document.getElementById('g-inp-fecha').value || '').trim();
+    const generoVal = document.getElementById('g-inp-genero').value;
+    const dpiVal = (document.getElementById('g-inp-curp').value || '').trim();
+    const telVal = (document.getElementById('g-inp-telefono').value || '').trim();
+    const correoVal = (document.getElementById('g-inp-correo').value || '').trim();
+    const direccionVal = (document.getElementById('g-inp-direccion').value || '').trim();
+    const servicioVal = (document.getElementById('g-inp-servicio').value || '').trim();
+    const estadoVal = (document.getElementById('g-inp-estado').value || '').trim();
+    const ubicacionVal = (document.getElementById('g-inp-ubicacion').value || '').trim();
+    const sangreVal = (document.getElementById('g-inp-sangre').value || '').trim();
+    const medicoVal = (document.getElementById('g-inp-medico').value || '').trim();
+
+    // Verificación estricta: todos los campos son obligatorios salvo correo electrónico, póliza y antecedentes
+    if (!nombreVal || !apellidosVal || !fechaVal || !generoVal || !dpiVal || !telVal || !direccionVal || !servicioVal || !estadoVal || !ubicacionVal || !sangreVal || !medicoVal) {
+      mostrarAlertaPersonalizada({
+        titulo: 'Campos Obligatorios Incompletos',
+        subtitulo: 'Admisión Hospitalaria',
+        mensaje: 'Todos los campos del paciente son obligatorios (incluyendo médico asignado, dirección y ubicación), a excepción del correo electrónico, la póliza y los antecedentes/observaciones.',
+        tipo: 'warning'
+      });
+      return;
+    }
+
+    if (correoVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoVal)) {
+      mostrarAlertaPersonalizada({
+        titulo: 'Correo Inválido',
+        mensaje: 'El correo electrónico ingresado no tiene un formato válido (ej. usuario@dominio.com). Si el paciente no posee correo, puede dejar el campo vacío.',
+        tipo: 'warning'
+      });
+      return;
+    }
+
+    if (!/^\d{13}$/.test(dpiVal)) {
+      mostrarAlertaPersonalizada({
+        titulo: 'DPI Inválido',
+        subtitulo: 'Validación de Documento Único de Identidad (Guatemala)',
+        mensaje: 'El DPI / CUI debe contener exactamente 13 dígitos numéricos enteros. Por favor verifique el número ingresado.',
+        tipo: 'error'
+      });
+      return;
+    }
+
+    if (!/^\d{8}$/.test(telVal)) {
+      mostrarAlertaPersonalizada({
+        titulo: 'Teléfono Inválido',
+        subtitulo: 'Validación de Contacto Telefónico',
+        mensaje: 'El número de teléfono debe contener exactamente 8 dígitos numéricos enteros (ej. 77612345).',
+        tipo: 'error'
+      });
+      return;
+    }
+
+    if (generoVal !== 'Femenino' && generoVal !== 'Masculino') {
+      mostrarAlertaPersonalizada({
+        titulo: 'Género Requerido',
+        mensaje: 'Debe seleccionar un género biológico válido (Femenino o Masculino).',
+        tipo: 'warning'
+      });
+      return;
+    }
 
     const antecedentesVal = document.getElementById('g-inp-antecedentes').value;
     const antecedentesArr = antecedentesVal ? antecedentesVal.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -123,42 +198,50 @@ function inicializarFormularioGestion() {
     const nuevo = {
       id: `pac-${Date.now()}`,
       expediente: `EXP-0${expNum}`,
-      nombre: document.getElementById('g-inp-nombre').value,
-      apellidos: document.getElementById('g-inp-apellidos').value,
-      fechaNacimiento: document.getElementById('g-inp-fecha').value,
-      genero: document.getElementById('g-inp-genero').value,
-      curp: document.getElementById('g-inp-curp').value.toUpperCase(),
-      telefono: document.getElementById('g-inp-telefono').value,
-      correo: document.getElementById('g-inp-correo').value || 'sin-correo@hospital.com',
-      direccion: document.getElementById('g-inp-direccion').value || 'Dirección no registrada',
-      servicioArea: document.getElementById('g-inp-servicio').value,
-      medicoTratante: "Dr. Rodrigo Palma",
-      ubicacion: document.getElementById('g-inp-ubicacion').value || "Pendiente de asignación",
+      documentoIdentidad: dpiVal,
+      nombre: nombreVal,
+      apellidos: apellidosVal,
+      fechaNacimiento: fechaVal,
+      sexo: generoVal,
+      genero: generoVal,
+      curp: dpiVal,
+      telefono: telVal,
+      correo: correoVal,
+      direccion: direccionVal,
+      servicioArea: servicioVal,
+      medicoTratante: medicoVal,
+      ubicacion: ubicacionVal,
       ultimaConsulta: new Date().toISOString(),
-      estadoClinico: document.getElementById('g-inp-estado').value,
+      estadoClinico: estadoVal,
       estadoArchivo: "activo",
       detallesInstitucion: {
         institucionId: "I1",
         nombreInstitucion: "Hospital General",
         antecedentesCriticos: antecedentesArr,
-        tipoSangre: document.getElementById('g-inp-sangre').value,
+        tipoSangre: sangreVal,
         seguro: aseguradoraVal ? {
           aseguradora: aseguradoraVal,
           poliza: polizaVal || 'S/N',
           cobertura: 80
         } : null,
         internamiento: {
-          enCama: document.getElementById('g-inp-servicio').value === 'Hospitalización',
-          pabellon: document.getElementById('g-inp-ubicacion').value
+          enCama: servicioVal === 'Hospitalización',
+          pabellon: ubicacionVal
         }
       },
       historial: { consultas: [] }
     };
 
-    store.agregarPaciente(nuevo);
+    const guardado = await store.agregarPaciente(nuevo);
     form.reset();
-    alert(`¡Paciente ${nuevo.nombre} ${nuevo.apellidos} registrado exitosamente con expediente ${nuevo.expediente}!`);
+    poblarSelectDoctoresEnGestion();
     renderListaArchivar('lista-archivar-pacientes-container');
+
+    mostrarToast({
+      titulo: 'Expediente Guardado en MongoDB',
+      mensaje: `Paciente ${guardado.nombre} ${guardado.apellidos} registrado exitosamente con expediente ${guardado.expediente} asignado a ${guardado.medicoTratante}.`,
+      tipo: 'success'
+    });
   });
 }
 
@@ -170,6 +253,7 @@ window.navegarA = (nombreVista) => {
 document.addEventListener('DOMContentLoaded', () => {
   renderModalDrawer('drawer-container');
   cargarVista('principal');
+  store.sincronizarConBackend();
 
   store.subscribe(() => {
     if (vistaActual === 'principal') {
@@ -178,16 +262,33 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (vistaActual === 'buscador') {
       renderPatientTable('table-container');
     } else if (vistaActual === 'gestion') {
+      poblarSelectDoctoresEnGestion();
       renderListaArchivar('lista-archivar-pacientes-container');
     } else if (vistaActual === 'laboratorio') {
+      actualizarMetricasLaboratorio();
+      poblarSelectsLaboratorio();
       renderLaboratorioTable('laboratorio-table-container');
+      renderUnidadesLaboratorio('unidades-laboratorio-cards-container');
+      renderCatalogoExamenes('catalogo-examenes-table-container');
+      renderPacientesAsociadosTable('laboratorio-pacientes-asociados-container');
+    } else if (vistaActual === 'polizas') {
+      actualizarMetricasPolizas();
+      poblarSelectsPolizas();
+      renderPolizasTable();
+    } else if (vistaActual === 'doctores') {
+      actualizarMetricasDoctores();
+      renderDoctoresTable();
     }
 
     const kpis = store.getKPIs();
     const totalEl = document.getElementById('sidebar-total-badge');
     const labBadge = document.getElementById('sidebar-lab-badge');
+    const polizasBadge = document.getElementById('sidebar-polizas-badge');
+    const doctoresBadge = document.getElementById('sidebar-doctores-badge');
     if (totalEl) totalEl.textContent = kpis.total;
     if (labBadge) labBadge.textContent = kpis.labsPendientes > 0 ? kpis.labsPendientes : 'OK';
+    if (polizasBadge) polizasBadge.textContent = kpis.totalPolizas || 0;
+    if (doctoresBadge) doctoresBadge.textContent = kpis.totalDoctores || 0;
   });
 
   // Botones de acceso en header

@@ -314,48 +314,90 @@ export class MariaDbAdapter {
 
     try {
       const texto = filtro.texto?.trim() ?? "";
+      const documento = filtro.documento?.trim() ?? "";
       const estado = filtro.estado?.trim() ?? "";
       const pagina = Math.max(1, Number(filtro.pagina) || 1);
       const limite = Math.min(100, Math.max(1, Number(filtro.limite) || 10));
       const offset = (pagina - 1) * limite;
 
-      const condiciones = [];
-      const parametros = [];
+      const armarConsulta = (incluirDoc) => {
+        const condiciones = [];
+        const parametros = [];
 
-      if (texto) {
-        condiciones.push("(p.nombres LIKE ? OR p.apellidos LIKE ? OR p.documento LIKE ?)");
-        const patron = `%${texto}%`;
-        parametros.push(patron, patron, patron);
+        if (texto) {
+          if (incluirDoc) {
+            condiciones.push("(p.nombres LIKE ? OR p.apellidos LIKE ? OR p.documento LIKE ?)");
+            const patron = `%${texto}%`;
+            parametros.push(patron, patron, patron);
+          } else {
+            condiciones.push("(p.nombres LIKE ? OR p.apellidos LIKE ?)");
+            const patron = `%${texto}%`;
+            parametros.push(patron, patron);
+          }
+        }
+
+        if (documento && incluirDoc) {
+          condiciones.push("p.documento = ?");
+          parametros.push(documento);
+        }
+
+        if (estado) {
+          condiciones.push("h.estado = ?");
+          parametros.push(estado);
+        }
+
+        const whereClause = condiciones.length > 0 ? `WHERE ${condiciones.join(" AND ")}` : "";
+        return { whereClause, parametros };
+      };
+
+      let resTotal;
+      let resItems;
+      try {
+        const { whereClause, parametros } = armarConsulta(true);
+        const sqlTotal = `
+          SELECT COUNT(p.id_paciente) AS total
+          FROM paciente p
+          LEFT JOIN historial_clinico h ON h.id_paciente = p.id_paciente
+          ${whereClause}
+        `;
+        resTotal = await conn.query(sqlTotal, parametros);
+
+        const sqlItems = `
+          SELECT p.*
+          FROM paciente p
+          LEFT JOIN historial_clinico h ON h.id_paciente = p.id_paciente
+          ${whereClause}
+          ORDER BY p.apellidos, p.nombres, p.id_paciente
+          LIMIT ? OFFSET ?
+        `;
+        resItems = await conn.query(sqlItems, [...parametros, limite, offset]);
+      } catch (errList) {
+        if (errList.code === "ER_BAD_FIELD_ERROR" || errList.message?.includes("Unknown column")) {
+          const { whereClause, parametros } = armarConsulta(false);
+          const sqlTotal = `
+            SELECT COUNT(p.id_paciente) AS total
+            FROM paciente p
+            LEFT JOIN historial_clinico h ON h.id_paciente = p.id_paciente
+            ${whereClause}
+          `;
+          resTotal = await conn.query(sqlTotal, parametros);
+
+          const sqlItems = `
+            SELECT p.*
+            FROM paciente p
+            LEFT JOIN historial_clinico h ON h.id_paciente = p.id_paciente
+            ${whereClause}
+            ORDER BY p.apellidos, p.nombres, p.id_paciente
+            LIMIT ? OFFSET ?
+          `;
+          resItems = await conn.query(sqlItems, [...parametros, limite, offset]);
+        } else {
+          throw errList;
+        }
       }
 
-      if (estado) {
-        condiciones.push("h.estado = ?");
-        parametros.push(estado);
-      }
-
-      const whereClause = condiciones.length > 0 ? `WHERE ${condiciones.join(" AND ")}` : "";
-
-      const sqlTotal = `
-        SELECT COUNT(p.id_paciente) AS total
-        FROM paciente p
-        LEFT JOIN historial_clinico h ON h.id_paciente = p.id_paciente
-        ${whereClause}
-      `;
-
-      const resTotal = await conn.query(sqlTotal, parametros);
       const filasTotal = Array.isArray(resTotal) ? resTotal : resTotal.rows ?? [];
       const total = Number(filasTotal[0]?.total ?? 0);
-
-      const sqlItems = `
-        SELECT p.*
-        FROM paciente p
-        LEFT JOIN historial_clinico h ON h.id_paciente = p.id_paciente
-        ${whereClause}
-        ORDER BY p.apellidos, p.nombres, p.id_paciente
-        LIMIT ? OFFSET ?
-      `;
-
-      const resItems = await conn.query(sqlItems, [...parametros, limite, offset]);
       const filasItems = Array.isArray(resItems) ? resItems : resItems.rows ?? [];
 
       return {
@@ -1129,6 +1171,51 @@ export class MariaDbAdapter {
         // Conservar error original
       }
       throw error;
+    } finally {
+      if (typeof conn.release === "function") conn.release();
+    }
+  }
+
+  async obtenerCatalogos() {
+    const conn = await this._obtenerConexion();
+    try {
+      const vacunas = await conn.query("SELECT id_vacuna, nombre, descripcion, dosis_requeridas FROM vacuna ORDER BY nombre");
+
+      let medicamentos;
+      try {
+        medicamentos = await conn.query("SELECT id_medicamento, nombre, presentacion FROM medicamento WHERE estado = 'activo' OR estado = 1 OR estado = true ORDER BY nombre");
+      } catch (errMed) {
+        if (errMed.code === "ER_BAD_FIELD_ERROR" || errMed.message?.includes("Unknown column")) {
+          medicamentos = await conn.query("SELECT id_medicamento, nombre FROM medicamento WHERE estado = 'activo' OR estado = 1 OR estado = true ORDER BY nombre");
+        } else {
+          throw errMed;
+        }
+      }
+
+      const alergias = await conn.query("SELECT id_alergia, nombre, descripcion FROM alergia WHERE estado = 'activo' OR estado = 1 OR estado = true ORDER BY nombre");
+
+      const filasVacunas = Array.isArray(vacunas) ? vacunas : vacunas.rows ?? [];
+      const filasMedicamentos = Array.isArray(medicamentos) ? medicamentos : medicamentos.rows ?? [];
+      const filasAlergias = Array.isArray(alergias) ? alergias : alergias.rows ?? [];
+
+      return {
+        vacunas: filasVacunas.map((v) => ({
+          id: String(v.id_vacuna),
+          nombre: v.nombre,
+          descripcion: v.descripcion ?? null,
+          dosisRequeridas: v.dosis_requeridas == null ? null : Number(v.dosis_requeridas),
+        })),
+        medicamentos: filasMedicamentos.map((m) => ({
+          id: String(m.id_medicamento),
+          nombre: m.nombre,
+          presentacion: m.presentacion ?? null,
+        })),
+        alergias: filasAlergias.map((a) => ({
+          id: String(a.id_alergia),
+          nombre: a.nombre,
+          descripcion: a.descripcion ?? null,
+        })),
+      };
     } finally {
       if (typeof conn.release === "function") conn.release();
     }

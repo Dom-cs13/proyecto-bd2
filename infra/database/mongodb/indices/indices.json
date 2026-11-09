@@ -1,0 +1,29 @@
+{
+  "pacientes": [
+    { "key": { "expediente": 1 }, "options": { "unique": true, "name": "idx_pacientes_expediente" } },
+    { "key": { "documentoIdentidad": 1 }, "options": { "unique": true, "sparse": true, "name": "idx_pacientes_documento" } },
+    { "key": { "nombre": "text", "apellidos": "text" }, "options": { "name": "idx_pacientes_busqueda_texto" } }
+  ],
+  "consultas": [
+    { "key": { "pacienteId": 1, "fecha": -1 }, "options": { "name": "idx_consultas_paciente_fecha" } },
+    { "key": { "expediente": 1, "fecha": -1 }, "options": { "name": "idx_consultas_expediente_fecha" } }
+  ],
+  "polizas": [
+    { "key": { "idPoliza": 1 }, "options": { "unique": true, "name": "idx_polizas_id" } },
+    { "key": { "pacienteId": 1 }, "options": { "name": "idx_polizas_paciente" } },
+    { "key": { "aseguradora.nombreEmpresa": 1 }, "options": { "name": "idx_polizas_aseguradora" } }
+  ],
+  "doctores": [
+    { "key": { "idColegiado": 1 }, "options": { "unique": true, "name": "idx_doctores_colegiado" } },
+    { "key": { "nombre": "text", "apellidos": "text", "especialidad": "text" }, "options": { "name": "idx_doctores_busqueda" } }
+  ],
+  "laboratorios": [
+    { "key": { "codigo": 1 }, "options": { "unique": true, "name": "idx_laboratorios_codigo" } },
+    { "key": { "nombre": "text", "tipo": "text", "responsable": "text" }, "options": { "name": "idx_laboratorios_busqueda" } }
+  ],
+  "tipos_examenes": [
+    { "key": { "codigoExamen": 1 }, "options": { "unique": true, "name": "idx_examenes_codigo" } },
+    { "key": { "laboratorioId": 1 }, "options": { "name": "idx_examenes_laboratorio" } },
+    { "key": { "nombre": "text", "categoria": "text" }, "options": { "name": "idx_examenes_busqueda" } }
+  ]
+}

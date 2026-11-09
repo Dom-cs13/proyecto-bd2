@@ -5,11 +5,15 @@
  */
 
 import { Prohibido } from '../../domain/errores.js';
+import { MongoAdapter } from '../adapters/mongodb/MongoAdapter.js';
 import { FirestoreAdapter } from '../adapters/firestore/FirestoreAdapter.js';
 import { LaboratorioFirestoreRepository } from '../adapters/firestore/laboratorioFirestoreRepository.js';
 
+let mongoAdapterInstance = null;
 let firestoreAdapterInstance = null;
 let laboratorioRepoInstance = null;
+
+const repositoriosRegistrados = {};
 
 /**
  * Permite registrar instancias personalizadas (útil para pruebas unitarias y de integración).
@@ -17,7 +21,9 @@ let laboratorioRepoInstance = null;
  * @param {object} repo
  */
 export function registrarRepositorio(institucion, repo) {
-  if (institucion === 'laboratorio') {
+  const normalizada = String(institucion).toLowerCase();
+  repositoriosRegistrados[normalizada] = repo;
+  if (normalizada === 'laboratorio') {
     firestoreAdapterInstance = repo;
   }
 }
@@ -35,15 +41,28 @@ export function registrarLaboratorioRepo(repo) {
  * @param {string} institucion - 'hospital' | 'odontologia' | 'laboratorio' | 'pediatria'
  * @returns {import('../../domain/ports/HistorialRepository.js').HistorialRepository}
  */
-export function obtenerRepositorio(institucion) {
-  if (institucion === 'laboratorio') {
+export function obtenerRepositorio(institucion = 'hospital') {
+  const normalizada = String(institucion).toLowerCase();
+
+  if (repositoriosRegistrados[normalizada]) {
+    return repositoriosRegistrados[normalizada];
+  }
+
+  if (normalizada === 'hospital') {
+    if (!mongoAdapterInstance) {
+      mongoAdapterInstance = new MongoAdapter();
+    }
+    return mongoAdapterInstance;
+  }
+
+  if (normalizada === 'laboratorio') {
     if (!firestoreAdapterInstance) {
       firestoreAdapterInstance = new FirestoreAdapter();
     }
     return firestoreAdapterInstance;
   }
 
-  throw new Prohibido('INSTITUCION_INVALIDA', `Institución no soportada o no configurada: ${institucion}`);
+  throw new Prohibido('INSTITUCION_INVALIDA', `Institución no autorizada o no disponible: ${institucion}`);
 }
 
 /**
@@ -63,9 +82,14 @@ export function obtenerLaboratorioRepo() {
 export function obtenerTodos() {
   const adaptadores = {};
   try {
+    adaptadores.hospital = obtenerRepositorio('hospital');
+  } catch {
+    // Si no está disponible, se omite
+  }
+  try {
     adaptadores.laboratorio = obtenerRepositorio('laboratorio');
   } catch {
-    // Si no está disponible, se omite o captura
+    // Si no está disponible, se omite
   }
   return adaptadores;
 }

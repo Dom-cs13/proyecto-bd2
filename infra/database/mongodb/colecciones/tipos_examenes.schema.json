@@ -1,0 +1,23 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["codigoExamen", "laboratorioId", "laboratorioNombre", "nombre", "categoria", "tipoMuestra", "tiempoEstimadoHoras", "estado"],
+    "properties": {
+      "codigoExamen": { "bsonType": "string" },
+      "laboratorioId": { "bsonType": "string" },
+      "laboratorioNombre": { "bsonType": "string" },
+      "nombre": { "bsonType": "string" },
+      "categoria": { "bsonType": "string" },
+      "tipoMuestra": { "bsonType": "string" },
+      "tiempoEstimadoHoras": { "bsonType": ["int", "long", "double"] },
+      "indicacionesPaciente": { "bsonType": "string" },
+      "parametrosBase": {
+        "bsonType": "array",
+        "items": { "bsonType": "string" }
+      },
+      "estado": { "enum": ["activo", "suspendido"] },
+      "institucionId": { "bsonType": "string" }
+    }
+  }
+}
+

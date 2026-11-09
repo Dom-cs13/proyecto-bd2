@@ -1,0 +1,120 @@
+[
+  {
+    "_id": { "$oid": "650000000000000000000001" },
+    "expediente": "EXP-01842",
+    "documentoIdentidad": "2984512300101",
+    "nombre": "Mariana",
+    "apellidos": "Soto Hernández",
+    "fechaNacimiento": "1990-04-18",
+    "sexo": "Femenino",
+    "direccion": "Av. Central 45, Quetzaltenango",
+    "telefono": 12345678,
+    "correo": "mariana.soto@hospital.com",
+    "alergias": "Penicilina",
+    "estado": "activo",
+    "polizaSeguro": {
+      "idPoliza": "POL-98421",
+      "cobertura": "Hospitalaria completa",
+      "porcentajeCobertura": 85,
+      "fechaInicio": "2026-01-01",
+      "fechaVencimiento": "2026-12-31",
+      "estado": "vigente",
+      "aseguradora": {
+        "idAseguradora": "ASEG-01",
+        "nombreEmpresa": "Seguros Universales",
+        "nitIdentificador": "1234567-8",
+        "telefono": 23456789
+      }
+    },
+    "detallesInstitucion": {
+      "institucionId": "I1",
+      "nombreInstitucion": "Hospital General",
+      "tipoSangre": "O+",
+      "antecedentesCriticos": ["Alergia a penicilina", "Hipertensión controlada"],
+      "internamiento": {
+        "enCama": true,
+        "pabellon": "Pabellón A",
+        "cama": "Cama 104",
+        "fechaIngreso": "2026-10-24T14:30:00.000Z"
+      }
+    }
+  },
+  {
+    "_id": { "$oid": "650000000000000000000002" },
+    "expediente": "EXP-02491",
+    "documentoIdentidad": "1892345670101",
+    "nombre": "Carlos",
+    "apellidos": "Méndez Silva",
+    "fechaNacimiento": "1982-02-11",
+    "sexo": "Masculino",
+    "direccion": "Calle Real 12-30, Zona 3",
+    "telefono": 23456789,
+    "correo": "carlos.mendez@hospital.com",
+    "alergias": "Ninguna",
+    "estado": "activo",
+    "polizaSeguro": {
+      "idPoliza": "POL-33214",
+      "cobertura": "Consulta Externa y Diagnóstico",
+      "porcentajeCobertura": 70,
+      "fechaInicio": "2026-02-15",
+      "fechaVencimiento": "2027-02-15",
+      "estado": "vigente",
+      "aseguradora": {
+        "idAseguradora": "ASEG-02",
+        "nombreEmpresa": "Roble Salud",
+        "nitIdentificador": "9876543-2",
+        "telefono": 22334455
+      }
+    },
+    "detallesInstitucion": {
+      "institucionId": "I1",
+      "nombreInstitucion": "Hospital General",
+      "tipoSangre": "A+",
+      "antecedentesCriticos": ["Diabetes Tipo 2"],
+      "internamiento": {
+        "enCama": false
+      }
+    }
+  },
+  {
+    "_id": { "$oid": "650000000000000000000003" },
+    "expediente": "EXP-06390",
+    "documentoIdentidad": "1029384750101",
+    "nombre": "Roberto",
+    "apellidos": "Navarro Ruiz",
+    "fechaNacimiento": "1969-03-12",
+    "sexo": "Masculino",
+    "direccion": "Barrio El Calvario 2-90",
+    "telefono": 45678901,
+    "correo": "roberto.navarro@hospital.com",
+    "alergias": "Sulfas",
+    "estado": "activo",
+    "polizaSeguro": {
+      "idPoliza": "POL-55120",
+      "cobertura": "Traumatología y Cirugía",
+      "porcentajeCobertura": 90,
+      "fechaInicio": "2026-03-01",
+      "fechaVencimiento": "2027-03-01",
+      "estado": "vigente",
+      "aseguradora": {
+        "idAseguradora": "ASEG-01",
+        "nombreEmpresa": "Seguros Universales",
+        "nitIdentificador": "1234567-8",
+        "telefono": 23456789
+      }
+    },
+    "detallesInstitucion": {
+      "institucionId": "I1",
+      "nombreInstitucion": "Hospital General",
+      "tipoSangre": "O-",
+      "antecedentesCriticos": ["Politraumatismo vial", "Fractura de fémur expuesta"],
+      "internamiento": {
+        "enCama": true,
+        "pabellon": "Traumatología",
+        "cama": "Cama 112",
+        "fechaIngreso": "2026-10-18T20:15:00.000Z"
+      }
+    }
+  }
+]
+

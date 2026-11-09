@@ -11,8 +11,9 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
   let adapter;
   let labRepo;
   let storage;
+  let tokenAuth;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     app = crearApp();
     storage = {
       pacientes: new Map(),
@@ -122,6 +123,15 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
     labRepo = new LaboratorioFirestoreRepository(mockDb);
     registrarRepositorio('laboratorio', adapter);
     registrarLaboratorioRepo(labRepo);
+
+    const resLogin = await request(app)
+      .post('/auth/login')
+      .send({
+        institucion: 'laboratorio',
+        usuario: 'laboratorista',
+        password: 'password123',
+      });
+    tokenAuth = resLogin.body.token;
   });
 
   describe('Autenticación Laboratorio (/auth/login)', () => {
@@ -181,20 +191,25 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
 
       const resCrear = await request(app)
         .post('/pacientes')
+        .set('Authorization', `Bearer ${tokenAuth}`)
         .send(nuevoPaciente);
 
       expect(resCrear.status).toBe(201);
       expect(resCrear.body.nombre).toBe('Mariana');
       expect(resCrear.body.documentoIdentidad).toBe('2987654320101');
 
-      const resListar = await request(app).get('/pacientes');
+      const resListar = await request(app)
+        .get('/pacientes')
+        .set('Authorization', `Bearer ${tokenAuth}`);
       expect(resListar.status).toBe(200);
       expect(resListar.body.total).toBe(1);
       expect(resListar.body.items[0].nombre).toBe('Mariana');
     });
 
     it('debe obtener paciente por ID y responder 404 si no existe', async () => {
-      const res = await request(app).get('/pacientes/inexistente-123');
+      const res = await request(app)
+        .get('/pacientes/inexistente-123')
+        .set('Authorization', `Bearer ${tokenAuth}`);
       expect(res.status).toBe(404);
       expect(res.body.error.codigo).toBe('PACIENTE_NO_ENCONTRADO');
     });
@@ -213,6 +228,7 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
 
       const resArchivar = await request(app)
         .patch('/pacientes/pac-001/archivar')
+        .set('Authorization', `Bearer ${tokenAuth}`)
         .send({ motivo: 'Traslado a otra institución' });
 
       expect(resArchivar.status).toBe(200);

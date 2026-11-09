@@ -184,3 +184,15 @@ td small { display: block; font-size: 10px; color: var(--text-muted); margin-top
   .empty-card { padding: 18px; }
   .dashboard-zone { margin-bottom: 26px; }
 }
+
+.api-form { display: grid; gap: 16px; max-width: 720px; margin: 24px 0; }
+.api-form label { display: grid; gap: 6px; font-weight: 600; }
+.api-form input, .api-form select { min-width: 0; width: 100%; padding: 12px; border: 1px solid #b9cbd7; border-radius: 8px; font: inherit; background: #fff; color: #173950; }
+.api-form fieldset { display: grid; gap: 14px; border: 1px solid #b9cbd7; border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+.api-form .button { justify-self: start; }
+.api-form button:disabled { opacity: .6; cursor: wait; }
+.api-table { overflow-x: auto; }
+.api-table table { width: 100%; border-collapse: collapse; }
+.api-table th, .api-table td { text-align: left; padding: 12px; border-bottom: 1px solid #dce5ec; }
+.api-consulta { padding: 20px 0; border-top: 1px solid #dce5ec; overflow-wrap: anywhere; }
+.api-consulta .button, .route-panel > .button { margin: 6px; }
