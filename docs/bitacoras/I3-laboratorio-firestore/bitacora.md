@@ -128,3 +128,18 @@
 - **Evidencia:** 31 archivos de pruebas pasando (306/306 pruebas en verde con Vitest) incluyendo los 36 tests de contrato (4 motores), y 0 errores en ESLint.
 - **Tiempo invertido:** 45 min
 - **Siguiente paso:** Aprobación del PR y merge en `main`.
+
+## Sesión 8 · 2026-11-09 · I3-09 · Auditoría transversal de integración y persistencia
+
+- **Objetivo de la sesión:** Corregir autenticación, escrituras ficticias y consulta federada de ALBA Suite conservando el diseño de las cuatro instituciones; preparar PR Open sin fusión automática.
+- **Qué hice:**
+  - Commit `1898b2e`: verificación de JWT, eliminación de accesos anónimos y cuentas demo implícitas, cuentas provisionadas con scrypt, validación local de altas/ediciones/archivo, persistencia Mongo/Firestore, separación de historiales Mongo sin expediente, TLS de MariaDB y pruebas con motores desechables.
+  - Commit `4e08ea0`: conexión de los portales existentes a la API, eliminación de éxitos locales y fixtures en producción, búsqueda en red en modales existentes, pruebas DOM y conservación de los 30 archivos HTML/CSS. Se integraron los cambios locales previos de sesión sin perderlos; `artifacts/` permanece fuera de Git.
+  - Documenté la extensión de edición en el ADR propuesto 0002, el contrato y ejemplos. No se cambió el puerto compartido ni se ampliaron permisos de lectura clínica entre instituciones.
+  - Preparé `docs/auditoria-integracion-cuatro-motores.md` con gravedad, evidencias por institución, distinción entre motores reales/emulador/mocks y pendientes verificables.
+- **Decisiones tomadas (y por qué):** Sin configuración de cuentas se responde 503 en lugar de emitir tokens demo. Una escritura fallida nunca modifica el estado local como si hubiera sido confirmada. Las coincidencias de documento se conservan separadas por origen. La rama queda exceptuada del auto-merge del CI para respetar la solicitud de revisión manual.
+- **Problemas / bloqueos:** No se comprobaron conexiones de producción ni IAM/certificados reales. Pendiente aprobación de I3 del ADR 0002, provisión de cuentas por el operador y decisión de confidencialidad para compartir datos clínicos. El informe registra las operaciones clínicas y de edición todavía incompletas y los formularios compuestos sin transacción entre endpoints. La tarea no se declara completa al 100%.
+- **Evidencia:** `git log main..HEAD --oneline`: `1898b2e`, `4e08ea0`. `npm test`: 469 aprobadas, 5 omitidas por contenedores, 17,06 s. Suite desechable: 5/5 aprobadas, tres archivos, 31,23 s; PostgreSQL 16, MongoDB 7 y MariaDB 11 reales y Firestore en emulador oficial. La prueba HTTP cubre cuatro orígenes por tres destinos, dos reinicios del proceso Node, edición y lectura posterior, rechazo de identidad alterada y caída física de MongoDB con los otros motores disponibles. Lint, aislamiento, skills y diff-check aprobados. No se leyeron archivos de entorno, no se accedió a pacientes reales ni se modificaron bases reales.
+- **Tiempo invertido:** No registrado.
+- **Siguiente paso:** Publicar PR Open hacia main para revisión del dueño e I3, sin merge. Resolver los pendientes del informe mediante las aprobaciones y entornos correspondientes.
+- **Cierre operativo:** La prueba HTTP final se repitió después de corregir la edición parcial: aprobada en 18,79 s. La revisión automática de permisos rechazó el push a `origin` por considerar insuficiente la autorización del destino/contenido; no se publicó la rama ni se abrió el PR. Descripción preparada en `docs/pr-auditoria-integracion-cuatro-motores.md`; publicación pendiente de autorización explícita para `Dom-cs13/proyecto-bd2`.
