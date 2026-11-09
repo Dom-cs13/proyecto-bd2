@@ -2,6 +2,8 @@
 
 import { diagnosticoDesdeFila, tratamientoDesdeFila, recetaDesdeFila, medicamentoDesdeFila, servicioDesdeFila } from './mapper.js';
 import { MotorNoDisponible } from '../../../domain/errores.js';
+import { Conflicto, NoEncontrado } from '../../../domain/errores.js';
+import { identificadorDental, profesionalDesdeFila, citaDesdeFila, responsableDesdeFila, alergiaDesdeFila } from './mapper.js';
 
 export class PostgresAdapter {
   constructor(pool) {
@@ -26,6 +28,136 @@ export class PostgresAdapter {
         return { query: (...args) => ejecutar(() => cliente.query(...args)), release: () => cliente.release() };
       },
     };
+  }
+
+  async transaccionDental(operacion) {
+    const cliente = await this.pool.connect();
+    try {
+      await cliente.query('BEGIN');
+      const resultado = await operacion(cliente);
+      await cliente.query('COMMIT');
+      return resultado;
+    } catch (error) {
+      try { await cliente.query('ROLLBACK'); } catch { /* Conservar error original. */ }
+      throw error;
+    } finally { cliente.release(); }
+  }
+
+  async bloquearPaciente(cliente, id) {
+    // RLS oculta filas archivadas a SELECT FOR UPDATE por su política de UPDATE.
+    // La lectura previa distingue inexistencia de archivo; el bloqueo vuelve a comprobar.
+    const previo = await cliente.query('SELECT estado FROM public.historial_clinico WHERE id_paciente=$1', [id]);
+    if (!previo.rows.length) throw new NoEncontrado('PACIENTE_NO_ENCONTRADO');
+    if (previo.rows[0].estado !== 'activo') throw new Conflicto('PACIENTE_ARCHIVADO');
+    const { rows } = await cliente.query('SELECT estado FROM public.historial_clinico WHERE id_paciente=$1 FOR UPDATE', [id]);
+    if (!rows.length || rows[0].estado !== 'activo') throw new Conflicto('PACIENTE_ARCHIVADO');
+  }
+
+  async obtenerEquipo() {
+    const { rows } = await this.pool.query(`SELECT u.id_usuario, u.nombres, u.apellidos FROM public.usuario u
+      JOIN public.rol r USING(id_rol) WHERE u.estado=true AND lower(r.nombre)='odontologo' ORDER BY u.nombres`);
+    return { items: rows.map(profesionalDesdeFila) };
+  }
+
+  actualizarContacto(id, datos) {
+    return this.transaccionDental(async (c) => {
+      await this.bloquearPaciente(c, id);
+      const { rows } = await c.query(`UPDATE public.paciente SET telefono=COALESCE($2,telefono),
+        correo=COALESCE($3,correo),direccion=COALESCE($4,direccion) WHERE id_paciente=$1 RETURNING *`,
+      [id, datos.telefono ?? null, datos.correo ?? null, datos.direccion ?? null]);
+      return pacienteDesdeFila(rows[0]);
+    });
+  }
+
+  async obtenerAgenda(fecha, usuarioId) {
+    const { rows } = await this.pool.query(`SELECT c.*, p.nombres, p.apellidos FROM public.cita c
+      JOIN public.paciente p USING(id_paciente) WHERE c.fecha=$1 AND ($2::integer IS NULL OR c.id_usuario=$2)
+      ORDER BY c.hora, c.id_cita LIMIT 500`, [fecha, usuarioId ?? null]);
+    return { items: rows.map(citaDesdeFila) };
+  }
+
+  crearCita(datos) {
+    return this.transaccionDental(async (c) => {
+      await this.bloquearPaciente(c, datos.pacienteId);
+      const equipo = await c.query(`SELECT u.id_usuario FROM public.usuario u JOIN public.rol r USING(id_rol)
+        WHERE u.id_usuario=$1 AND u.estado=true AND lower(r.nombre)='odontologo'`, [datos.usuarioId]);
+      if (!equipo.rows.length) throw new NoEncontrado('ODONTOLOGO_NO_ENCONTRADO');
+      const { rows } = await c.query(`INSERT INTO public.cita(id_paciente,id_usuario,fecha,hora,motivo)
+        VALUES($1,$2,$3,$4,$5) RETURNING id_cita`, [datos.pacienteId, datos.usuarioId, datos.fecha, datos.hora, datos.motivo]);
+      return identificadorDental(rows[0].id_cita);
+    });
+  }
+
+  cambiarCita(id, datos) {
+    return this.transaccionDental(async (c) => {
+      const previa = await c.query('SELECT id_paciente FROM public.cita WHERE id_cita=$1', [id]);
+      if (!previa.rows.length) throw new NoEncontrado('CITA_NO_ENCONTRADA');
+      await this.bloquearPaciente(c, previa.rows[0].id_paciente);
+      const { rows } = await c.query(`UPDATE public.cita SET fecha=$2,hora=$3,estado=$4
+        WHERE id_cita=$1 AND estado IN ('programada','confirmada')
+        AND NOT EXISTS(SELECT 1 FROM public.consulta WHERE id_cita=$1) RETURNING id_cita`,
+      [id, datos.fecha, datos.hora, datos.estado]);
+      if (!rows.length) throw new Conflicto('CITA_NO_DISPONIBLE');
+      return identificadorDental(rows[0].id_cita);
+    });
+  }
+
+  async obtenerResponsables(id) {
+    if (!await this.obtenerPaciente(id)) throw new NoEncontrado('PACIENTE_NO_ENCONTRADO');
+    const { rows } = await this.pool.query(`SELECT r.*, pr.parentesco, pr.es_principal FROM public.responsable_legal r
+      JOIN public.paciente_responsable pr USING(id_responsable) WHERE pr.id_paciente=$1 ORDER BY pr.es_principal DESC, r.id_responsable`, [id]);
+    return { items: rows.map(responsableDesdeFila) };
+  }
+
+  guardarResponsable(id, datos) {
+    return this.transaccionDental(async (c) => {
+      await this.bloquearPaciente(c, id);
+      return this.insertarResponsable(c, id, datos);
+    });
+  }
+
+  async insertarResponsable(c, id, datos) {
+      const { rows } = await c.query(`INSERT INTO public.responsable_legal(nombres,apellidos,dpi,telefono)
+        VALUES($1,$2,$3,$4) RETURNING id_responsable`, [datos.nombres, datos.apellidos, datos.dpi ?? null, datos.telefono ?? null]);
+      if (datos.esPrincipal) await c.query('UPDATE public.paciente_responsable SET es_principal=false WHERE id_paciente=$1', [id]);
+      await c.query(`INSERT INTO public.paciente_responsable(id_paciente,id_responsable,parentesco,es_principal)
+        VALUES($1,$2,$3,$4)`, [id, rows[0].id_responsable, datos.parentesco, datos.esPrincipal]);
+      return identificadorDental(rows[0].id_responsable);
+  }
+
+  async obtenerAlergias(id) {
+    if (!await this.obtenerPaciente(id)) throw new NoEncontrado('PACIENTE_NO_ENCONTRADO');
+    const asignadas = await this.pool.query(`SELECT a.id_alergia, a.nombre, pa.nivel_severidad, pa.reaccion, pa.observaciones
+      FROM public.paciente_alergia pa JOIN public.alergia a USING(id_alergia) WHERE pa.id_paciente=$1 ORDER BY a.nombre`, [id]);
+    const catalogo = await this.pool.query('SELECT id_alergia,nombre FROM public.alergia WHERE estado=true ORDER BY nombre');
+    return { items: asignadas.rows.map(alergiaDesdeFila),
+    catalogo: catalogo.rows.map((r) => ({ id: String(r.id_alergia), nombre: r.nombre })) };
+  }
+
+  guardarAlergia(id, datos) {
+    return this.transaccionDental(async (c) => {
+      await this.bloquearPaciente(c, id);
+      const { rows } = await c.query(`INSERT INTO public.paciente_alergia(id_paciente,id_alergia,nivel_severidad,reaccion,observaciones,fecha_registro)
+        SELECT $1,id_alergia,$3,$4,$5,CURRENT_DATE FROM public.alergia WHERE id_alergia=$2 AND estado=true
+        ON CONFLICT(id_paciente,id_alergia) DO UPDATE SET nivel_severidad=EXCLUDED.nivel_severidad,
+        reaccion=EXCLUDED.reaccion,observaciones=EXCLUDED.observaciones RETURNING id_alergia`,
+      [id, datos.alergiaId, datos.nivelSeveridad, datos.reaccion, datos.observaciones ?? null]);
+      if (!rows.length) throw new NoEncontrado('ALERGIA_NO_ENCONTRADA');
+      return identificadorDental(rows[0].id_alergia);
+    });
+  }
+
+  finalizarConsulta(id, usuarioId) {
+    return this.transaccionDental(async (c) => {
+      const previa = await c.query('SELECT id_paciente FROM public.consulta WHERE id_consulta=$1 AND id_usuario=$2', [id, usuarioId]);
+      if (!previa.rows.length) throw new NoEncontrado('CONSULTA_NO_ENCONTRADA');
+      await this.bloquearPaciente(c, previa.rows[0].id_paciente);
+      const { rows } = await c.query(`UPDATE public.consulta SET estado='finalizada',fecha_finalizacion=now(),fecha_actualizacion=now()
+        WHERE id_consulta=$1 AND id_usuario=$2 AND estado='borrador' RETURNING *`, [id, usuarioId]);
+      if (!rows.length) throw new Conflicto('CONSULTA_NO_DISPONIBLE');
+      if (rows[0].id_cita) await c.query("UPDATE public.cita SET estado='completada' WHERE id_cita=$1", [rows[0].id_cita]);
+      return consultaDesdeFila(rows[0]);
+    });
   }
 
   async crearPaciente(datos) {
@@ -57,6 +189,10 @@ export class PostgresAdapter {
         "INSERT INTO public.historial_clinico (id_paciente) VALUES ($1)",
         [paciente.id_paciente]
       );
+
+      if (datos.detallesInstitucion?.responsableLegal) {
+        await this.insertarResponsable(cliente, paciente.id_paciente, datos.detallesInstitucion.responsableLegal);
+      }
 
       await cliente.query("COMMIT");
       return pacienteDesdeFila(paciente);
@@ -511,6 +647,13 @@ export class PostgresAdapter {
         const error = new Error("El paciente no tiene un historial activo");
         error.codigo = "HISTORIAL_NO_ACTIVO";
         throw error;
+      }
+
+      if (datos.citaId) {
+        const cita = await cliente.query(`SELECT id_cita FROM public.cita WHERE id_cita=$1
+          AND id_paciente=$2 AND id_usuario=$3 AND estado IN ('programada','confirmada') FOR UPDATE`,
+        [datos.citaId, datos.pacienteId, datos.usuarioId]);
+        if (!cita.rows.length) throw new Conflicto('CITA_NO_DISPONIBLE');
       }
 
       const resultado = await cliente.query(

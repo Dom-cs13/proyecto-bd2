@@ -36,6 +36,16 @@ describe('I2-09/I2-11 · cliente HTTP institucional', () => {
   it('impide construir rutas con identificadores manipulados', () => {
     expect(() => crearApiOdontologia({ sesion }).historial('../hospital')).toThrow('identificador');
   });
+  it('consulta red con identificadores opacos y conserva el bearer institucional', async () => {
+    const cliente = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ resultados: [] }) });
+    const api = crearApiOdontologia({ cliente, sesion });
+    await api.buscarEnRed({ texto: 'Ana & José', documento: '' });
+    expect(cliente).toHaveBeenLastCalledWith('/red/pacientes?texto=Ana+%26+Jos%C3%A9', expect.objectContaining({ method: 'GET' }));
+    await api.historialEnRed('laboratorio', 'uuid-prueba-1');
+    expect(cliente).toHaveBeenLastCalledWith('/red/laboratorio/pacientes/uuid-prueba-1/historial', expect.objectContaining({ method: 'GET' }));
+    expect(() => api.historialEnRed('constructor', '1')).toThrow('válido');
+    expect(() => api.historialEnRed('hospital', '../pacientes')).toThrow('válido');
+  });
   it.each([true, [], null])('rechaza respuestas exitosas que no contienen un objeto de API %#', async (cuerpo) => {
     const cliente = vi.fn().mockResolvedValue({ ok: true, json: async () => cuerpo });
     await expect(crearApiOdontologia({ cliente, sesion }).listar()).rejects.toThrow('respuesta inválida');
@@ -54,6 +64,18 @@ describe('I2-09/I2-11 · portal DOM con API simulada', () => {
     for (const nombre of ['window', 'document', 'location', 'FormData']) vi.stubGlobal(nombre, nombre === 'window' ? dom.window : dom.window[nombre]);
     contenido = globalThis.document.getElementById('contenido');
     api = {
+      buscarEnRed: vi.fn().mockResolvedValue({ resultados: [
+        { institucion: 'hospital', estado: 'ok', items: [{ id: 'mongo-7', nombre: 'Paciente red', apellidos: 'Prueba' }], total: 1 },
+        { institucion: 'laboratorio', estado: 'no_disponible', items: [], total: 0 },
+      ] }),
+      historialEnRed: vi.fn().mockResolvedValue({ paciente: { id: 'mongo-7', nombre: 'Paciente red', apellidos: 'Prueba' }, historial: { estado: 'activo' }, consultas: [] }),
+      agenda: vi.fn().mockResolvedValue({ items: [{ id: '2', pacienteId: '7', nombre: 'Ana López', fecha: '2026-11-10', hora: '09:00', motivo: 'Control', estado: 'confirmada' }] }),
+      equipo: vi.fn().mockResolvedValue({ items: [{ id: '9', nombre: 'Profesional' }] }),
+      crearCita: vi.fn().mockResolvedValue({ id: '2' }), cambiarCita: vi.fn().mockResolvedValue({ id: '2' }),
+      responsables: vi.fn().mockResolvedValue({ items: [] }), responsable: vi.fn().mockResolvedValue({ id: '1' }),
+      alergias: vi.fn().mockResolvedValue({ items: [], catalogo: [{ id: '2', nombre: 'Alergia conocida' }] }),
+      alergia: vi.fn().mockResolvedValue({ id: '2' }), finalizar: vi.fn().mockResolvedValue({ id: '4' }),
+      actualizarContacto: vi.fn().mockResolvedValue(paciente),
       listar: vi.fn().mockResolvedValue({ items: [paciente], total: 1 }), paciente: vi.fn().mockResolvedValue(paciente),
       historial: vi.fn().mockResolvedValue(expediente), registrar: vi.fn().mockResolvedValue(paciente),
       consulta: vi.fn().mockResolvedValue({ id: '4' }), diagnostico: vi.fn().mockResolvedValue({ id: '8' }),
@@ -67,6 +89,129 @@ describe('I2-09/I2-11 · portal DOM con API simulada', () => {
   const ruta = (hash) => { globalThis.location.hash = hash; };
   const llenar = (nombre, valor, raiz = contenido) => { raiz.querySelector(`[name="${nombre}"]`).value = valor; };
   const enviar = (id) => contenido.querySelector(id).dispatchEvent(new globalThis.window.Event('submit', { bubbles: true, cancelable: true }));
+
+  it('el odontograma envía el procedimiento seleccionado al endpoint de consulta existente', async () => {
+    ruta('consulta/7'); iniciar('odontologo');
+    await vi.waitFor(() => expect(contenido.querySelector('.odontograma')).not.toBeNull());
+    llenar('motivo', 'Control'); llenar('servicioId', '2');
+    contenido.querySelector('[data-pieza="26"]').click(); contenido.querySelector('[data-superficie="M"]').click();
+    enviar('#clinica-api');
+    await vi.waitFor(() => expect(api.consulta).toHaveBeenCalledWith({ pacienteId: '7', motivo: 'Control', detallesInstitucion: { servicios: [{ servicioId: '2', piezaDental: 26, superficie: 'M' }] } }));
+  });
+  it('el acceso directo a procedimientos conserva la intención al elegir paciente', async () => {
+    ruta('pacientes?accion=consulta'); iniciar('odontologo');
+    await vi.waitFor(() => expect(contenido.querySelector('a[href="#consulta/7"]')).not.toBeNull());
+    expect(contenido.textContent).toContain('Selecciona un paciente');
+    expect(api.listar).toHaveBeenCalledWith(expect.not.objectContaining({ accion: 'consulta' }), expect.any(AbortSignal));
+  });
+  it('el odontograma usa la fila activa al agregar otro servicio', async () => {
+    ruta('consulta/7'); iniciar('odontologo');
+    await vi.waitFor(() => expect(contenido.querySelector('.odontograma')).not.toBeNull());
+    llenar('motivo', 'Control'); llenar('servicioId', '2');
+    contenido.querySelector('[data-pieza="11"]').click(); contenido.querySelector('[data-superficie="V"]').click();
+    contenido.querySelector('#agregar-servicio').click();
+    const fila = contenido.querySelectorAll('.api-servicio')[1];
+    llenar('servicioId', '2', fila); contenido.querySelector('[data-pieza="48"]').click(); contenido.querySelector('[data-superficie="O"]').click();
+    enviar('#clinica-api');
+    await vi.waitFor(() => expect(api.consulta).toHaveBeenCalledWith(expect.objectContaining({ detallesInstitucion: { servicios: [
+      { servicioId: '2', piezaDental: 11, superficie: 'V' }, { servicioId: '2', piezaDental: 48, superficie: 'O' },
+    ] } })));
+  });
+  it('secretaría no accede al odontograma clínico por navegación directa', async () => {
+    ruta('consulta/7'); iniciar('secretaria');
+    await vi.waitFor(() => expect(api.listar).toHaveBeenCalled());
+    expect(contenido.querySelector('.odontograma')).toBeNull(); expect(api.historial).not.toHaveBeenCalled();
+  });
+  it.each(['secretaria', 'odontologo'])('%s consulta la red y abre una ficha sin acciones de escritura', async (rol) => {
+    ruta('red'); iniciar(rol);
+    await vi.waitFor(() => expect(contenido.querySelector('#buscar-red')).not.toBeNull());
+    expect(api.buscarEnRed).not.toHaveBeenCalled();
+    llenar('documento', 'FICTICIO'); enviar('#buscar-red');
+    await vi.waitFor(() => expect(contenido.querySelectorAll('.network-card')).toHaveLength(2));
+    expect(contenido.textContent).toContain('No disponible');
+    contenido.querySelector('a[href^="#red-historial/"]').click();
+    await vi.waitFor(() => expect(api.historialEnRed).toHaveBeenCalledWith('hospital', 'mongo-7', expect.any(AbortSignal)));
+    await vi.waitFor(() => expect(contenido.textContent).toContain('solo lectura'));
+    expect(contenido.querySelector('form')).toBeNull(); expect(api.registrar).not.toHaveBeenCalled();
+    expect(contenido.textContent).not.toContain('Sin registrar');
+  });
+  it('no envía una búsqueda vacía de red y explica cómo continuar', async () => {
+    globalThis.window.history.replaceState(null, '', '#red'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('#buscar-red')).not.toBeNull());
+    enviar('#buscar-red');
+    await vi.waitFor(() => expect(contenido.querySelector('[role="alert"]')).not.toBeNull());
+    expect(api.buscarEnRed).not.toHaveBeenCalled();
+  });
+
+  it.each(['secretaria', 'odontologo'])('restaura el dashboard %s con agenda real y navegación', async (rol) => {
+    ruta('inicio'); iniciar(rol);
+    await vi.waitFor(() => expect(contenido.querySelector('.appointment')).not.toBeNull());
+    expect(contenido.textContent).toContain('Ana López');
+    expect(contenido.textContent).not.toMatch(/ficticio|demostración|Próximamente/);
+    expect(globalThis.document.querySelector('#navegacion').textContent).toContain('Inicio');
+    expect(contenido.querySelector(`a[href="#${rol === 'odontologo' ? 'expediente' : 'ficha'}/7"]`)).not.toBeNull();
+    expect(api.historial).not.toHaveBeenCalled();
+  });
+  it('secretaría agenda una cita con profesional seleccionado desde la API', async () => {
+    ruta('nueva-cita/7'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('#cita-api')).not.toBeNull());
+    llenar('usuarioId', '9'); llenar('fecha', '2026-11-10'); llenar('hora', '09:00'); llenar('motivo', 'Control');
+    enviar('#cita-api');
+    await vi.waitFor(() => expect(api.crearCita).toHaveBeenCalledWith({ pacienteId: '7', usuarioId: '9', fecha: '2026-11-10', hora: '09:00', motivo: 'Control' }));
+  });
+  it('secretaría reprograma o cancela una cita y vuelve a la agenda', async () => {
+    ruta('reprogramar/2?fecha=2026-11-10&hora=09:00'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('#cita-api')).not.toBeNull());
+    llenar('estado', 'cancelada'); enviar('#cita-api');
+    await vi.waitFor(() => expect(api.cambiarCita).toHaveBeenCalledWith('2', { fecha: '2026-11-10', hora: '09:00', estado: 'cancelada' }));
+  });
+  it('secretaría registra al responsable principal', async () => {
+    ruta('responsables/7'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('#relacion-api')).not.toBeNull());
+    llenar('nombres', 'Ana'); llenar('apellidos', 'López'); llenar('parentesco', 'Madre'); llenar('esPrincipal', 'true');
+    enviar('#relacion-api');
+    await vi.waitFor(() => expect(api.responsable).toHaveBeenCalledWith('7', { nombres: 'Ana', apellidos: 'López', parentesco: 'Madre', esPrincipal: true }));
+  });
+  it('secretaría registra menor y responsable desde el mismo formulario', async () => {
+    ruta('registro'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('#registro-api')).not.toBeNull());
+    llenar('documentoIdentidad', 'MENOR-1'); llenar('nombre', 'Menor'); llenar('genero', 'Otro'); llenar('apellidos', 'Ficticio'); llenar('fechaNacimiento', '2020-01-01');
+    llenar('responsableNombres', 'Tutor'); llenar('responsableApellidos', 'Ficticio'); llenar('responsableParentesco', 'Madre');
+    enviar('#registro-api');
+    await vi.waitFor(() => expect(api.registrar).toHaveBeenCalledWith(expect.objectContaining({ detallesInstitucion: { responsableLegal: {
+      nombres: 'Tutor', apellidos: 'Ficticio', parentesco: 'Madre', esPrincipal: true,
+    } } })));
+  });
+  it('secretaría actualiza el contacto desde la ficha', async () => {
+    ruta('contacto/7'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('#contacto-api')).not.toBeNull());
+    llenar('telefono', '12345678'); enviar('#contacto-api');
+    await vi.waitFor(() => expect(api.actualizarContacto).toHaveBeenCalledWith('7', { telefono: '12345678' }));
+  });
+  it('conserva la cita seleccionada desde agenda al guardar consulta', async () => {
+    ruta('consulta/7?citaId=2'); iniciar('odontologo');
+    await vi.waitFor(() => expect(contenido.querySelector('#clinica-api')).not.toBeNull());
+    llenar('motivo', 'Control'); enviar('#clinica-api');
+    await vi.waitFor(() => expect(api.consulta).toHaveBeenCalledWith({ pacienteId: '7', citaId: '2', motivo: 'Control' }));
+  });
+  it('odontólogo guarda una alergia del catálogo con reacción y severidad', async () => {
+    ruta('alergias/7'); iniciar('odontologo');
+    await vi.waitFor(() => expect(contenido.querySelector('#relacion-api')).not.toBeNull());
+    llenar('alergiaId', '2'); llenar('nivelSeveridad', 'Alta'); llenar('reaccion', 'Erupción'); enviar('#relacion-api');
+    await vi.waitFor(() => expect(api.alergia).toHaveBeenCalledWith('7', { alergiaId: '2', nivelSeveridad: 'Alta', reaccion: 'Erupción' }));
+  });
+  it('odontólogo finaliza la consulta desde el expediente', async () => {
+    ruta('expediente/7'); iniciar('odontologo');
+    await vi.waitFor(() => expect([...contenido.querySelectorAll('button')].some((b) => b.textContent.includes('Finalizar consulta'))).toBe(true));
+    [...contenido.querySelectorAll('button')].find((b) => b.textContent.includes('Finalizar consulta')).click();
+    await vi.waitFor(() => expect(api.finalizar).toHaveBeenCalledWith('4'));
+  });
+  it('odontólogo consulta responsables sin formulario administrativo', async () => {
+    ruta('responsables/7'); iniciar('odontologo');
+    await vi.waitFor(() => expect(api.responsables).toHaveBeenCalled());
+    await vi.waitFor(() => expect(contenido.textContent).toContain('Responsables legales'));
+    expect(contenido.querySelector('#relacion-api')).toBeNull();
+  });
 
   it('busca pacientes y escapa datos clínicos recibidos de la API', async () => {
     api.listar.mockResolvedValue({ items: [{ ...paciente, nombres: '<img src=x onerror="alert(1)">' }], total: 1 });

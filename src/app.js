@@ -2,6 +2,7 @@ import { routerPediatriaAuth } from './interfaces/http/routes/pediatriaAuth.js';
 import { routerOdontologiaAuth } from './interfaces/http/routes/odontologiaAuth.js';
 import { crearRouterOdontologia } from './interfaces/http/routes/odontologiaPacientes.js';
 import { crearRouterPediatria } from './interfaces/http/routes/pediatriaPacientes.js';
+import { crearRouterRed } from './interfaces/http/routes/consultaEnRed.js';
 // Arma la app Express sin escuchar un puerto (los tests la usan con Supertest).
 import express from 'express';
 import authRoutes from './interfaces/http/routes/auth.js';
@@ -18,6 +19,7 @@ export function crearApp(opciones = {}) {
 
   app.use(routerPediatriaAuth);
   app.use(routerOdontologiaAuth);
+  app.use(crearRouterRed(opciones.red));
 
   const soloOdonto = opciones.odontologia && !opciones.pediatria;
   const soloPedia = opciones.pediatria && !opciones.odontologia;

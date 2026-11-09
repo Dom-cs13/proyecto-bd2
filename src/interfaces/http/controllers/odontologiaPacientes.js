@@ -2,6 +2,8 @@ import { casosPacientesOdontologia } from '../../../application/useCases/odontol
 import { Conflicto, ErrorDominio, MotorNoDisponible, Validacion } from '../../../domain/errores.js';
 import { archivoOdontologia, filtroOdontologia, idOdontologia, pacienteOdontologia } from '../validators/odontologia.js';
 import { consultaOdontologia, diagnosticoOdontologia, tratamientoOdontologia, recetaOdontologia } from '../validators/odontologia.js';
+import { citaOdontologia, cambioCitaOdontologia, responsableOdontologia, alergiaOdontologia, agendaOdontologia } from '../validators/odontologia.js';
+import { editarPacienteOdontologia } from '../validators/odontologia.js';
 
 export function controladoresOdontologia(obtenerRepositorio) {
   const ejecutar = (operacion, status = 200, duplicado = 'CONFLICTO') => async (req, res, next) => {
@@ -26,6 +28,16 @@ export function controladoresOdontologia(obtenerRepositorio) {
     }
   };
   return {
+    actualizarContacto: ejecutar((casos, req) => casos.actualizarContacto(idOdontologia.parse(req.params.id), editarPacienteOdontologia.parse(req.body))),
+    agenda: ejecutar((casos, req) => casos.agenda(agendaOdontologia.parse(req.query).fecha, req.user.rol === 'odontologo' ? req.user.sub : undefined)),
+    equipo: ejecutar((casos) => casos.equipo()),
+    crearCita: ejecutar((casos, req) => casos.crearCita(citaOdontologia.parse(req.body)), 201),
+    cambiarCita: ejecutar((casos, req) => casos.cambiarCita(idOdontologia.parse(req.params.id), cambioCitaOdontologia.parse(req.body))),
+    responsables: ejecutar((casos, req) => casos.responsables(idOdontologia.parse(req.params.id))),
+    responsable: ejecutar((casos, req) => casos.responsable(idOdontologia.parse(req.params.id), responsableOdontologia.parse(req.body)), 201),
+    alergias: ejecutar((casos, req) => casos.alergias(idOdontologia.parse(req.params.id))),
+    alergia: ejecutar((casos, req) => casos.alergia(idOdontologia.parse(req.params.id), alergiaOdontologia.parse(req.body)), 201),
+    finalizar: ejecutar((casos, req) => casos.finalizar(idOdontologia.parse(req.params.id), req.user.sub)),
     crearConsulta: ejecutar((casos, req) => casos.crearConsulta(consultaOdontologia.parse(req.body), idOdontologia.parse(req.user.sub)), 201),
     diagnostico: ejecutar((casos, req) => casos.agregarDiagnostico(idOdontologia.parse(req.params.id), diagnosticoOdontologia.parse(req.body)), 201),
     tratamiento: ejecutar((casos, req) => casos.registrarTratamiento(idOdontologia.parse(req.params.id), tratamientoOdontologia.parse(req.body)), 201),

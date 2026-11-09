@@ -20,6 +20,16 @@ export function crearRouterOdontologia(opciones = {}) {
     router[metodo](path, ...(generica ? [seleccionar] : []), verificar, permitirOdontologia(...roles), controlador);
   };
   ruta('post', '/consultas', ['odontologo'], c.crearConsulta);
+  ruta('patch', '/odontologia/pacientes/:id/contacto', ['secretaria'], c.actualizarContacto, false);
+  ruta('get', '/odontologia/agenda', ['secretaria', 'odontologo'], c.agenda, false);
+  ruta('get', '/odontologia/equipo', ['secretaria'], c.equipo, false);
+  ruta('post', '/odontologia/citas', ['secretaria'], c.crearCita, false);
+  ruta('patch', '/odontologia/citas/:id', ['secretaria'], c.cambiarCita, false);
+  ruta('get', '/odontologia/pacientes/:id/responsables', ['secretaria', 'odontologo'], c.responsables, false);
+  ruta('post', '/odontologia/pacientes/:id/responsables', ['secretaria'], c.responsable, false);
+  ruta('get', '/odontologia/pacientes/:id/alergias', ['odontologo'], c.alergias, false);
+  ruta('post', '/odontologia/pacientes/:id/alergias', ['odontologo'], c.alergia, false);
+  ruta('patch', '/odontologia/consultas/:id/finalizar', ['odontologo'], c.finalizar, false);
   ruta('post', '/consultas/:id/diagnosticos', ['odontologo'], c.diagnostico);
   ruta('post', '/diagnosticos/:id/tratamientos', ['odontologo'], c.tratamiento);
   ruta('post', '/consultas/:id/recetas', ['odontologo'], c.receta);

@@ -30,7 +30,8 @@ DECLARE tabla text; columna text; secuencia text;
 BEGIN
   FOREACH tabla IN ARRAY ARRAY[
     'paciente', 'historial_clinico', 'consulta', 'diagnostico', 'tratamiento',
-    'receta', 'detalle_receta', 'consulta_servicio', 'medicamento', 'servicio_odontologico', 'rol'
+    'receta', 'detalle_receta', 'consulta_servicio', 'medicamento', 'servicio_odontologico', 'rol',
+    'cita', 'responsable_legal', 'paciente_responsable', 'alergia', 'paciente_alergia'
   ] LOOP
     EXECUTE format('REVOKE ALL ON TABLE public.%I FROM PUBLIC', tabla);
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', tabla);
@@ -41,10 +42,10 @@ BEGIN
 
   FOREACH tabla IN ARRAY ARRAY[
     'paciente', 'historial_clinico', 'consulta', 'diagnostico', 'tratamiento',
-    'receta', 'detalle_receta', 'consulta_servicio'
+    'receta', 'detalle_receta', 'consulta_servicio', 'cita', 'responsable_legal'
   ] LOOP
     EXECUTE format('GRANT INSERT ON TABLE public.%I TO red_salud_odontologia_api', tabla);
-    columna := 'id_' || CASE tabla WHEN 'historial_clinico' THEN 'historial' ELSE tabla END;
+    columna := 'id_' || CASE tabla WHEN 'historial_clinico' THEN 'historial' WHEN 'responsable_legal' THEN 'responsable' ELSE tabla END;
     secuencia := pg_get_serial_sequence(format('public.%I', tabla), columna);
     IF secuencia IS NULL THEN RAISE EXCEPTION 'Falta identity en %', tabla; END IF;
     EXECUTE format('GRANT USAGE ON SEQUENCE %s TO red_salud_odontologia_api', secuencia);
@@ -61,11 +62,30 @@ CREATE POLICY odontologia_api_archivo ON public.historial_clinico
 
 REVOKE ALL ON public.usuario FROM PUBLIC;
 ALTER TABLE public.usuario ENABLE ROW LEVEL SECURITY;
-GRANT SELECT (id_usuario, correo, id_rol, estado, password_hash)
+GRANT SELECT (id_usuario, nombres, apellidos, correo, id_rol, estado, password_hash)
   ON public.usuario TO red_salud_odontologia_api;
 DROP POLICY IF EXISTS odontologia_api_login ON public.usuario;
 CREATE POLICY odontologia_api_login ON public.usuario FOR SELECT
   TO red_salud_odontologia_api USING (estado = true);
+
+DO $$
+DECLARE tabla text;
+BEGIN
+  FOREACH tabla IN ARRAY ARRAY['paciente_responsable', 'paciente_alergia'] LOOP
+    EXECUTE format('GRANT INSERT ON public.%I TO red_salud_odontologia_api', tabla);
+    EXECUTE format('DROP POLICY IF EXISTS odontologia_api_registro ON public.%I', tabla);
+    EXECUTE format('CREATE POLICY odontologia_api_registro ON public.%I FOR INSERT TO red_salud_odontologia_api WITH CHECK (true)', tabla);
+  END LOOP;
+  FOREACH tabla IN ARRAY ARRAY['paciente', 'cita', 'consulta', 'paciente_responsable', 'paciente_alergia'] LOOP
+    EXECUTE format('DROP POLICY IF EXISTS odontologia_api_actualizacion ON public.%I', tabla);
+    EXECUTE format('CREATE POLICY odontologia_api_actualizacion ON public.%I FOR UPDATE TO red_salud_odontologia_api USING (true) WITH CHECK (true)', tabla);
+  END LOOP;
+END $$;
+GRANT UPDATE (telefono, correo, direccion) ON public.paciente TO red_salud_odontologia_api;
+GRANT UPDATE (fecha, hora, estado) ON public.cita TO red_salud_odontologia_api;
+GRANT UPDATE (estado, fecha_finalizacion, fecha_actualizacion) ON public.consulta TO red_salud_odontologia_api;
+GRANT UPDATE (es_principal) ON public.paciente_responsable TO red_salud_odontologia_api;
+GRANT UPDATE (nivel_severidad, reaccion, observaciones) ON public.paciente_alergia TO red_salud_odontologia_api;
 
 DO $$
 BEGIN
