@@ -7,6 +7,7 @@ import {
   MuestraSchema,
   ResultadoSchema,
 } from '../../src/domain/entities/laboratorio.js';
+import { SystemStatusSchema } from '../../src/domain/entities/sistema.js';
 
 describe('Validación de Ejemplos de Contrato JSON (I3-02)', () => {
   const dirEjemplos = resolve(process.cwd(), 'contratos/ejemplos');
@@ -57,6 +58,12 @@ describe('Validación de Ejemplos de Contrato JSON (I3-02)', () => {
   it('resultado-laboratorio-response.json valida contra ResultadoSchema', () => {
     const data = leerJson('resultado-laboratorio-response.json');
     const parseado = ResultadoSchema.safeParse(data);
+    expect(parseado.success).toBe(true);
+  });
+
+  it('system-status-response.json valida contra SystemStatusSchema', () => {
+    const data = leerJson('system-status-response.json');
+    const parseado = SystemStatusSchema.safeParse(data);
     expect(parseado.success).toBe(true);
   });
 });

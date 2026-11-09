@@ -176,3 +176,21 @@
 - **Evidencia:** `.gitattributes`, `frontend/hospital/pages/gestion-pacientes.html`, `frontend/hospital/js/app.js`, `frontend/hospital/js/components/doctoresComponent.js`, `frontend/hospital/js/components/laboratorioTable.js`, `frontend/hospital/js/components/polizasComponent.js`.
 - **Tiempo invertido:** 40 min
 - **Siguiente paso:** Entrega final y revisión de usuario.
+
+## Sesión 10 · 2026-11-09 · Endpoint GET /system/status y Panel Técnico (I1-08)
+
+- **Objetivo de la sesión:** Implementar el endpoint oficial `GET /system/status` para diagnóstico de salud, latencia y motores activos del sistema para el panel técnico, cumpliendo con la sección 3.3, 7.6 y el contrato formal.
+- **Qué hice:**
+  - Definido `SystemStatusSchema` en `src/domain/entities/sistema.js` validando `contratos/ejemplos/system-status-response.json`.
+  - Implementado el caso de uso `obtenerEstadoSistema` en `src/application/useCases/obtenerEstadoSistema.js` bajo arquitectura hexagonal (DIP estricto, sin imports de drivers) con ejecución en paralelo de `ping()` y timeout configurable.
+  - Creada fábrica `src/infrastructure/config/statusRepositoryFactory.js` para resolución segura y desacoplada de los 4 motores (`hospital`, `odontologia`, `laboratorio`, `pediatria`).
+  - Implementados controlador `src/interfaces/http/controllers/systemStatus.js` y router Express en `src/interfaces/http/routes/status.js`, montado en `src/app.js` sobre `GET /system/status`.
+  - Añadidas pruebas unitarias en `tests/unit/obtenerEstadoSistema.test.js`, prueba de contrato en `tests/unit/contratosEjemplos.test.js` y pruebas de integración en `tests/integration/systemStatus.test.js`.
+- **Decisiones tomadas (y por qué):**
+  - Aislar fallos individuales de conexión para que un motor caído reporte `desconectado` con latencia `null` sin tumbar el diagnóstico de los motores restantes.
+  - Sanitizar la salida técnica garantizando que jamás se filtren credenciales, URLs con contraseñas o stack traces internos.
+- **Problemas / bloqueos:** Ninguno. 418 pruebas unitarias, de integración y de contrato en verde, linter con 0 errores.
+- **Evidencia:** `src/domain/entities/sistema.js`, `src/application/useCases/obtenerEstadoSistema.js`, `src/infrastructure/config/statusRepositoryFactory.js`, `src/interfaces/http/controllers/systemStatus.js`, `src/interfaces/http/routes/status.js`, `src/app.js`, `tests/unit/obtenerEstadoSistema.test.js`, `tests/integration/systemStatus.test.js`.
+- **Tiempo invertido:** 35 min
+- **Siguiente paso:** Tarea I1-07 Transacciones multi-documento con `session.withTransaction()` e inclusión en contrato formal.
+
