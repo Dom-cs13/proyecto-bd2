@@ -88,7 +88,7 @@ export function obtenerFirebaseApp() {
     });
   }
 
-  if (!credential && FIREBASE_PROJECT_ID) {
+  if (!credential && FIREBASE_PROJECT_ID && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     try {
       credential = applicationDefault();
     } catch {

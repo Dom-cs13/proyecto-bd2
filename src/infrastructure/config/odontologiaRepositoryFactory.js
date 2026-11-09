@@ -8,7 +8,10 @@ let repositorio;
 export function obtenerRepositorio(institucion) {
   if (institucion !== 'odontologia') throw new Prohibido('INSTITUCION_INVALIDA');
   try {
-    repositorio ??= new PostgresAdapter(crearPoolPostgres());
+    const ssl = process.env.PGSSL_REJECT_UNAUTHORIZED === 'true'
+      ? { rejectUnauthorized: true }
+      : { rejectUnauthorized: false };
+    repositorio ??= new PostgresAdapter(crearPoolPostgres({ ssl }));
     return repositorio;
   } catch {
     throw new MotorNoDisponible('odontologia');

@@ -28,7 +28,9 @@ export function crearPoolMariaDb(configuracion = {}) {
   };
 
   if (usarSsl) {
-    opciones.ssl = { rejectUnauthorized: true };
+    opciones.ssl = typeof configuracion.ssl === 'object'
+      ? configuracion.ssl
+      : { rejectUnauthorized: process.env.MARIADB_SSL_REJECT_UNAUTHORIZED === 'true' };
   }
 
   return mariadb.createPool(opciones);

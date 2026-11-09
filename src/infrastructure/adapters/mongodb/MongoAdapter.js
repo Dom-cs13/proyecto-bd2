@@ -13,12 +13,15 @@ import {
 import { NoEncontrado, Conflicto } from '../../../domain/errores.js';
 
 export class MongoAdapter {
-  constructor() {
+  constructor(db = null, cliente = null) {
     this.institucion = 'Hospital General';
     this.motor = 'MongoDB Atlas';
+    this._dbInyectada = db;
+    this._clienteInyectado = cliente;
   }
 
   async _getDb() {
+    if (this._dbInyectada) return this._dbInyectada;
     const { db } = await obtenerConexionMongo();
     return db;
   }
@@ -202,6 +205,10 @@ export class MongoAdapter {
       throw new NoEncontrado('PACIENTE_NO_ENCONTRADO', `No existe el paciente con ID ${datos.pacienteId}`);
     }
 
+    if (paciente.estado === 'archivado') {
+      throw new Conflicto('PACIENTE_ARCHIVADO', 'No se pueden crear consultas para un paciente archivado');
+    }
+
     const doc = {
       ...datos,
       pacienteId: paciente.id,
@@ -209,8 +216,22 @@ export class MongoAdapter {
       fecha: datos.fecha ? new Date(datos.fecha) : new Date(),
     };
 
-    const resultado = await db.collection('consultas').insertOne(doc);
-    doc._id = resultado.insertedId;
+    const cliente = this._clienteInyectado;
+    if (cliente && typeof cliente.startSession === 'function') {
+      const session = cliente.startSession();
+      try {
+        await session.withTransaction(async () => {
+          const resultado = await db.collection('consultas').insertOne(doc, { session });
+          doc._id = resultado.insertedId;
+        });
+      } finally {
+        await session.endSession();
+      }
+    } else {
+      const resultado = await db.collection('consultas').insertOne(doc);
+      doc._id = resultado.insertedId;
+    }
+
     return consultaToDomain(doc);
   }
 
@@ -226,15 +247,27 @@ export class MongoAdapter {
     const diagnostico = {
       idDiagnostico: `diag-${Date.now()}`,
       ...datos,
+      codigoCie: datos.codigoCie || datos.codigo || null,
       tratamiento: null,
     };
 
-    await db.collection('consultas').updateOne(query, {
-      $set: { diagnostico },
-    });
+    const cliente = this._clienteInyectado;
+    if (cliente && typeof cliente.startSession === 'function') {
+      const session = cliente.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await db.collection('consultas').updateOne(query, { $set: { diagnostico } }, { session });
+        });
+      } finally {
+        await session.endSession();
+      }
+    } else {
+      await db.collection('consultas').updateOne(query, { $set: { diagnostico } });
+    }
 
     return {
       id: diagnostico.idDiagnostico,
+      codigoCie: diagnostico.codigoCie,
       descripcion: diagnostico.descripcion,
       observaciones: diagnostico.observaciones || '',
     };
@@ -260,9 +293,19 @@ export class MongoAdapter {
       fechaInicio: datos.fechaInicio || new Date().toISOString().slice(0, 10),
     };
 
-    await db.collection('consultas').updateOne(query, {
-      $set: { 'diagnostico.tratamiento': tratamiento },
-    });
+    const cliente = this._clienteInyectado;
+    if (cliente && typeof cliente.startSession === 'function') {
+      const session = cliente.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await db.collection('consultas').updateOne(query, { $set: { 'diagnostico.tratamiento': tratamiento } }, { session });
+        });
+      } finally {
+        await session.endSession();
+      }
+    } else {
+      await db.collection('consultas').updateOne(query, { $set: { 'diagnostico.tratamiento': tratamiento } });
+    }
 
     return {
       id: tratamiento.idTratamiento,
@@ -282,20 +325,39 @@ export class MongoAdapter {
       throw new NoEncontrado('CONSULTA_NO_ENCONTRADA', `No existe la consulta ${consultaId}`);
     }
 
+    const medicamentos = datos.medicamentos || datos.detalles || [];
     const receta = {
       idReceta: `rec-${Date.now()}`,
       fecha: new Date(),
-      detalles: datos.detalles || [],
+      medicamentos,
+      detalles: medicamentos,
     };
 
-    await db.collection('consultas').updateOne(query, {
-      $set: { 'diagnostico.tratamiento.receta': receta },
-    });
+    const cliente = this._clienteInyectado;
+    if (cliente && typeof cliente.startSession === 'function') {
+      const session = cliente.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await db.collection('consultas').updateOne(
+            query,
+            { $set: { 'diagnostico.tratamiento.receta': receta } },
+            { session }
+          );
+        });
+      } finally {
+        await session.endSession();
+      }
+    } else {
+      await db.collection('consultas').updateOne(query, {
+        $set: { 'diagnostico.tratamiento.receta': receta },
+      });
+    }
 
     return {
       id: receta.idReceta,
       fecha: receta.fecha.toISOString(),
       detalles: receta.detalles,
+      medicamentos: receta.medicamentos,
     };
   }
 

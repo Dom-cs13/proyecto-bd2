@@ -25,11 +25,13 @@ export function pacienteToDomain(doc) {
     apellidos: doc.apellidos || '',
     fechaNacimiento: formatearFechaIso(doc.fechaNacimiento)?.slice(0, 10) || '',
     sexo: doc.sexo || doc.genero || '',
+    genero: doc.genero || doc.sexo || '',
     direccion: doc.direccion || '',
     telefono: doc.telefono ? String(doc.telefono) : '',
     correo: doc.correo || '',
     alergias: doc.alergias || '',
     polizaSeguro: doc.polizaSeguro || null,
+    activo: doc.activo !== undefined ? Boolean(doc.activo) : doc.estado !== 'archivado',
     detallesInstitucion: doc.detallesInstitucion || {
       institucionId: 'I1',
       nombreInstitucion: 'Hospital General',
