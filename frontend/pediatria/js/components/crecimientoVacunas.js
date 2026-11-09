@@ -1,6 +1,8 @@
 import { store, ESQUEMA_NACIONAL_VACUNAS } from '../state.js';
 import { mostrarErrorHttp, mostrarNotificacionExito } from '../../../shared/js/components/mensajesError.js';
 import { puedeEjecutarAccion, obtenerConfiguracionRol } from '../../../shared/js/components/navegacionRol.js';
+import { apiPediatria } from '../../../shared/js/api/pediatria.js';
+import { obtenerSesion } from '../../../shared/js/api/auth.js';
 
 export function inicializarSelectorCrecimiento() {
   const select = document.getElementById('sel-paciente-crecimiento');
@@ -287,7 +289,7 @@ function abrirDialogoControl() {
     }
 
     const imc = parseFloat((peso / Math.pow(talla / 100, 2)).toFixed(1));
-    store.agregarControlCrecimiento(paciente.id, {
+    const nuevoControl = {
       id: `cc-${Date.now()}`,
       fecha: new Date().toISOString().split('T')[0],
       edadMeses: isNaN(edadMeses) ? 24 : edadMeses,
@@ -296,7 +298,20 @@ function abrirDialogoControl() {
       perimetroCefalicoCm: pc,
       imc,
       observaciones: obs || 'Control registrado en consultorio.'
-    });
+    };
+    store.agregarControlCrecimiento(paciente.id, nuevoControl);
+    const sesion = obtenerSesion();
+    if (sesion?.institucion === 'pediatria' && sesion.token && !sesion.token.includes('demo') && /^[1-9]\d*$/.test(String(paciente.id))) {
+      apiPediatria.crecimiento(paciente.id, {
+        pesoKg: peso,
+        tallaCm: talla,
+        perimetroCefalicoCm: pc,
+        edadMeses: nuevoControl.edadMeses,
+        observaciones: nuevoControl.observaciones
+      }).catch((err) => {
+        mostrarErrorHttp(err);
+      });
+    }
     cerrar();
     mostrarNotificacionExito('Control antropométrico registrado', `${peso} kg · ${talla} cm (IMC ${imc}) guardado para ${paciente.nombre}.`);
   });
@@ -379,14 +394,26 @@ function abrirDialogoVacuna() {
 
     if (!seleccionada || !lote) return;
 
-    store.registrarVacuna(paciente.id, {
+    const nuevaVacuna = {
       vacunaId: seleccionada.vacunaId,
       nombreVacuna: seleccionada.nombreVacuna,
       dosis: seleccionada.dosis,
       fechaAplicacion: new Date().toISOString().split('T')[0],
       lote,
       responsable: responsable || 'Enf. Rosa Elena'
-    });
+    };
+    store.registrarVacuna(paciente.id, nuevaVacuna);
+    const sesion = obtenerSesion();
+    if (sesion?.institucion === 'pediatria' && sesion.token && !sesion.token.includes('demo') && /^[1-9]\d*$/.test(String(paciente.id))) {
+      apiPediatria.vacuna(paciente.id, {
+        vacunaId: String(idx + 1),
+        numeroDosis: seleccionada.dosis,
+        lote,
+        fechaAplicacion: nuevaVacuna.fechaAplicacion
+      }).catch((err) => {
+        mostrarErrorHttp(err);
+      });
+    }
     cerrar();
     mostrarNotificacionExito('Vacuna registrada en el carnet', `${seleccionada.nombreVacuna} (Dosis ${seleccionada.dosis}, lote ${lote}).`);
   });

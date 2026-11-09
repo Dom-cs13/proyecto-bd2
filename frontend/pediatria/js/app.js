@@ -439,6 +439,9 @@ async function cargarEstadoPanelTecnico() {
 
 // Navegación global
 window.navegarA = (nombreVista) => {
+  if (location.hash !== `#${nombreVista}`) {
+    location.hash = `#${nombreVista}`;
+  }
   cargarVista(nombreVista);
 };
 
@@ -466,7 +469,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  cargarVista('principal');
+  const sincronizarVistaPorHash = () => {
+    const [ruta] = (location.hash.slice(1) || 'principal').split('?');
+    const [seccion] = ruta.split('/');
+    if (['buscador', 'pacientes'].includes(seccion)) {
+      cargarVista('buscador');
+    } else if (['crecimiento', 'crecimiento-vacunas', 'vacunas'].includes(seccion)) {
+      cargarVista('crecimiento');
+    } else if (['gestion', 'registro'].includes(seccion)) {
+      cargarVista('gestion');
+    } else if (seccion === 'consulta-red') {
+      cargarVista('consulta-red');
+    } else {
+      cargarVista('principal');
+    }
+  };
+
+  window.addEventListener('hashchange', sincronizarVistaPorHash);
+
+  if (location.hash && location.hash !== '#') {
+    sincronizarVistaPorHash();
+  } else {
+    cargarVista('principal');
+  }
 
   // Reactividad con el store
   store.subscribe(() => {
@@ -488,11 +513,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Botones de Topbar
   const topNavPrincipal = document.getElementById('topnav-btn-principal');
-  if (topNavPrincipal) topNavPrincipal.addEventListener('click', () => cargarVista('principal'));
+  if (topNavPrincipal) topNavPrincipal.addEventListener('click', () => { location.hash = '#principal'; cargarVista('principal'); });
 
   const topNavBuscador = document.getElementById('topnav-btn-buscador');
-  if (topNavBuscador) topNavBuscador.addEventListener('click', () => cargarVista('buscador'));
+  if (topNavBuscador) topNavBuscador.addEventListener('click', () => { location.hash = '#buscador'; cargarVista('buscador'); });
 
   const topNavNuevo = document.getElementById('topnav-btn-nuevo');
-  if (topNavNuevo) topNavNuevo.addEventListener('click', () => cargarVista('gestion'));
+  if (topNavNuevo) topNavNuevo.addEventListener('click', () => { location.hash = '#gestion'; cargarVista('gestion'); });
 });

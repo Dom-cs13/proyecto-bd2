@@ -28,3 +28,12 @@
     <div id="table-container" class="table-container"></div>
   </div>
 </div>
+
+<script type="module">
+  // Enlace SPA con portalApi: Si se accede directamente a la página complementaria,
+  // delega al portal principal sin recargar la página ni perder el contexto SPA.
+  if (typeof window !== 'undefined' && window.top === window && !document.getElementById('main-viewport') && !document.getElementById('contenido')) {
+    const destino = `../index.html#buscador${location.search}${location.hash ? '&' + location.hash.slice(1) : ''}`;
+    location.replace(destino);
+  }
+</script>
