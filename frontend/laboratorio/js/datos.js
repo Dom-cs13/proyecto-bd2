@@ -362,6 +362,9 @@ function cargarDesdeStorage() {
       if (raw) {
         const data = JSON.parse(raw);
         if (Array.isArray(data?.pacientes) && Array.isArray(data?.examenes)) {
+          if (data.pacientes.length === 0 && data.examenes.length === 0) {
+            return false;
+          }
           hydrate(data);
           return true;
         }

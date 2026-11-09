@@ -87,6 +87,16 @@ async function navegar() {
   document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('activo', a.hash === `#${nombre}`));
   document.querySelectorAll('.topbar-tab').forEach((a) => a.classList.toggle('active', a.hash === `#${nombre}`));
 
+  // Actualizar indicador de sección actual
+  const nombresSeccion = {
+    principal: 'Panel General',
+    expedientes: 'Buscador y Base de Datos',
+    pacientes: 'Alta y Archivado',
+    examenes: 'Órdenes de Exámenes'
+  };
+  const seccionActual = document.getElementById('seccion-actual');
+  if (seccionActual) seccionActual.textContent = nombresSeccion[nombre] || 'Panel General';
+
   // Actualizar insignias del sidebar
   const badgePac = document.getElementById('badge-pacientes');
   if (badgePac) badgePac.textContent = pacientes.length;

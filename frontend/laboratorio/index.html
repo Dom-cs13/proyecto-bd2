@@ -3,83 +3,182 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Laboratorio Clínico · Red de Salud</title>
+  <title>Laboratorio Clínico · Alba Suite</title>
+  
+  <script>
+    // Algunos servidores estáticos sirven el índice sin normalizar el directorio.
+    // La barra final permite resolver CSS, módulos y enlaces relativos correctamente.
+    if (location.pathname.endsWith('/laboratorio')) {
+      const destino = new URL(location.href);
+      destino.pathname += '/';
+      location.replace(destino.href);
+    }
+  </script>
+
+  <!-- Estilos compartidos y de módulo -->
   <link rel="stylesheet" href="../shared/css/fuentes.css">
-  <link rel="stylesheet" href="css/laboratorio.css">
+  <link rel="stylesheet" href="./css/laboratorio.css">
 </head>
 <body>
   <script type="module">
-    import { exigirSesion } from '../shared/js/api/auth.js';
-    exigirSesion('laboratorio');
+    import { obtenerSesion, exigirSesion } from '../shared/js/api/auth.js';
+    const esLocal = ['localhost', '127.0.0.1', '::1', ''].includes(location.hostname) || location.protocol === 'file:';
+    const sesion = obtenerSesion();
+    if (!esLocal && !sesion) {
+      exigirSesion('laboratorio');
+    }
   </script>
-  <div class="app">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="marca">
-        <svg viewBox="0 0 40 40" width="38" height="38" aria-hidden="true">
-          <rect x="2" y="2" width="36" height="36" rx="10" fill="#fff"/>
-          <path d="M16 10h8v6h6v8h-6v6h-8v-6h-6v-8h6z" fill="#5b4a9e"/>
-        </svg>
-        <div>
-          <strong>Laboratorio Clínico</strong>
-          <span>Red de Salud</span>
-        </div>
-      </div>
 
-      <div class="nav-section">
-        <div class="nav-title">MÓDULOS DEL SISTEMA</div>
-        <nav class="nav" id="nav" aria-label="Navegación principal">
-          <a href="#principal">📊 Panel General</a>
-          <a href="#expedientes">📁 Base de Datos <span class="nav-badge" id="badge-pacientes">0</span></a>
-          <a href="#pacientes">👤 Registro Pacientes</a>
-          <a href="#examenes">🔬 Órdenes Exámenes <span class="nav-badge" id="badge-ordenes">0</span></a>
-        </nav>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-title">PALETA APLICADA</div>
-        <div class="palette-box">
-          <div class="palette-header">JERARQUÍA VISUAL <span>10 TONOS</span></div>
-          <div class="palette-bar">
-            <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+  <div class="app-container app">
+    <!-- Sidebar Izquierdo Modular Institucional -->
+    <aside id="sidebar-container" class="app-sidebar sidebar" aria-label="Navegación institucional">
+      <div>
+        <!-- Marca Institucional -->
+        <div class="brand-section marca">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 2v7.31L4.2 18.2A2 2 0 0 0 6 21h12a2 2 0 0 0 1.8-2.8L14 9.31V2h-4z"/>
+              <path d="M8.5 2h7"/>
+              <path d="M7 16h10"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-title">Laboratorio Clínico</h1>
+            <p class="brand-subtitle">Alba Suite · Red de Salud (I3)</p>
           </div>
         </div>
+
+        <!-- Módulos del Sistema -->
+        <div class="nav-group-title nav-title">Módulos del Sistema</div>
+        <nav class="nav-list nav" id="nav" aria-label="Navegación principal">
+          <a href="#principal" class="nav-item">
+            <span class="nav-item-content">
+              <span>📊</span>
+              <span>Panel General</span>
+            </span>
+          </a>
+          <a href="#expedientes" class="nav-item">
+            <span class="nav-item-content">
+              <span>📁</span>
+              <span>Base de Datos</span>
+            </span>
+            <span class="nav-badge" id="badge-pacientes">0</span>
+          </a>
+          <a href="#pacientes" class="nav-item">
+            <span class="nav-item-content">
+              <span>👤</span>
+              <span>Registro Pacientes</span>
+            </span>
+          </a>
+          <a href="#examenes" class="nav-item">
+            <span class="nav-item-content">
+              <span>🔬</span>
+              <span>Órdenes Exámenes</span>
+            </span>
+            <span class="nav-badge" id="badge-ordenes">0</span>
+          </a>
+        </nav>
+
+        <!-- Navegación en Red (Otras Instituciones) -->
+        <div class="nav-group-title nav-title" style="margin-top: 24px;">Otras Instituciones (Red)</div>
+        <div class="nav-list">
+          <a href="../hospital/index.html" class="nav-item" style="opacity: 0.8;" title="Ir a Hospital General">
+            <span class="nav-item-content">
+              <span style="color: #00595d;">🩺</span>
+              <span>Hospital General (I1)</span>
+            </span>
+          </a>
+          <a href="../odontologia/index.html" class="nav-item" style="opacity: 0.8;" title="Ir a Clínica Odontológica">
+            <span class="nav-item-content">
+              <span style="color: #1e5a8a;">🦷</span>
+              <span>Odontología (I2)</span>
+            </span>
+          </a>
+          <a href="../pediatria/index.html" class="nav-item" style="opacity: 0.8;" title="Ir a Centro Pediátrico">
+            <span class="nav-item-content">
+              <span style="color: #2e6987;">👶</span>
+              <span>Centro Pediátrico (I4)</span>
+            </span>
+          </a>
+        </div>
       </div>
 
-      <div class="sidebar-pie">
-        <div class="status-pill">
-          <span class="dot"></span> BD Activa <span class="version">v1.0 Local</span>
+      <!-- Pie del Sidebar -->
+      <div class="sidebar-footer sidebar-pie">
+        <div class="db-status-pill status-pill">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="dot db-dot"></span>
+            <span>BD Firestore Activa</span>
+          </div>
+          <span class="version">v1.0 NoSQL</span>
         </div>
-        <a href="#" id="btn-reset" style="display:block; text-align:center; margin-top:12px; font-size:0.8rem; opacity:0.8; text-decoration:none; color:#fff;">🔄 Reiniciar demo</a>
-        <a href="../index.html?logout=true" style="display:block; text-align:center; margin-top:6px; font-size:0.75rem; opacity:0.8; text-decoration:none; color:#fff;">🚪 Cerrar sesión</a>
+
+        <div class="user-profile-card">
+          <div class="user-avatar">LB</div>
+          <div class="user-info">
+            <span class="user-name">Lic. Bioquímico Clínico</span>
+            <span class="user-role">Laboratorio Clínico / I3</span>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:6px; font-size:0.75rem;">
+          <a href="#" id="btn-reset" class="sidebar-sublink">🔄 Reiniciar demo</a>
+          <a href="../index.html?logout=true" class="sidebar-sublink">🚪 Salir</a>
+        </div>
       </div>
     </aside>
 
-    <!-- MAIN WRAPPER -->
-    <div class="main-wrapper">
-      <!-- TOPBAR -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <a href="#expedientes" class="topbar-tab">📋 Tabla y Búsqueda de BD</a>
-          <a href="#principal" class="topbar-tab">📊 Panel General</a>
+    <!-- Área Principal de la Aplicación -->
+    <main class="app-main main-wrapper">
+      <!-- Barra Superior de Navegación Rápida -->
+      <header class="top-navbar topbar">
+        <div class="top-nav-left topbar-left">
+          <div class="top-nav-breadcrumb">
+            <span>Laboratorio Clínico</span>
+            <span>/</span>
+            <strong id="seccion-actual">Panel General</strong>
+          </div>
+          <a href="#principal" class="topbar-tab btn btn-outline btn-sm">
+            <span>📊</span> Principal
+          </a>
+          <a href="#expedientes" class="topbar-tab btn btn-outline btn-sm">
+            <span>📋</span> Buscador BD
+          </a>
+          <a href="#examenes" class="topbar-tab btn btn-outline btn-sm">
+            <span>🔬</span> Órdenes
+          </a>
         </div>
-        <div class="topbar-right">
+
+        <div class="top-nav-right topbar-right">
           <div class="quick-filter">
             <span class="icon">🔍</span>
             <span class="text">Filtro rápido: Global</span>
           </div>
-          <button class="btn btn-primary" id="btn-top-action">➕ Nuevo Registro</button>
+          <button class="btn btn-primary btn-sm" id="btn-top-action" type="button">
+            <span>➕</span> Nuevo Registro
+          </button>
         </div>
       </header>
 
-      <!-- VISTA DINÁMICA -->
-      <main id="vista" class="contenido" aria-live="polite"></main>
-    </div>
+      <!-- Viewport Dinámico donde se cargan las vistas de /vistas/ -->
+      <section id="vista" class="content-viewport contenido" aria-live="polite"></section>
+
+      <!-- Footer Institucional de Pie -->
+      <footer class="app-footer" style="background-color:#ffffff; border-top:1px solid var(--border-color); color:var(--text-muted); padding:12px 32px; display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; flex-wrap:wrap; gap:12px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <strong style="color:var(--primary);">Laboratorio Clínico · Alba Suite (I3)</strong>
+          <span style="opacity:0.85;">· 8 Especialidades Diagnósticas, Muestras y Resultados Estructurados</span>
+        </div>
+        <span style="opacity:0.85;">Firestore NoSQL · Integración federada en red</span>
+      </footer>
+    </main>
   </div>
 
+  <!-- Diálogo modal y Toast -->
   <dialog id="modal" aria-labelledby="dialog-title"></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 
+  <!-- Aplicación JS Principal -->
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>
