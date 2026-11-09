@@ -9,12 +9,20 @@ const opcionesSuperficie = ['O', 'M', 'D', 'V', 'L', 'P', 'I'];
 export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontologia, icono = () => '' }) {
   const clinica = sesion.rol === 'odontologo';
   const navegacion = document.getElementById('navegacion');
-  const menu = [['inicio', 'Inicio'], ['citas', 'Agenda'], ['pacientes', 'Pacientes'], ...(!clinica ? [['registro', 'Registrar paciente']] : []), ['red', 'Consulta en red'], ['estado', 'Estado del servicio']];
-  navegacion.innerHTML = menu.map(([hash, texto]) => `<a class="nav-link" href="#${hash}">${icono({ inicio: 'inicio', citas: 'calendario', pacientes: 'pacientes', registro: 'mas', red: 'buscar', estado: 'gestion' }[hash])}<span>${texto}</span></a>`).join('');
+  const menu = [['inicio', 'Inicio'], ['citas', 'Agenda'], ['pacientes', 'Pacientes'], ...(!clinica ? [['registro', 'Registrar paciente']] : [['catalogos', 'Servicios y medicamentos']]), ['red', 'Consulta en red'], ['estado', 'Estado del servicio']];
+  navegacion.innerHTML = menu.map(([hash, texto]) => `<a class="nav-link" href="#${hash}">${icono({ inicio: 'inicio', citas: 'calendario', pacientes: 'pacientes', registro: 'mas', catalogos: 'receta', red: 'buscar', estado: 'gestion' }[hash])}<span>${texto}</span></a>`).join('');
   document.getElementById('rol-actual').textContent = clinica ? 'Odontólogo' : 'Secretaria';
   document.querySelector('.page-footer').lastElementChild.textContent = 'Atención odontológica';
   let version = 0;
   let controlador;
+  let guardado = false;
+  function notificarGuardado() {
+    contenido.querySelector('.save-status')?.remove();
+    const mensaje = document.createElement('p');
+    mensaje.className = 'save-status'; mensaje.setAttribute('role', 'status');
+    mensaje.textContent = 'Cambios guardados correctamente.';
+    contenido.prepend(mensaje);
+  }
   function aviso(error) {
     const mensaje = document.createElement('p');
     mensaje.setAttribute('role', 'alert');
@@ -32,13 +40,23 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
       const submit = form.querySelector('[type="submit"]');
       submit.disabled = true;
       const actual = version;
-      try { await accion(Object.fromEntries(new FormData(form))); }
+      const rutaEnvio = location.hash;
+      const textoSubmit = submit.textContent;
+      submit.textContent = 'Procesando…';
+      try {
+        await accion(Object.fromEntries(new FormData(form)));
+        if (actual === version && !['buscar-api', 'buscar-red', 'fecha-agenda'].includes(id)) {
+          guardado = location.hash;
+          if (location.hash === rutaEnvio) notificarGuardado();
+        }
+      }
       catch (error) { if (actual === version) aviso(error); }
-      finally { delete form.dataset.enviando; submit.disabled = false; }
+      finally { delete form.dataset.enviando; submit.disabled = false; submit.textContent = textoSubmit; }
     });
   }
   async function renderizar() {
     const actual = ++version;
+    if (guardado !== location.hash) guardado = false;
     controlador?.abort();
     controlador = new AbortController();
     const signal = controlador.signal;
@@ -47,6 +65,7 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
     const grupoActivo = seccion === 'red-historial' ? 'red' : ['nueva-cita', 'reprogramar'].includes(seccion) ? 'citas'
       : ['ficha', 'expediente', 'responsables', 'alergias', 'contacto', 'consulta', 'diagnostico', 'tratamiento', 'receta', 'archivar'].includes(seccion) ? 'pacientes' : seccion;
     contenido.innerHTML = '<p role="status">Cargando…</p>';
+    contenido.setAttribute('aria-busy', 'true');
     navegacion.querySelectorAll('a').forEach((a) => {
       if (a.hash === `#${grupoActivo}`) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
@@ -56,6 +75,10 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
       contenido.innerHTML = `<div class="page-heading"><div><span class="eyebrow">${clinica ? 'ESPACIO CLÍNICO' : 'RECEPCIÓN Y ADMINISTRACIÓN'}</span><h1>${titulo}</h1></div>${seccion !== 'inicio' ? enlace('inicio', 'Volver al inicio') : '<span class="label blue">Clínica Odontológica · I2</span>'}</div><section class="panel route-panel">${html}</section>`;
       document.title = `${titulo} · Odontología · Alba Suite`;
       document.getElementById('seccion-actual').textContent = titulo;
+      contenido.setAttribute('aria-busy', 'false');
+      contenido.querySelector('h1').setAttribute('tabindex', '-1');
+      contenido.querySelector('h1').focus({ preventScroll: true });
+      if (guardado) notificarGuardado();
       return true;
     };
     const ir = (destino) => { if (actual === version) location.hash = destino; };
@@ -85,17 +108,24 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
       } else if (['inicio', 'citas'].includes(seccion)) {
         const fecha = new URLSearchParams(query).get('fecha') || new Intl.DateTimeFormat('en-CA').format(new Date());
         const agenda = await api.agenda(fecha, signal);
+        const indicadores = `<dl class="agenda-metrics" aria-label="Resumen de la agenda seleccionada">${[
+          ['Citas registradas', agenda.items.length],
+          ['Por atender', agenda.items.filter((c) => ['programada', 'confirmada'].includes(c.estado)).length],
+          ['Completadas', agenda.items.filter((c) => c.estado === 'completada').length],
+          ['Canceladas / no asistió', agenda.items.filter((c) => ['cancelada', 'no_asistio'].includes(c.estado)).length],
+        ].map(([titulo, valor]) => `<div><dt>${titulo}</dt><dd>${valor}</dd></div>`).join('')}</dl>`;
         const acceso = (destino, titulo, texto, simbolo) => `<a class="quick-card" href="#${destino}"><span class="icon-box">${icono(simbolo)}</span><span><strong>${titulo}</strong><small>${texto}</small></span><span class="arrow">${icono('flecha')}</span></a>`;
         const trabajo = clinica
           ? [['Historial clínico', 'Seleccionar paciente y ver expediente', 'historial', 'pacientes'], ['Antecedentes y alergias', 'Seleccionar paciente y revisar alergias', 'historial', 'pacientes?accion=alergias'], ['Diagnósticos', 'Elegir consulta desde el expediente', 'diagnostico', 'pacientes'], ['Procedimientos dentales', 'Seleccionar paciente y abrir odontograma', 'diente', 'pacientes?accion=consulta'], ['Tratamientos', 'Seguimiento desde el expediente', 'tratamiento', 'pacientes'], ['Recetas y medicamentos', 'Elegir consulta desde el expediente', 'receta', 'pacientes']]
           : [['Responsables legales', 'Seleccionar paciente y gestionar vínculos', 'pacientes', 'pacientes?accion=responsables'], ['Citas y estado de atención', 'Consultar la agenda administrativa', 'calendario', 'citas']];
-        const tarjetas = agenda.items.map((c) => `<article class="appointment"><span class="time">${escapar(c.hora)}</span><div class="appointment-info"><strong>${escapar(c.nombre)}</strong><p>${escapar(c.motivo)}</p><span class="label">${escapar(c.estado)}</span></div><div class="row-actions">${enlace(`${clinica ? 'expediente' : 'ficha'}/${c.pacienteId}`, clinica ? 'Abrir expediente' : 'Abrir ficha')}${['programada', 'confirmada'].includes(c.estado) ? (clinica ? enlace(`consulta/${c.pacienteId}?citaId=${encodeURIComponent(c.id)}`, 'Atender cita') : enlace(`reprogramar/${c.id}?fecha=${encodeURIComponent(c.fecha)}&hora=${encodeURIComponent(c.hora)}`, 'Gestionar cita')) : ''}</div></article>`).join('');
-        if (!mostrar(clinica ? 'Tu siguiente paciente, a un paso' : 'Una recepción más ágil',
+        const tarjetas = agenda.items.map((c) => `<article class="appointment"><span class="time">${escapar(c.hora)}</span><div class="appointment-info"><strong>${escapar(c.nombre)}</strong><p>${escapar(c.motivo)}</p><span class="label">${escapar(c.estado)}</span></div><div class="row-actions">${enlace(`${clinica ? 'expediente' : 'ficha'}/${c.pacienteId}`, clinica ? 'Abrir expediente' : 'Abrir ficha')}${['programada', 'confirmada'].includes(c.estado) ? (clinica ? enlace(`consulta/${c.pacienteId}?citaId=${encodeURIComponent(c.id)}`, 'Atender cita') : enlace(`reprogramar/${c.id}?fecha=${encodeURIComponent(c.fecha)}&hora=${encodeURIComponent(c.hora)}&estado=${encodeURIComponent(c.estado)}`, 'Gestionar cita')) : ''}</div></article>`).join('');
+        if (!mostrar(seccion === 'citas' ? 'Agenda de citas' : clinica ? 'Tu siguiente paciente, a un paso' : 'Una recepción más ágil',
+          `<p class="agenda-scope">${clinica ? 'Tu agenda profesional' : 'Agenda de la clínica'} · ${escapar(fecha)}. Indicadores calculados con las citas de esta fecha.</p>${indicadores}` +
           `<section class="dashboard-zone"><div class="zone-heading"><h2>${clinica ? 'Pacientes por atender' : 'Atención rápida'}</h2></div><div class="quick-grid">${enlace('pacientes', 'Buscar paciente')}${!clinica ? enlace('registro', 'Nuevo paciente') : ''}</div></section>` +
-          `<section class="dashboard-zone"><h2>Agenda del día</h2>${formulario('fecha-agenda', campo('fecha', 'Fecha', 'date', true), 'Consultar')}<div class="agenda agenda-wide">${tarjetas || '<p>No hay citas registradas para esta fecha.</p>'}</div></section>` +
+          `<section class="dashboard-zone"><h2>Agenda de la fecha seleccionada</h2>${formulario('fecha-agenda', campo('fecha', 'Fecha', 'date', true), 'Consultar')}<div class="agenda agenda-wide">${tarjetas || `<div class="empty-state"><h3>Sin citas para esta fecha</h3><p>Puedes consultar otro día${!clinica ? ' o seleccionar un paciente para agendar una cita' : ''}.</p>${enlace('pacientes', 'Buscar paciente')}</div>`}</div></section>` +
           `<section class="dashboard-zone"><h2>${clinica ? 'Trabajo clínico y seguimiento' : 'Gestión administrativa'}</h2><p>${clinica ? 'Selecciona un paciente para consultar antecedentes, registrar procedimientos, diagnósticos, tratamientos y recetas.' : 'Abre una ficha para gestionar responsables legales y agendar citas.'}</p><div class="quick-grid ${clinica ? 'clinical-grid' : ''}">${trabajo.map(([titulo, texto, simbolo, destino]) => acceso(destino, titulo, texto, simbolo)).join('')}</div></section>`)) return;
         contenido.querySelector('[name="fecha"]').value = fecha;
-        alEnviar('fecha-agenda', async (d) => { ir(`citas?fecha=${d.fecha}`); });
+        alEnviar('fecha-agenda', async (d) => { const destino = `citas?fecha=${d.fecha}`; if (location.hash === `#${destino}`) await renderizar(); else ir(destino); });
       } else if (seccion === 'contacto' && !clinica) {
         const paciente = await api.paciente(pacienteId, signal);
         mostrar('Actualizar contacto', formulario('contacto-api', campo('telefono', 'Teléfono', 'tel', false, 'maxlength="20"') + campo('correo', 'Correo', 'email', false, 'maxlength="150"') + campo('direccion', 'Dirección', 'text', false, 'maxlength="200"'), 'Guardar'));
@@ -105,6 +135,8 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
         mostrar('Gestionar cita', formulario('cita-api', campo('fecha', 'Fecha', 'date', true) + campo('hora', 'Hora', 'time', true) + selectSimple('estado', 'Estado', ['programada', 'confirmada', 'cancelada', 'no_asistio']), 'Guardar'));
         const params = new URLSearchParams(query);
         for (const nombre of ['fecha', 'hora']) contenido.querySelector(`[name="${nombre}"]`).value = params.get(nombre) || '';
+        const estadoActual = params.get('estado');
+        if (['programada', 'confirmada', 'cancelada', 'no_asistio'].includes(estadoActual)) contenido.querySelector('[name="estado"]').value = estadoActual;
         alEnviar('cita-api', async (d) => { await api.cambiarCita(pacienteId, d); ir('citas'); });
       } else if (seccion === 'nueva-cita' && !clinica) {
         const equipo = await api.equipo(signal);
@@ -120,8 +152,16 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
           const entrada = Object.fromEntries(Object.entries(d).filter(([, v]) => v !== ''));
           if (esAlergia) await api.alergia(pacienteId, entrada);
           else await api.responsable(pacienteId, { ...entrada, esPrincipal: d.esPrincipal === 'true' });
+          if (actual !== version) return;
+          guardado = location.hash;
           await renderizar();
         });
+      } else if (seccion === 'catalogos' && clinica) {
+        const datos = await api.catalogos(signal);
+        const catalogo = (titulo, items, detalle) => `<section class="dashboard-zone"><h2>${titulo}</h2>${items.length ? `<ul class="catalog-list">${items.map((item) => `<li><strong>${escapar(item.nombre)}</strong><span>${escapar(detalle(item))}</span></li>`).join('')}</ul>` : '<p class="empty-state">No hay elementos disponibles en este catálogo.</p>'}</section>`;
+        mostrar('Servicios y medicamentos', '<p class="form-help">Catálogos disponibles para la atención. Para registrar un procedimiento o emitir una receta, abre el expediente del paciente. La administración de catálogos no está disponible en este portal.</p>' + enlace('pacientes', 'Seleccionar paciente') +
+          catalogo('Servicios odontológicos', datos.servicios, (s) => s.precioBase == null ? 'Precio base sin registrar' : `Precio base: ${Number(s.precioBase).toFixed(2)}`) +
+          catalogo('Medicamentos', datos.medicamentos, (m) => m.presentacion || 'Presentación sin registrar'));
       } else if (seccion === 'estado') {
         const estado = await api.estado(signal);
         mostrar('Estado del servicio', `<p role="status">${estado.ok ? 'Disponible' : 'No disponible'}</p><dl class="detail-grid"><div><dt>Motor</dt><dd>${escapar(estado.motor)}</dd></div><div><dt>Latencia</dt><dd>${escapar(estado.latenciaMs)} ms</dd></div></dl>`);
@@ -156,7 +196,7 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
           if (activo) html += enlace(`consulta/${pacienteId}`, 'Nueva consulta') + enlace(`archivar/${pacienteId}`, 'Archivar historial');
           else html += `<p>${escapar(expediente.historial.motivoArchivo?.detalle)} · ${escapar(expediente.historial.fechaArchivo)}</p>`;
           html += '<h2>Consultas</h2>' + (expediente.consultas.length ? expediente.consultas.map((consulta) =>
-            `<article class="api-consulta"><h3>Consulta ${escapar(consulta.id)} · ${escapar(consulta.fecha)}</h3><p>${escapar(consulta.motivo)}</p><p>${escapar(consulta.observaciones)}</p>` +
+            `<article class="api-consulta"><h3>Consulta ${escapar(consulta.id)} · ${escapar(consulta.fecha)}</h3><p>${escapar(consulta.motivo)}</p><p>${escapar(consulta.observaciones)}</p><span class="label blue">${escapar(consulta.estado)}</span><p class="form-help">Póliza vinculada: ${consulta.detallesInstitucion?.polizaId ? escapar(consulta.detallesInstitucion.polizaId) : "Sin póliza registrada"}</p>` +
             (activo && consulta.estado === 'borrador' ? enlace(`diagnostico/${pacienteId}/${consulta.id}`, 'Agregar diagnóstico') + enlace(`receta/${pacienteId}/${consulta.id}`, 'Emitir receta') : '') +
             '<h4>Diagnósticos y tratamientos</h4>' + (consulta.diagnosticos ?? []).map((d) => `<div><p>${escapar(d.descripcion)} · ${escapar(d.observaciones)}</p>` +
               (activo && consulta.estado === 'borrador' ? enlace(`tratamiento/${pacienteId}/${d.id}`, 'Agregar tratamiento') : '') +
@@ -176,11 +216,12 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
             boton.addEventListener('click', async () => {
               if (boton.disabled) return;
               boton.disabled = true;
-              try { await api.finalizar(consulta.id); if (actual === version) await renderizar(); }
+              try { await api.finalizar(consulta.id); if (actual === version) { guardado = location.hash; await renderizar(); } }
               catch (error) { if (actual === version) aviso(error); }
               finally { boton.disabled = false; }
             });
-            contenido.querySelector('.route-panel').append(boton);
+            const indice = expediente.consultas.findIndex((item) => item.id === consulta.id);
+            contenido.querySelectorAll('.api-consulta')[indice]?.append(boton);
           }
         }
       } else if (['consulta', 'diagnostico', 'tratamiento', 'receta', 'archivar'].includes(seccion) && clinica) {
@@ -314,7 +355,7 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
       contenido.querySelector('#reintentar-api').addEventListener('click', renderizar);
     }
   }
-  const cambiar = () => { renderizar(); contenido.focus(); };
+  const cambiar = () => { renderizar(); };
   window.addEventListener('hashchange', cambiar);
   renderizar();
   return () => { version++; controlador?.abort(); window.removeEventListener('hashchange', cambiar); };

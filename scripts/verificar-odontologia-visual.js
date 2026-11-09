@@ -85,6 +85,13 @@ try {
     ['odontograma-mobile', 'odontologo', 'consulta/7', 390, 1300],
     ['secretaria-mobile', 'secretaria', 'inicio', 390, 1100],
     ['red-desktop', 'odontologo', 'red?documento=VISUAL-7', 1440, 1100],
+    ['red-mobile', 'secretaria', 'red?documento=VISUAL-7', 390, 1100],
+    ['pacientes-desktop', 'secretaria', 'pacientes', 1440, 1000],
+    ['pacientes-mobile', 'secretaria', 'pacientes', 390, 1100],
+    ['registro-mobile', 'secretaria', 'registro', 390, 1100],
+    ['expediente-desktop', 'odontologo', 'expediente/7', 1440, 1300],
+    ['expediente-mobile', 'odontologo', 'expediente/7', 390, 1300],
+    ['catalogos-mobile', 'odontologo', 'catalogos', 390, 1100],
   ]) {
     const destino = join(salida, `${nombre}.png`);
     await enviar('Emulation.setDeviceMetricsOverride', { width: ancho, height: alto, deviceScaleFactor: 1, mobile: ancho < 700 }, sessionId);

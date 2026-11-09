@@ -51,7 +51,7 @@ describe.skipIf(process.env.ALBA_ODONTOLOGIA_DESECHABLE !== '1')('PostgreSQL 16 
         detallesInstitucion: { responsableLegal: { nombres: 'Tutor', apellidos: 'Ficticio', parentesco: 'Madre', esPrincipal: true, dpi: 'TUTOR-1' } } });
       expect((await repo.obtenerResponsables(menor.id)).items).toHaveLength(1);
       await expect(repo.crearPaciente({ nombres: 'Menor', apellidos: 'Ficticio', documentoIdentidad: 'MENOR-ERROR', fechaNacimiento: '2020-01-01',
-        detallesInstitucion: { responsableLegal: { nombres: 'Tutor', apellidos: 'Ficticio', parentesco: 'Madre', esPrincipal: true, dpi: 'TUTOR-1' } } })).rejects.toMatchObject({ code: '23505' });
+        detallesInstitucion: { responsableLegal: { nombres: 'Tutor', apellidos: 'Ficticio', parentesco: 'Madre', esPrincipal: true, dpi: 'TUTOR-1' } } })).rejects.toMatchObject({ status: 409, codigo: 'PACIENTE_DUPLICADO' });
       expect((await repo.listarPacientes({ documento: 'MENOR-ERROR' })).total).toBe(0);
       expect(typeof paciente.id).toBe('string');
       await repo.actualizarContacto(paciente.id, { telefono: '12345678' });

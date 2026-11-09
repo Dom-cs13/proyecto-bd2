@@ -152,6 +152,45 @@ describe('I2-09/I2-11 · portal DOM con API simulada', () => {
     expect(contenido.querySelector(`a[href="#${rol === 'odontologo' ? 'expediente' : 'ficha'}/7"]`)).not.toBeNull();
     expect(api.historial).not.toHaveBeenCalled();
   });
+  it('calcula indicadores de la agenda sin confundir citas canceladas con pendientes', async () => {
+    api.agenda.mockResolvedValue({ items: ['programada', 'confirmada', 'completada', 'cancelada', 'no_asistio'].map((estado, i) => ({ id: String(i + 1), pacienteId: '7', nombre: 'Ana', fecha: '2026-11-10', hora: '09:00', estado })) });
+    ruta('citas?fecha=2026-11-10'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('.agenda-metrics')).not.toBeNull());
+    expect([...contenido.querySelectorAll('.agenda-metrics dd')].map((e) => e.textContent)).toEqual(['5', '2', '1', '2']);
+    expect(contenido.querySelector('h1').textContent).toBe('Agenda de citas');
+    expect(globalThis.document.activeElement).toBe(contenido.querySelector('h1'));
+    expect(contenido.getAttribute('aria-busy')).toBe('false');
+    expect(contenido.querySelector('a[href^="#reprogramar/"]').hash).toContain('estado=programada');
+  });
+  it('conserva el estado confirmado al abrir y guardar una cita sin cambiarlo', async () => {
+    ruta('reprogramar/2?fecha=2026-11-10&hora=09:00&estado=confirmada'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('#cita-api')).not.toBeNull());
+    expect(contenido.querySelector('[name="estado"]').value).toBe('confirmada');
+    enviar('#cita-api');
+    await vi.waitFor(() => expect(api.cambiarCita).toHaveBeenCalledWith('2', { fecha: '2026-11-10', hora: '09:00', estado: 'confirmada' }));
+    await vi.waitFor(() => expect(contenido.querySelector('.save-status')?.textContent).toContain('guardados'));
+  });
+  it('una agenda vacía ofrece continuar sin inventar pacientes ni citas', async () => {
+    api.agenda.mockResolvedValue({ items: [] }); ruta('inicio'); iniciar();
+    await vi.waitFor(() => expect(contenido.querySelector('.agenda-metrics')).not.toBeNull());
+    expect([...contenido.querySelectorAll('.agenda-metrics dd')].map((e) => e.textContent)).toEqual(['0', '0', '0', '0']);
+    expect(contenido.textContent).toContain('Sin citas para esta fecha');
+    expect(contenido.querySelector('.appointment')).toBeNull();
+  });
+  it('consulta los catálogos clínicos existentes sin ofrecer escrituras de catálogo', async () => {
+    ruta('catalogos'); iniciar('odontologo');
+    await vi.waitFor(() => expect(contenido.querySelector('.catalog-list')).not.toBeNull());
+    expect(contenido.textContent).toContain('Servicio ficticio');
+    expect(contenido.textContent).toContain('Medicamento ficticio');
+    expect(contenido.querySelector('form')).toBeNull();
+    expect(globalThis.document.querySelector('a[aria-current="page"]').hash).toBe('#catalogos');
+  });
+  it('secretaría no consulta el catálogo clínico por navegación directa', async () => {
+    ruta('catalogos'); iniciar();
+    await vi.waitFor(() => expect(api.listar).toHaveBeenCalled());
+    expect(api.catalogos).not.toHaveBeenCalled();
+    expect(globalThis.document.querySelector('a[href="#catalogos"]')).toBeNull();
+  });
   it('secretaría agenda una cita con profesional seleccionado desde la API', async () => {
     ruta('nueva-cita/7'); iniciar();
     await vi.waitFor(() => expect(contenido.querySelector('#cita-api')).not.toBeNull());

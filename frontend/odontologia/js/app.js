@@ -167,7 +167,7 @@ if ((esDemo || sesion?.institucion === 'odontologia') && ['secretaria', 'odontol
     });
   }
   renderizar();
-  window.addEventListener('hashchange', () => { renderizar(); contenido.focus(); });
+  if (esDemo) window.addEventListener('hashchange', () => { renderizar(); contenido.focus(); });
 } else if (sesion?.institucion === 'odontologia') {
   document.getElementById('acceso-pendiente').hidden = false;
 }

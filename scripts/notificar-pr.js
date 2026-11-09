@@ -8,6 +8,8 @@ const prTitulo = process.env.PR_TITLE || '';
 const prAutor = process.env.PR_AUTHOR || 'colaborador';
 const prHeadRef = process.env.PR_HEAD_REF || process.env.GITHUB_HEAD_REF || '';
 const esDraft = process.env.PR_IS_DRAFT === 'true';
+// I2-11: el dueño solicitó expresamente un PR Open con revisión manual.
+const revisionManual = prHeadRef === 'feat/I2-11-mejoras-frontend';
 const baseSha = process.env.BASE_SHA;
 const headSha = process.env.HEAD_SHA;
 const resReglas = process.env.RESULT_REGLAS || 'success';
@@ -119,6 +121,8 @@ if (fallas.length > 0) {
 } else if (resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
   if (esDraft) {
     markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente (Borrador)\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n⏳ **En espera de revisión:** Este PR está marcado como **Draft (Borrador)**. En cuanto el autor o el dueño del repositorio hagan clic en el botón **'Ready for review'**, el CI se activará automáticamente y ejecutará el auto-merge a \`main\` mediante squash commit.`;
+  } else if (revisionManual) {
+    markdown = `${MARCADOR}\n## Verificación del CI completada\n\nReglas, secretos y calidad aprobados. Este PR queda abierto para revisión y fusión manual por solicitud del dueño.`;
   } else {
     markdown = `${MARCADOR}\n## ✅ Verificación del CI completada exitosamente\n\nTodos los checks automáticos del proyecto han pasado al 100%:\n- 🟢 **Reglas del PR:** Título reglamentario, sin conflictos, bitácora al día y sin credenciales.\n- 🟢 **Seguridad:** Sin secretos en commits (Gitleaks).\n- 🟢 **Calidad:** ESLint (reglas DIP y DRY), Vitest y skills sincronizadas.\n\n🚀 **Auto-merge 100% autónomo:** Este PR ha cumplido todas las reglas y está siendo fusionado automáticamente a \`main\` mediante squash commit.`;
   }
@@ -160,7 +164,7 @@ async function publicarComentario() {
     }
 
     // Auto-merge autónomo si todo pasó en verde y NO es borrador
-    if (!esDraft && fallas.length === 0 && resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
+    if (!esDraft && !revisionManual && fallas.length === 0 && resReglas === 'success' && resSecretos === 'success' && resCalidad === 'success') {
       console.log(`[notificar-pr] CI 100% verde. Intentando auto-merge para PR #${prNumero}...`);
       let mergeExitoso = false;
 
