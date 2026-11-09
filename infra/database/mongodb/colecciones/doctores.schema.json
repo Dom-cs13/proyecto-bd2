@@ -1,0 +1,18 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["nombre", "apellidos", "idColegiado", "especialidad", "telefono", "correo", "estado"],
+    "properties": {
+      "idColegiado": { "bsonType": "string" },
+      "nombre": { "bsonType": "string" },
+      "apellidos": { "bsonType": "string" },
+      "especialidad": { "bsonType": "string" },
+      "telefono": { "bsonType": ["int", "long", "string", "double"] },
+      "correo": { "bsonType": "string" },
+      "horario": { "bsonType": "string" },
+      "estado": { "enum": ["activo", "de turno", "vacaciones", "inactivo"] },
+      "institucionId": { "bsonType": "string" }
+    }
+  }
+}
+

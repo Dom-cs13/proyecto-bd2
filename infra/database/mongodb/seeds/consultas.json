@@ -1,0 +1,72 @@
+[
+  {
+    "_id": { "$oid": "651000000000000000000001" },
+    "pacienteId": "650000000000000000000001",
+    "expediente": "EXP-01842",
+    "fecha": "2026-10-26T09:15:00.000Z",
+    "motivos": "Revisión post-operatoria de apendicectomía y retiro de drenaje",
+    "observaciones": "Herida quirúrgica limpia, sin signos de infección ni eritema, afebril.",
+    "usuario": {
+      "idUsuario": "usr-01",
+      "nombre": "Rodrigo",
+      "apellidos": "Palma",
+      "rol": "Médico Adscrito"
+    },
+    "cita": {
+      "idCita": "cita-101",
+      "fecha": "2026-10-26",
+      "hora": "09:00",
+      "motivo": "Control post-quirúrgico",
+      "estado": "completada"
+    },
+    "servicios": [
+      {
+        "idServicio": "srv-01",
+        "nombre": "Cirugía General y Digestiva"
+      }
+    ],
+    "diagnostico": {
+      "idDiagnostico": "diag-01",
+      "descripcion": "Apendicitis aguda fase III en evolución post-quirúrgica favorable",
+      "observaciones": "Adecuada cicatrización, tránsito intestinal normal",
+      "tratamiento": {
+        "idTratamiento": "trat-01",
+        "descripcion": "Curas diarias con solución antiséptica y deambulación progresiva",
+        "observaciones": "Evitar esfuerzos físicos mayores por 15 días",
+        "fechaInicio": "2026-10-26",
+        "fechaFin": "2026-10-31",
+        "receta": {
+          "idReceta": "rec-01",
+          "fecha": "2026-10-26",
+          "detalles": [
+            {
+              "idDetalleR": "det-01",
+              "medicamento": {
+                "idMedicamento": "med-01",
+                "nombre": "Paracetamol"
+              },
+              "dosis": "500 mg",
+              "frecuencia": "Cada 8 horas",
+              "cantidad": 9,
+              "duracion": "3 días",
+              "indicaciones": "Tomar por vía oral después de los alimentos en caso de dolor."
+            },
+            {
+              "idDetalleR": "det-02",
+              "medicamento": {
+                "idMedicamento": "med-02",
+                "nombre": "Ciprofloxacino"
+              },
+              "dosis": "500 mg",
+              "frecuencia": "Cada 12 horas",
+              "cantidad": 10,
+              "duracion": "5 días",
+              "indicaciones": "Completar tratamiento antimicrobiano profiláctico sin omitir dosis."
+            }
+          ]
+        }
+      }
+    }
+  }
+]
+

@@ -1,0 +1,63 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["pacienteId", "fecha", "motivos"],
+    "properties": {
+      "pacienteId": { "bsonType": ["objectId", "string"] },
+      "expediente": { "bsonType": "string" },
+      "fecha": { "bsonType": ["date", "string"] },
+      "motivos": { "bsonType": "string" },
+      "observaciones": { "bsonType": "string" },
+      "servicios": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "object",
+          "properties": {
+            "idServicio": { "bsonType": "string" },
+            "nombre": { "bsonType": "string" }
+          }
+        }
+      },
+      "diagnostico": {
+        "bsonType": ["object", "null"],
+        "properties": {
+          "idDiagnostico": { "bsonType": "string" },
+          "descripcion": { "bsonType": "string" },
+          "observaciones": { "bsonType": "string" },
+          "tratamiento": {
+            "bsonType": ["object", "null"],
+            "properties": {
+              "idTratamiento": { "bsonType": "string" },
+              "descripcion": { "bsonType": "string" },
+              "observaciones": { "bsonType": "string" },
+              "fechaInicio": { "bsonType": "string" },
+              "fechaFin": { "bsonType": ["string", "null"] },
+              "receta": {
+                "bsonType": ["object", "null"],
+                "properties": {
+                  "idReceta": { "bsonType": "string" },
+                  "fecha": { "bsonType": ["date", "string"] },
+                  "detalles": {
+                    "bsonType": "array",
+                    "items": {
+                      "bsonType": "object",
+                      "properties": {
+                        "idDetalleR": { "bsonType": "string" },
+                        "medicamento": { "bsonType": ["object", "string"] },
+                        "dosis": { "bsonType": "string" },
+                        "frecuencia": { "bsonType": "string" },
+                        "cantidad": { "bsonType": ["int", "double"] },
+                        "duracion": { "bsonType": "string" },
+                        "indicaciones": { "bsonType": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

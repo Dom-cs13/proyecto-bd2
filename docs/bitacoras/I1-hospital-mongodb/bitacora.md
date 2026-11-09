@@ -46,6 +46,7 @@
 - **Tiempo invertido:** 70 min
 - **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
 
+
 ## Sesión 4 · 2026-11-03 · Trigger `ready_for_review` y soporte de Drafts en CI (I1-01)
 
 - **Objetivo de la sesión:** Configurar el CI para que detecte de forma automática cuando un Pull Request pasa de Borrador (Draft) a Listo para revisión (`ready_for_review`) y ejecute el auto-merge en el acto.
@@ -59,3 +60,119 @@
 - **Evidencia:** `.github/workflows/ci.yml`, `scripts/notificar-pr.js`.
 - **Tiempo invertido:** 25 min
 - **Siguiente paso:** I1-03 (JWT, `RepositoryFactory`).
+
+## Sesión 5 · 2026-11-05 · Implementación MongoDB Atlas y Compass (I1-04)
+
+- **Objetivo de la sesión:** Implementar el modelo documental del Hospital General, configurar conexión a MongoDB Atlas mediante MongoDB Compass, crear el adaptador `MongoAdapter`, `mapper.js`, esquemas JSON y semillas de datos.
+- **Qué hice:**
+  - Diseñé el modelo documental a partir del diagrama ER del Hospital General (pág. 3): colecciones `pacientes` y `consultas` con pólizas, diagnósticos y tratamientos embebidos.
+  - Creé las semillas JSON en `infra/database/mongodb/seeds/` (`pacientes.json` y `consultas.json`) listas para importar desde MongoDB Compass.
+  - Implementé `src/infrastructure/adapters/mongodb/connection.js` con resolución DNS optimizada para clusters de Atlas, y `MongoAdapter.js` con las operaciones del puerto `HistorialRepository`.
+  - Diseñé el `mapper.js` para asegurar cumplimiento estricto de LSP (id como string, camelCase, ISO dates).
+  - Creé los esquemas JSON de validación en `infra/database/mongodb/colecciones/` y la definición de índices en `infra/database/mongodb/indices/`.
+  - Añadí pruebas unitarias para el mapper en `tests/unit/mongoMapper.test.js`.
+- **Decisiones tomadas (y por qué):**
+  - Embeber la póliza de seguro y aseguradora en `pacientes` al ser leídas conjuntamente en admisiones.
+  - Embeber la cadena clínica (diagnóstico, tratamiento, receta) dentro de cada documento de `consultas` para evitar JOINs y mantener atomicidad por episodio médico.
+- **Problemas / bloqueos:** Ninguno. Conexión a MongoDB Atlas verificada con latencia en vivo y pruebas en verde.
+- **Evidencia:** `src/infrastructure/adapters/mongodb/`, `infra/database/mongodb/`, `tests/unit/mongoMapper.test.js`.
+- **Tiempo invertido:** 75 min
+- **Siguiente paso:** Integración con rutas de Express y `RepositoryFactory`.
+
+## Sesión 6 · 2026-11-05 · Restricciones de Validación y Módulo de Pólizas (I1-04)
+
+- **Objetivo de la sesión:** Implementar restricciones estrictas en el formulario de alta de pacientes (género biológico Femenino/Masculino, DPI de 13 dígitos y teléfono de 8 dígitos) y desarrollar el módulo completo de gestión y asociación de pólizas de seguro (ER Hospital General) tanto en frontend como en base de datos MongoDB Atlas.
+- **Qué hice:**
+  - En `frontend/hospital/pages/gestion-pacientes.html` y `app.js`: eliminada la opción "Otro" dejando únicamente "Femenino" y "Masculino"; añadida validación y sanitización en tiempo real para limitar el DPI / CUI a exactamente 13 dígitos numéricos enteros y el teléfono a 8 dígitos numéricos.
+  - En `frontend/hospital/js/components/modalDrawer.js`: aplicada restricción de 8 dígitos numéricos en la edición del teléfono del paciente.
+  - En `frontend/hospital/js/components/sidebar.js`: incorporada la opción de navegación "🛡️ Pólizas de Seguro" con badge dinámico de conteo en tiempo real.
+  - Diseñada la vista `frontend/hospital/pages/polizas.html` y su componente `frontend/hospital/js/components/polizasComponent.js` con formulario de emisión de pólizas (cobertura, porcentaje, vigencia, empresa aseguradora, NIT y teléfono de 8 dígitos), panel de asociación directa a pacientes activos y tabla/catálogo con búsqueda interactiva.
+  - Actualizado el gestor de estado `frontend/hospital/js/state.js` con las colecciones `polizas`, métodos de creación y vinculación (`asociarPolizaAPaciente`), y cálculo automático de KPIs.
+  - Actualizada la base de datos documental (`infra/database/mongodb/`): creado `colecciones/polizas.schema.json`, semillas `seeds/polizas.json` con 5 pólizas para Compass, índices `indices.json`, y adaptado `MongoAdapter.js` y `mapper.js` con operaciones `crearPoliza`, `listarPolizas` y `asociarPolizaPaciente`.
+  - Añadida prueba unitaria en `tests/unit/mongoMapper.test.js` para `polizaToDomain` verificando cumplimiento LSP.
+  - Implementado el sistema integral de ventanas flotantes modales personalizadas (`modalDialog.js`) y notificaciones toast con el diseño visual de Alba Suite (Hospital General), reemplazando el 100% de los `alert()`, `prompt()` y `confirm()` nativos del navegador por modales clínicos con backdrop difuminado, selección de motivos, tarjetas explicativas y transiciones fluidas.
+  - Conectada la arquitectura completa de persistencia web a base de datos real: implementado `RepositoryFactory.js` (`obtenerRepositorio` + `obtenerTodos`), middleware `auth.js` (JWT) y `resolverRepositorio.js`, rutas Express en `src/interfaces/http/routes/` (`auth.js`, `pacientes.js` y `polizas.js`), y enlazado el cliente HTTP `apiClient` con `state.js` para que cada alta, archivado y póliza creada en el navegador se guarde en MongoDB Atlas en vivo y se refleje al instante en MongoDB Compass.
+- **Decisiones tomadas (y por qué):**
+  - Implementar un patrón híbrido para pólizas: persistencia en colección propia `polizas` para gestión de convenios y aseguradoras, combinada con embebido en `pacientes.polizaSeguro` para consultas de admisión en O(1).
+  - Sanitizar entradas numéricas directamente en el evento `input` (`replace(/\D/g, '')`) para evitar que el usuario ingrese letras, caracteres especiales o longitudes mayores a las permitidas por la regulación guatemalteca (13 para DPI, 8 para teléfono).
+  - Desacoplar los diálogos modales en `modalDialog.js` para garantizar consistencia visual UI/UX clínica en todas las vistas (archivado justificado, órdenes de laboratorio, validaciones y altas).
+  - Conectar el frontend a los endpoints REST de Express con fallback resiliente offline, permitiendo que las inserciones persistan en MongoDB Atlas en tiempo real.
+- **Problemas / bloqueos:** Ninguno. Validaciones de ESLint y pruebas unitarias de Vitest en verde.
+- **Evidencia:** `src/infrastructure/config/RepositoryFactory.js`, `src/interfaces/http/routes/pacientes.js`, `src/interfaces/http/routes/polizas.js`, `src/interfaces/http/routes/auth.js`, `frontend/hospital/js/components/modalDialog.js`, `tests/integration/app.test.js`.
+- **Tiempo invertido:** 85 min
+- **Siguiente paso:** Pruebas e2e de navegación y commit a la rama.
+
+## Sesión 7 · 2026-11-05 · Campos Obligatorios y Módulo de Personal Médico (I1-04)
+
+- **Objetivo de la sesión:** Hacer obligatorios todos los campos de registro de un paciente (salvo pólizas y antecedentes/observaciones), permitir asignar médico tratante a cada paciente y crear el módulo completo de administración y registro de personal médico (doctores).
+- **Qué hice:**
+  - En `frontend/hospital/pages/gestion-pacientes.html` y `app.js`: se establecieron como estrictamente obligatorios los campos de Nombre(s), Apellidos, Fecha de Nacimiento, Género Biológico (Femenino/Masculino), DPI/CUI (13 dígitos numéricos), Teléfono (8 dígitos numéricos), Correo Electrónico, Dirección Domiciliar, Servicio Hospitalario, Estado Inicial, Ubicación/Pabellón, Tipo de Sangre y Médico Tratante Asignado. Se mantuvieron opcionales únicamente la póliza de seguro médico y las alergias/antecedentes.
+  - Diseñado y creado el módulo completo de doctores:
+    - En base de datos MongoDB: creado `infra/database/mongodb/colecciones/doctores.schema.json` con validación de tipos, semillas `infra/database/mongodb/seeds/doctores.json` con 4 médicos colegiados iniciales e índices `infra/database/mongodb/indices/indices.json` (único en `idColegiado` y búsqueda por texto en nombres y especialidad).
+    - En capa de infraestructura: implementado `doctorToDomain` en `mapper.js` (LSP compliant: id string, camelCase), y métodos `crearDoctor`, `listarDoctores` y `obtenerDoctor` en `MongoAdapter.js`.
+    - En interfaz HTTP: creado `src/interfaces/http/routes/doctores.js` (GET /, POST /, GET /:id) y montado en `src/app.js` sobre `/doctores`.
+    - En frontend: creada la página `frontend/hospital/pages/doctores.html`, el componente `doctoresComponent.js` (registro de doctores, directorio con búsqueda y KPIs), incorporado el botón de acceso en el sidebar con badge dinámico, y vinculado el selector dinámico de doctores en los formularios de nuevo paciente y edición de expediente en `modalDrawer.js`.
+  - Añadidas pruebas unitarias en `tests/unit/mongoMapper.test.js` para `doctorToDomain`.
+- **Decisiones tomadas (y por qué):**
+  - Implementar una entidad de primer nivel `doctores` en MongoDB que modele a los médicos con su número de colegiado guatemalteco (`idColegiado`), especialidad y horario de atención, permitiendo asociarlos de manera atómica tanto en altas de pacientes como en consultas clínicas.
+  - Validar todos los campos del formulario antes del envío con diálogos modales personalizados (`mostrarAlertaPersonalizada`), evitando que se guarden expedientes incompletos en la base de datos de producción.
+- **Problemas / bloqueos:** Ninguno. Linter (ESLint) y pruebas unitarias (Vitest) pasando en verde con 0 errores.
+- **Evidencia:** `infra/database/mongodb/colecciones/doctores.schema.json`, `src/interfaces/http/routes/doctores.js`, `frontend/hospital/pages/doctores.html`, `frontend/hospital/js/components/doctoresComponent.js`, `tests/unit/mongoMapper.test.js`.
+- **Tiempo invertido:** 45 min
+- **Siguiente paso:** Verificación final en el navegador e integración de consultas.
+
+## Sesión 8 · 2026-11-05 · Red de Laboratorios Diagnósticos, Catálogo de Exámenes y Pacientes Asociados (I1-04)
+
+- **Objetivo de la sesión:** Transformar el módulo de laboratorio para soportar múltiples unidades de laboratorio especializadas (Hematología, Bioquímica, Microbiología, Inmunología, etc.), administrar la creación de laboratorios, crear y administrar tipos de exámenes vinculados a cada unidad diagnóstica, emitir órdenes clínicas relacionando pacientes a exámenes y laboratorios, y visualizar qué pacientes están asociados a uno o varios laboratorios.
+- **Qué hice:**
+  - En base de datos MongoDB Atlas (`infra/database/mongodb/`):
+    - Diseñados los esquemas JSON de validación: `colecciones/laboratorios.schema.json` y `colecciones/tipos_examenes.schema.json`.
+    - Creadas semillas para Compass con datos clínicos representativos: `seeds/laboratorios.json` (4 unidades) y `seeds/tipos_examenes.json` (6 análisis especializados con muestra requerida, tiempo y parámetros).
+    - Agregados índices en `indices/indices.json`: únicos en código de laboratorio y código de examen, e índices de búsqueda por texto.
+  - En capa de infraestructura (`src/infrastructure/`):
+    - Añadidos en `mapper.js`: `laboratorioToDomain`, `tipoExamenToDomain` y `ordenLaboratorioToDomain` (LSP compliant).
+    - Implementados en `MongoAdapter.js`: `crearLaboratorio`, `listarLaboratorios`, `obtenerLaboratorio`, `crearTipoExamen`, `listarTiposExamenes`, `crearOrdenLaboratorio`, `listarOrdenesLaboratorio` y `obtenerPacientesPorLaboratorio`.
+  - En capa de interfaz HTTP (`src/interfaces/http/`):
+    - Creado `routes/laboratorios.js` con endpoints GET y POST para laboratorios, catálogo de exámenes, emisión de órdenes y reporte de pacientes asociados.
+    - Montado el enrutador en `src/app.js` sobre `/laboratorios`.
+  - En frontend (`frontend/hospital/`):
+    - Rediseñada la vista `pages/laboratorio.html` incorporando sub-pestañas clínicas (Órdenes y Pacientes Asociados, Gestión de Laboratorios y Catálogo de Tipos de Exámenes), métricas KPI interactivas y formularios de alta.
+    - Desarrollado el controlador completo `js/components/laboratorioTable.js` con filtrado dinámico por unidad de laboratorio, tarjetas de directorio, tabla de catálogo, vista toggle de pacientes canalizados a laboratorios y emisión de órdenes.
+    - Actualizado el modal `mostrarModalNuevaOrdenLab` en `modalDialog.js` para seleccionar paciente, laboratorio y tipo de examen filtrado dinámicamente según la unidad elegida.
+    - Sincronizado el estado en `state.js` (`unidadesLaboratorio`, `tiposExamenes`, `getPacientesPorLaboratorio`).
+  - Añadidas pruebas unitarias en `tests/unit/mongoMapper.test.js` para los nuevos mappers.
+- **Decisiones tomadas (y por qué):**
+  - Modelar los laboratorios y el catálogo de exámenes como colecciones independientes en MongoDB Atlas para permitir que el Hospital General incorpore nuevas unidades diagnósticas sin requerir migraciones de código.
+  - Enlazar dinámicamente el modal de nueva orden para que al elegir un laboratorio (ej. Hematología), el selector de examen cargue exclusivamente los análisis que dicho laboratorio realiza, previniendo errores clínicos de canalización de muestras.
+  - Proveer una vista conmutable entre la tabla cronológica de órdenes y el reporte de "Pacientes y Laboratorios Asociados" para que el personal hospitalario vea de un vistazo qué estudios tiene activos cada paciente en los distintos laboratorios.
+- **Problemas / bloqueos:** Ninguno. Validaciones de ESLint (0 errores), pruebas de Vitest (6 unitarias + 3 de integración) en verde.
+- **Evidencia:** `infra/database/mongodb/seeds/laboratorios.json`, `infra/database/mongodb/seeds/tipos_examenes.json`, `src/interfaces/http/routes/laboratorios.js`, `frontend/hospital/pages/laboratorio.html`, `frontend/hospital/js/components/laboratorioTable.js`, `tests/unit/mongoMapper.test.js`.
+- **Tiempo invertido:** 65 min
+- **Siguiente paso:** Pruebas visuales finales y entrega.
+
+## Sesión 9 · 2026-11-05 · Auditoría Integral de Delimitaciones, Sanitización de Campos y Normalización Git (I1-04)
+
+- **Objetivo de la sesión:** Realizar una auditoría completa de todos los formularios de la plataforma para verificar que los campos tengan delimitaciones estrictas (bloqueo en tiempo real de letras donde solo van números, rangos numéricos acotados, mayúsculas automáticas en códigos), ajustar la obligatoriedad de campos (correo electrónico obligatorio para médicos, opcional para pacientes) y resolver las advertencias de finales de línea LF/CRLF en Git y GitHub Desktop mediante `.gitattributes`.
+- **Qué hice:**
+  - En formularios de admisión de pacientes (`gestion-pacientes.html` y `app.js`):
+    - Se ajustó el correo electrónico a opcional tanto en interfaz visual como en la validación lógica de envío. Si no se ingresa, no bloquea el registro; si se ingresa, se valida formato de correo válido.
+    - Se mantuvo la obligatoriedad estricta de nombres, apellidos, fecha, género, DPI (13 dígitos numéricos enteros con filtrado regex en tiempo real), teléfono (8 dígitos numéricos con sanitización instantánea), dirección, servicio, estado, ubicación, tipo de sangre y médico asignado.
+  - En módulo de médicos (`doctores.html` y `doctoresComponent.js`):
+    - Se aseguró que el correo electrónico institucional sea estrictamente obligatorio y validado contra patrón RFC.
+    - Se aplicó sanitización en tiempo real para que el teléfono solo admita dígitos (8 dígitos) y el número de colegiado se convierta automáticamente a mayúsculas.
+  - En módulo de pólizas de seguro (`polizasComponent.js`):
+    - Añadida sanitización en tiempo real para que el porcentaje de cobertura solo admita dígitos y se delimite entre 1% y 100%.
+    - Bloqueo de caracteres no numéricos en el teléfono de la aseguradora (8 dígitos) y auto-capitalización del código de póliza.
+  - En módulo de laboratorios (`laboratorioTable.js`):
+    - Auto-capitalización del código de laboratorio (`lab-inp-codigo`) y código de examen (`ex-inp-codigo`).
+    - Sanitización del tiempo estimado de análisis para admitir únicamente números enteros positivos (`replace(/\D/g, '')`).
+  - En repositorio Git:
+    - Creado `.gitattributes` en la raíz del proyecto para normalizar automáticamente finales de línea a LF en todos los archivos de texto (`.js`, `.json`, `.html`, `.css`, `.md`, `.sql`), eliminando las alertas de conversión CRLF en GitHub Desktop y evitando diffs fantasma de saltos de línea.
+    - Ejecutado `git add --renormalize .` para dejar el árbol de trabajo sincronizado y limpio.
+- **Decisiones tomadas (y por qué):**
+  - Implementar sanitización de entrada directa en el evento `input` en lugar de esperar al `submit`, garantizando que el usuario físicamente no pueda tipear letras o caracteres no válidos en campos numéricos (DPI, teléfonos, tiempos, porcentajes).
+  - Adoptar `.gitattributes` con `eol=lf` para estandarizar el repositorio entre Windows y entornos Linux/macOS de despliegue continuo (CI).
+- **Problemas / bloqueos:** Ninguno. Validaciones de ESLint (0 errores), pruebas de Vitest (6 unitarias + 3 de integración) en verde.
+- **Evidencia:** `.gitattributes`, `frontend/hospital/pages/gestion-pacientes.html`, `frontend/hospital/js/app.js`, `frontend/hospital/js/components/doctoresComponent.js`, `frontend/hospital/js/components/laboratorioTable.js`, `frontend/hospital/js/components/polizasComponent.js`.
+- **Tiempo invertido:** 40 min
+- **Siguiente paso:** Entrega final y revisión de usuario.

@@ -1,0 +1,93 @@
+[
+  {
+    "_id": { "$oid": "652000000000000000000001" },
+    "idPoliza": "POL-98421",
+    "cobertura": "Hospitalaria completa",
+    "porcentajeCobertura": 85,
+    "fechaInicio": "2026-01-01",
+    "fechaVencimiento": "2026-12-31",
+    "estado": "vigente",
+    "pacienteId": "650000000000000000000001",
+    "expediente": "EXP-01842",
+    "pacienteNombre": "Mariana Soto Hernández",
+    "aseguradora": {
+      "idAseguradora": "ASEG-01",
+      "nombreEmpresa": "Seguros Universales",
+      "nitIdentificador": "1234567-8",
+      "telefono": 23456789
+    }
+  },
+  {
+    "_id": { "$oid": "652000000000000000000002" },
+    "idPoliza": "POL-33214",
+    "cobertura": "Consulta Externa y Diagnóstico",
+    "porcentajeCobertura": 70,
+    "fechaInicio": "2026-02-15",
+    "fechaVencimiento": "2027-02-15",
+    "estado": "vigente",
+    "pacienteId": "650000000000000000000002",
+    "expediente": "EXP-02491",
+    "pacienteNombre": "Carlos Méndez Silva",
+    "aseguradora": {
+      "idAseguradora": "ASEG-02",
+      "nombreEmpresa": "Roble Salud",
+      "nitIdentificador": "9876543-2",
+      "telefono": 22334455
+    }
+  },
+  {
+    "_id": { "$oid": "652000000000000000000003" },
+    "idPoliza": "POL-55120",
+    "cobertura": "Traumatología y Cirugía",
+    "porcentajeCobertura": 90,
+    "fechaInicio": "2026-03-01",
+    "fechaVencimiento": "2027-03-01",
+    "estado": "vigente",
+    "pacienteId": "650000000000000000000003",
+    "expediente": "EXP-06390",
+    "pacienteNombre": "Roberto Navarro Ruiz",
+    "aseguradora": {
+      "idAseguradora": "ASEG-01",
+      "nombreEmpresa": "Seguros Universales",
+      "nitIdentificador": "1234567-8",
+      "telefono": 23456789
+    }
+  },
+  {
+    "_id": { "$oid": "652000000000000000000004" },
+    "idPoliza": "POL-77140",
+    "cobertura": "Accidentes y Emergencias",
+    "porcentajeCobertura": 80,
+    "fechaInicio": "2026-04-01",
+    "fechaVencimiento": "2027-04-01",
+    "estado": "vigente",
+    "pacienteId": null,
+    "expediente": null,
+    "pacienteNombre": null,
+    "aseguradora": {
+      "idAseguradora": "ASEG-03",
+      "nombreEmpresa": "Aseguradora General",
+      "nitIdentificador": "3456789-0",
+      "telefono": 24225566
+    }
+  },
+  {
+    "_id": { "$oid": "652000000000000000000005" },
+    "idPoliza": "POL-88230",
+    "cobertura": "Maternidad y Neonatología",
+    "porcentajeCobertura": 75,
+    "fechaInicio": "2026-05-01",
+    "fechaVencimiento": "2027-05-01",
+    "estado": "vigente",
+    "pacienteId": null,
+    "expediente": null,
+    "pacienteNombre": null,
+    "aseguradora": {
+      "idAseguradora": "ASEG-04",
+      "nombreEmpresa": "Mapfre Guatemala",
+      "nitIdentificador": "5678901-2",
+      "telefono": 23880000
+    }
+  }
+]
+
