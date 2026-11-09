@@ -1,43 +1,50 @@
-# [I3-09] Corrige seguridad y persistencia de ALBA Suite sin rediseño
+# [I3-09] Corrige registro, seguridad e integración de ALBA Suite sin rediseño
 
-Base: `main`. Head: `fix/I3-09-auditoria-integracion`. Estado solicitado: **Open, sin auto-merge**.
+Base: `main`. Head: `fix/I3-09-auditoria-integracion`. PR **Open, no Draft**, para revisión manual. No hacer merge ni activar auto-merge.
 
 ## Descripción
 
-Hospital aceptaba accesos sin autenticar y JWT inválidos; Hospital, Laboratorio y el portal principal pediátrico podían anunciar registros guardados solo en memoria. Esta propuesta exige autenticación verificada y confirmación de la API antes de actualizar el estado local, persiste ediciones de Hospital/Laboratorio y elimina resultados federados simulados. Mantiene intactos los 30 archivos HTML/CSS de las cuatro instituciones.
+Hospital aceptaba accesos sin autenticar y JWT inválidos; los portales podían anunciar registros guardados solo en memoria. Además, el cliente forzaba solicitudes al puerto 3000, Pediatría omitía el tutor capturado como nombre completo y un fallo de lectura posterior hacía parecer que el alta había fallado.
 
-Hospital y Laboratorio consultan las cuatro instituciones con Enter desde su buscador existente. La ficha federada conserva la proyección autorizada: no comparte notas clínicas ajenas ni fusiona identidades. El PR incluye cambios compartidos de autenticación, clientes API, contrato y validadores, además de los adaptadores Mongo/Firestore y el valor predeterminado de validación TLS de MariaDB.
+Ambas auditorías quedan incluidas: autenticación verificada, confirmación de escritura antes del éxito, persistencia del tutor y ediciones locales, protección contra doble envío, errores útiles, diagnóstico pediátrico corregido, preservación de la URI Mongo y verificación TLS por defecto. Odontología conserva la validación de responsable para menores y muestra un mensaje claro si está incompleto.
 
-## Validación
+La búsqueda en red conserva el origen y las proyecciones autorizadas. No fusiona identidades, replica expedientes ni comparte notas clínicas ajenas. No hay cambios en los 30 archivos HTML/CSS ni en los estilos inline de 27 módulos JS. Se reutilizan los controles existentes.
+
+## Pruebas repetidas antes de publicar
 
 - `npm run lint`: aprobado.
-- `npm test`: 469 aprobadas; 5 omitidas explícitamente por requerir contenedores.
-- Suite desechable ejecutada separadamente: 5/5 aprobadas. PostgreSQL 16, MongoDB 7 y MariaDB 11 reales; Firestore en emulador oficial. No son instancias de producción.
-- Cuatro orígenes × tres instituciones consultantes, persistencia tras dos reinicios reales del proceso Node, edición y lectura posterior, rechazo de sustitución de identidad y caída física de MongoDB con los otros motores disponibles. Repetición final de esta prueba: aprobada, 18,79 s.
-- Rollback de recetas/atención y RLS en SQL; suite de contrato común con dobles en memoria; regresiones DOM y huellas de HTML/CSS.
+- `npm test`: 483 aprobadas; 13 omitidas expresamente por requerir infraestructura.
+- Contratos, conservación de diseño y prohibición de auto-merge de esta rama: 49/49 aprobadas por separado.
 - `npm run verificar:aislamiento`, `npm run skills:check` y `git diff --check`: aprobados.
+- Las 13 pruebas desechables pasaron también por separado, en cuatro archivos (65,41 s), incluidos ocho recorridos con Chrome real. Tres motores reales locales: PostgreSQL 16, MariaDB 11 y MongoDB 7; Firestore en el emulador oficial. No equivalen a bases de producción.
+- Los cuatro formularios devolvieron 201 y se confirmó persistencia con drivers; se verificaron tutor, historial automático, adulto y menor odontológicos, doble envío y fallo de recarga posterior.
+- Cuatro lecturas clínicas locales y 16 búsquedas/aperturas desde los cuatro portales, incluidas 12 entre instituciones distintas, sin filtrar notas ajenas. Persistencia tras reinicios de Node, rollback/RLS SQL y caída aislada de MongoDB desechable.
 
-## Revisión necesaria y límites
+## Pendientes para el compañero que revisa
 
-- Requiere aprobación de I3 del [ADR 0002](./decisiones/0002-edicion-local-pacientes.md) para la nueva extensión PATCH de edición. No se modifica el puerto compartido.
-- Hospital y Laboratorio requieren cuentas provisionadas por el operador; no hay cuentas demo por defecto. No se modificaron credenciales reales.
-- No se verificaron Atlas/Supabase/Firebase/MariaDB de producción. El emulador no prueba IAM de Firebase.
-- No se amplía el acceso a datos clínicos de otras instituciones. No se implementa un expediente clínico global sin decisión de confidencialidad.
-- Siguen pendientes el flujo HTTP clínico completo de Hospital, la unificación de estudios de Laboratorio con el historial común y endpoints de algunas ediciones. Los formularios compuestos que usan varios endpoints informan errores parciales y no se anuncian como transacciones globales.
-- Sin comparación visual por capturas de navegador; sí conservación exacta de HTML/CSS y pruebas de comportamiento DOM. El informe enumera el resto de límites.
+- **MongoDB y Firestore siguen desconectados en el entorno del usuario.** Falta comprobar configuración efectiva, identidad de servicio, DNS/TLS, acceso de red e IAM, sin mostrar secretos. No se afirma que los cuatro motores de producción funcionen.
+- **MariaDB real:** verificar esquema efectivo y GRANT de escritura, y repetir el formulario con una cuenta y datos autorizados. Un ping positivo no garantiza INSERT permitido. No se escribió un paciente de prueba en esa base.
+- La advertencia concreta del despliegue odontológico debe contrastarse con su código HTTP y `error.codigo`. Se comprobó el rechazo válido de menores sin responsable y altas correctas con responsable o de adultos.
+- Aprobación de I3 del ADR propuesto 0002 para la extensión PATCH de edición local. El puerto compartido no cambia y la aprobación no se da por recibida.
+- Permanecen las limitaciones documentadas del flujo clínico HTTP de Hospital, la integración de estudios de Laboratorio en el historial común y algunas ediciones. Los formularios compuestos que usan varios endpoints no se presentan como una transacción global.
+- Hospital y Laboratorio requieren cuentas provisionadas por el operador; no hay cuentas demo implícitas. No se modificaron credenciales ni bases reales.
 
-Informe: [auditoría de integración](./auditoria-integracion-cuatro-motores.md). Bitácora: [I3, sesión 8](./bitacoras/I3-laboratorio-firestore/bitacora.md).
+## Informes y reproducción
+
+- [Auditoría inicial](https://github.com/Dom-cs13/proyecto-bd2/blob/fix/I3-09-auditoria-integracion/docs/auditoria-integracion-cuatro-motores.md)
+- [Segunda auditoría y comandos de pruebas desechables](https://github.com/Dom-cs13/proyecto-bd2/blob/fix/I3-09-auditoria-integracion/docs/auditoria-funcional-segunda-revision.md)
+- [Bitácora I3](https://github.com/Dom-cs13/proyecto-bd2/blob/fix/I3-09-auditoria-integracion/docs/bitacoras/I3-laboratorio-firestore/bitacora.md)
+- [ADR 0002 pendiente de aprobación](https://github.com/Dom-cs13/proyecto-bd2/blob/fix/I3-09-auditoria-integracion/docs/decisiones/0002-edicion-local-pacientes.md)
 
 ## Checklist
 
-- [x] Título con formato de tarea.
-- [x] Sin drivers ni SQL nuevos en domain/application; sin ORMs.
-- [x] Salidas modificadas pasan por mappers.
-- [x] Contrato común en verde contra MockAdapter y los cuatro adaptadores con dobles.
-- [x] Sin secretos, pacientes reales, archivos privados ni artifacts en los commits.
-- [x] Bitácora incluida.
+- [x] Título con formato de tarea; sin drivers ni SQL nuevos en domain/application ni ORMs.
+- [x] Salidas modificadas pasan por mappers; contrato común en verde.
+- [x] Bitácora, informes y regresiones incluidos.
+- [x] HTML/CSS y estilos conservados.
+- [x] Sin archivos de entorno, certificados, secretos reales, datos clínicos reales, archivos personales ni artifacts en los commits.
 - [x] Zod, documentación, ejemplo y ADR propuesto para edición local.
 - [ ] Aprobación de I3 del cambio contractual antes de fusionar.
-- [ ] CI remoto aprobado tras publicar el PR.
+- [ ] Validaciones manuales autorizadas en bases de producción.
 
-El script de CI tiene una excepción probada para esta rama y no debe intentar fusionarla. No hacer merge automático.
+Esta rama está exceptuada del auto-merge del script de CI mediante una prueba automatizada. El PR debe permanecer abierto para revisión manual.
