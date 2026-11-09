@@ -3,14 +3,11 @@
  * Centraliza los fetch permitidos por la regla ESLint de AGENTS.md
  */
 
-const esDevServer = typeof window !== 'undefined' && (
-  location.protocol === 'file:' ||
-  (['localhost', '127.0.0.1', '::1'].includes(location.hostname) && Boolean(location.port) && location.port !== '3000')
+// Express sirve interfaz y API desde el mismo origen, también con PORT distinto
+// de 3000. Un servidor de vistas separado requiere una base explícita.
+const API_BASE = globalThis.ALBA_API_BASE ?? (
+  typeof location !== 'undefined' && location.protocol === 'file:' ? 'http://localhost:3000' : ''
 );
-
-const API_BASE = esDevServer
-  ? `http://${location.hostname === '127.0.0.1' ? '127.0.0.1' : 'localhost'}:3000`
-  : '';
 
 export async function fetchPlantillaHtml(rutaRelativa) {
   const resp = await fetch(rutaRelativa);
@@ -43,7 +40,7 @@ export async function apiClient(endpoint, opciones = {}) {
   } catch (error) {
     if (API_BASE && error instanceof TypeError) {
       throw new Error(
-        'No se pudo conectar con el servidor backend (puerto 3000). Asegúrate de iniciar la API con "npm run dev" o abrir la aplicación desde http://localhost:3000',
+        'No se pudo conectar con el servidor API configurado. Abre la aplicación desde el servidor Express o revisa ALBA_API_BASE.',
         { cause: error }
       );
     }

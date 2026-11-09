@@ -24,7 +24,8 @@ const repos = { hospital: new MongoAdapter(cliente.db(base)), laboratorio: new F
   odontologia: new PostgresAdapter(poolPostgres), pediatria: new MariaDbAdapter(poolMaria) };
 registrarRepositorio('hospital', repos.hospital);
 registrarRepositorio('laboratorio', repos.laboratorio);
-const app = crearApp({ odontologia: { obtenerRepositorio: () => repos.odontologia }, pediatria: { obtenerRepositorio: () => repos.pediatria }, red: { obtenerTodos: () => repos } });
+const app = crearApp({ odontologia: { obtenerRepositorio: () => repos.odontologia }, pediatria: { obtenerRepositorio: () => repos.pediatria },
+  red: { obtenerTodos: () => repos }, status: { obtenerRepositorios: () => repos } });
 const servidor = app.listen(0, '127.0.0.1', () => process.send({ puerto: servidor.address().port }));
 process.on('message', async mensaje => {
   if (mensaje !== 'cerrar') return;

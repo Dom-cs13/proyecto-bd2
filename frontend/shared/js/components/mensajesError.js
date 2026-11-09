@@ -1,3 +1,5 @@
+import { escapar } from './pacientes.js';
+
 /**
  * Componente compartido de notificaciones y errores HTTP (I4-10)
  * Formato único de error (AGENTS.md): { error: { codigo, mensaje } }
@@ -33,7 +35,7 @@ export function mostrarErrorHttp(payload = {}) {
   const status = payload.status || 400;
   const meta = CATALOGO_CODIGOS_HTTP[status] || CATALOGO_CODIGOS_HTTP[400];
   const codigo = payload.error?.codigo || payload.codigo || meta.codigo;
-  const mensaje = payload.error?.mensaje || payload.mensaje || 'No se pudo completar la operación solicitada.';
+  const mensaje = payload.error?.mensaje || payload.mensaje || payload.message || 'No se pudo completar la operación solicitada.';
 
   const contenedor = asegurarContenedorToast();
   const tarjeta = document.createElement('div');
@@ -49,9 +51,9 @@ export function mostrarErrorHttp(payload = {}) {
     <div style="flex:1;font-size:0.82rem;line-height:1.4;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
         <strong style="color:#8a2428;font-size:0.84rem;">${meta.titulo}</strong>
-        <code style="font-size:0.7rem;background:#ffccc4;color:#7a1f22;padding:2px 6px;border-radius:4px;font-weight:700;">${codigo}</code>
+        <code style="font-size:0.7rem;background:#ffccc4;color:#7a1f22;padding:2px 6px;border-radius:4px;font-weight:700;">${escapar(codigo)}</code>
       </div>
-      <p style="margin:0;color:#2e6987;">${mensaje}</p>
+      <p style="margin:0;color:#2e6987;">${escapar(mensaje)}</p>
     </div>
     <button type="button" aria-label="Cerrar aviso" style="background:none;border:0;color:#58798c;cursor:pointer;padding:2px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

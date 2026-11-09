@@ -53,20 +53,7 @@ export class MariaDbAdapter {
         );
       } catch (errPac) {
         if (errPac.code === "ER_BAD_FIELD_ERROR" || errPac.message?.includes("Unknown column")) {
-          resultado = await conn.query(
-            `INSERT INTO paciente
-              (nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, direccion)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-              datos.nombres ?? datos.nombre ?? '',
-              datos.apellidos,
-              datos.fechaNacimiento,
-              datos.sexo ?? "M",
-              datos.telefono ?? null,
-              datos.correo ?? null,
-              datos.direccion ?? null,
-            ]
-          );
+          throw new MotorNoDisponible('pediatria', 'El esquema de Pediatría no coincide con el DDL de pacientes; requiere revisión de configuración');
         } else {
           throw errPac;
         }
@@ -80,7 +67,9 @@ export class MariaDbAdapter {
       );
 
       const tutorDatos = datos.detallesInstitucion?.tutorPrincipal;
-      if (tutorDatos?.dpi && tutorDatos?.nombres && tutorDatos?.apellidos) {
+      // El formulario existente captura el nombre completo en un único campo.
+      // Zod lo conserva en nombres; apellidos es opcional y no debe omitir el tutor.
+      if (tutorDatos?.dpi && tutorDatos?.nombres) {
         let tutorId;
         try {
           const tutorExistente = await conn.query(
@@ -97,7 +86,7 @@ export class MariaDbAdapter {
               [
                 tutorDatos.dpi,
                 tutorDatos.nombres,
-                tutorDatos.apellidos,
+                tutorDatos.apellidos ?? '',
                 tutorDatos.telefono ?? "",
                 tutorDatos.correo ?? null,
                 tutorDatos.direccion ?? null,
@@ -121,7 +110,7 @@ export class MariaDbAdapter {
                 [
                   tutorDatos.dpi,
                   tutorDatos.nombres,
-                  tutorDatos.apellidos,
+                  tutorDatos.apellidos ?? '',
                   tutorDatos.telefono ?? "",
                   tutorDatos.correo ?? null,
                   tutorDatos.direccion ?? null,

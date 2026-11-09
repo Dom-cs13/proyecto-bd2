@@ -115,6 +115,7 @@ function inicializarFormularioGestion() {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (form.dataset.enviando) return;
 
     if (!puedeEjecutarAccion('crear_paciente')) {
       const cfg = obtenerConfiguracionRol();
@@ -155,14 +156,23 @@ function inicializarFormularioGestion() {
     const nuevo = { nombre, apellidos, fechaNacimiento: fecha, genero, documentoIdentidad: curp,
       telefono: tutorTel, direccion, detallesInstitucion: { tipoSangre: sangre,
         tutorPrincipal: { nombre: tutorNombre, parentesco: tutorParentesco, documento: tutorDoc, telefono: tutorTel } } };
-    try { await store.agregarPaciente(nuevo); }
-    catch (error) { return mostrarErrorHttp(error); }
-    form.reset();
-    mostrarNotificacionExito(
-      `Paciente ${nuevo.nombre} ${nuevo.apellidos} registrado`,
-      `Expediente ${store.pacientes[0]?.expediente} vinculado a Tutor Principal: ${tutorNombre}.`
-    );
-    renderListaArchivar('lista-archivar-pacientes-container');
+    const submit = form.querySelector('[type="submit"]');
+    form.dataset.enviando = 'true';
+    if (submit) submit.disabled = true;
+    try {
+      const paciente = await store.agregarPaciente(nuevo);
+      form.reset();
+      mostrarNotificacionExito(
+        `Paciente ${nuevo.nombre} ${nuevo.apellidos} registrado`,
+        `Expediente ${paciente.expediente} vinculado a Tutor Principal: ${tutorNombre}.`
+      );
+      if (store.avisoUltimaOperacion) mostrarErrorHttp({ status: 503, mensaje: store.avisoUltimaOperacion });
+      renderListaArchivar('lista-archivar-pacientes-container');
+    } catch (error) { mostrarErrorHttp(error); }
+    finally {
+      delete form.dataset.enviando;
+      if (submit) submit.disabled = false;
+    }
   });
 }
 
@@ -288,8 +298,8 @@ async function cargarEstadoPanelTecnico() {
     // Fallback demostrativo cuando el servidor backend no está levantado
   }
 
-  const motorPediatria = statusData?.pediatria?.motor || 'MariaDB 11.4 (Docker Local)';
-  const estadoPediatria = statusData?.pediatria?.estado || 'no_disponible';
+  const motorPediatria = statusData?.motores?.pediatria?.motor || 'mariadb';
+  const estadoPediatria = statusData?.motores?.pediatria?.estado || 'no_disponible';
   const fuente = statusData ? 'Respuesta en vivo de GET /system/status' : 'Estado no verificado: API no disponible';
 
   container.innerHTML = `

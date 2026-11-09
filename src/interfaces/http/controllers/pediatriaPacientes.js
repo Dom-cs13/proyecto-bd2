@@ -20,6 +20,9 @@ export function controladoresPediatria(obtenerRepositorio) {
       res.status(status).json(await operacion(casos, req));
     } catch (error) {
       if (error instanceof ErrorDominio || error?.name === 'ZodError') return next(error);
+      if (error.errno === 1142 || error.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+        return next(new MotorNoDisponible('pediatria', 'La cuenta de base de datos no tiene los permisos requeridos para esta operación'));
+      }
       if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) return next(new Conflicto(duplicado));
       if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.errno === 1452 || error.errno === 1451) {
         return next(new Validacion('REFERENCIA_INVALIDA', 'El registro asociado no existe o no corresponde al paciente'));

@@ -174,6 +174,9 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
         alEnviar('registro-api', async (datos) => {
           const entrada = Object.fromEntries(Object.entries(datos).filter(([nombre, valor]) => !nombre.startsWith('responsable') && valor.trim()));
           if (Object.entries(datos).some(([nombre, valor]) => nombre.startsWith('responsable') && valor.trim())) {
+            if (!datos.responsableNombres?.trim() || !datos.responsableApellidos?.trim() || !datos.responsableParentesco?.trim()) {
+              throw new Error('Completa los nombres, apellidos y parentesco del responsable legal.');
+            }
             entrada.detallesInstitucion = { responsableLegal: Object.fromEntries([
               ['nombres', datos.responsableNombres], ['apellidos', datos.responsableApellidos], ['parentesco', datos.responsableParentesco],
               ['telefono', datos.responsableTelefono], ['dpi', datos.responsableDpi], ['esPrincipal', true],

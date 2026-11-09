@@ -102,8 +102,19 @@ class PediatriaStore {
   }
 
   async agregarPaciente(datos) {
+    this.avisoUltimaOperacion = null;
     const paciente = await apiPediatria.registrar(datos);
-    return this.recargarPaciente(paciente.id);
+    // Un 201 ya confirmó el alta. Una lectura posterior fallida no la revierte.
+    const confirmado = { ...paciente, expediente: paciente.expediente || paciente.id,
+      historial: { estado: 'activo', consultas: [] } };
+    this.pacientes.unshift(confirmado);
+    this.pacienteSeleccionadoId = paciente.id;
+    this.notify();
+    try { return await this.recargarPaciente(paciente.id); }
+    catch {
+      this.avisoUltimaOperacion = 'El paciente fue registrado, pero no se pudo recargar su ficha. No reenvíe el alta; vuelva a buscarlo cuando se restablezca la lectura.';
+      return confirmado;
+    }
   }
 
   async archivarPaciente(id, motivo) {
