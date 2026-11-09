@@ -113,4 +113,21 @@
 - **Tiempo invertido:** 40 min
 - **Siguiente paso:** Revisión final y aprobación del PR #23 para la entrega de la Convergencia 1.
 
+## Sesión 7 · 2026-11-08 · Tareas I3-08, I1-09, I3-11
+
+- **Objetivo de la sesión:** Resolver observaciones de auditoría: 1) Expandir la suite de pruebas de contrato (`tests/contract/contrato.test.js`) mediante `describe.each` para verificar LSP en todos los adaptadores (`MockAdapter`, `FirestoreAdapter`, `PostgresAdapter`, `MariaDbAdapter`) usando mocks en memoria; 2) Conectar el envío de formularios de toma de muestra y registro de resultados en el frontend de Laboratorio con la API Express (`POST /laboratorio/muestras`, `POST /laboratorio/resultados`), respetando la Regla 7.
+- **Qué hice:**
+  - Amplié `tests/contract/contrato.test.js` agregando implementaciones en memoria (`crearPostgresEnMemoria` y `crearMariaDbEnMemoria`) con soporte completo de queries multilínea (`/is`), paginación, filtros e inserción/asociación de diagnósticos y recetas.
+  - Ajusté mapeadores y adaptadores de PostgreSQL (`src/infrastructure/adapters/postgresql/`) y MariaDB (`src/infrastructure/adapters/mariadb/`) para armonizar `documentoIdentidad`, `nombre`, `activo`, `codigoCie` y formato de respuesta de historial con los contratos LSP.
+  - Implementé `registrarMuestraApi` y `registrarResultadoApi` en `frontend/laboratorio/js/datos.js` utilizando `apiClient` con cabecera `Authorization: Bearer <token>`.
+  - Conecté la persistencia en `frontend/laboratorio/js/ui/formularios.js` (`formOrden`) para despachar las muestras y resultados a la API Express sin que el navegador toque el SDK de Firebase (cumpliendo con la Regla 7).
+- **Decisiones tomadas (y por qué):**
+  - Mocks en memoria en Vitest para Postgres y MariaDB sin requerir contenedores activos en la suite de contrato base, agilizando el CI y permitiendo verificación homogénea de LSP.
+  - Toda mutación de muestras y resultados viaja a través de Express (`/laboratorio/muestras` y `/laboratorio/resultados`) delegando la persistencia y reglas clínicas al backend.
+- **Problemas / bloqueos:** Ajustes en regex multilínea y mapeo de campos `documentoIdentidad` vs `documento` para MariaDB resueltos satisfactoriamente.
+- **Evidencia:** 31 archivos de pruebas pasando (306/306 pruebas en verde con Vitest) incluyendo los 36 tests de contrato (4 motores), y 0 errores en ESLint.
+- **Tiempo invertido:** 45 min
+- **Siguiente paso:** Aprobación del PR y merge en `main`.
+
+
 

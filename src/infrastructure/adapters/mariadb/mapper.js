@@ -26,13 +26,18 @@ export function pacienteDesdeFila(fila, detalles = {}) {
   return {
     id: String(fila.id_paciente),
     documento: fila.documento ?? null,
+    documentoIdentidad: fila.documento ?? fila.documento_identidad ?? null,
     nombres: fila.nombres,
+    nombre: fila.nombres,
     apellidos: fila.apellidos,
     fechaNacimiento: fechaSoloDiaISO(fila.fecha_nacimiento),
     sexo: fila.sexo ?? null,
+    genero: ['F', 'Femenino'].includes(fila.sexo) ? 'Femenino'
+      : ['M', 'Masculino'].includes(fila.sexo) ? 'Masculino' : 'Otro',
     telefono: fila.telefono ?? null,
     correo: fila.correo ?? null,
     direccion: fila.direccion ?? null,
+    activo: fila.activo !== false,
     detallesInstitucion: {
       grupoSanguineo: fila.grupo_sanguineo ?? null,
       tutorPrincipal: detalles.tutorPrincipal ?? null,
