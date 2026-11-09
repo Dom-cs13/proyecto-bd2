@@ -6,6 +6,7 @@ import { routerLaboratorio } from './interfaces/http/routes/laboratorioRoutes.js
 import { crearRouterOdontologia } from './interfaces/http/routes/odontologiaPacientes.js';
 import { crearRouterPediatria } from './interfaces/http/routes/pediatriaPacientes.js';
 import { crearRouterRed } from './interfaces/http/routes/consultaEnRed.js';
+import { crearRouterStatus } from './interfaces/http/routes/status.js';
 import authRoutes from './interfaces/http/routes/auth.js';
 import pacientesRoutes from './interfaces/http/routes/pacientes.js';
 import polizasRoutes from './interfaces/http/routes/polizas.js';
@@ -23,6 +24,7 @@ export function crearApp(opciones = {}) {
   app.use(routerPediatriaAuth);
   app.use(routerOdontologiaAuth);
   app.use(crearRouterRed(opciones.red));
+  app.use(crearRouterStatus(opciones.status));
   app.use(routerLaboratorioAuth);
 
   const soloOdonto = opciones.odontologia && !opciones.pediatria;
