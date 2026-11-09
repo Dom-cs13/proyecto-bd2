@@ -9,41 +9,22 @@ const CLAVE_TOKEN = 'token';
 export const INSTITUCIONES = ['hospital', 'odontologia', 'laboratorio', 'pediatria'];
 
 export async function login({ institucion, usuario, password }) {
-  try {
-    const res = await apiClient('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ institucion, usuario, password })
-    });
-    const cuerpo = await res.json().catch(() => ({}));
-    if (res.ok && cuerpo.token) {
-      sessionStorage.setItem(CLAVE_TOKEN, cuerpo.token);
-      return obtenerSesion();
-    }
-    if (res.status === 401 || res.status === 400) {
-      throw new Error(cuerpo.error?.mensaje || `Error HTTP ${res.status}`);
-    }
-  } catch (err) {
-    if (institucion === 'odontologia') throw err;
-    if (err.message && !err.message.includes('404') && !err.message.includes('conectar') && !err.message.includes('fetch') && !err.message.includes('405')) {
-      throw err;
-    }
+  cerrarSesion();
+  const res = await apiClient('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ institucion, usuario, password })
+  });
+  const cuerpo = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(cuerpo.error?.mensaje || `Error HTTP ${res.status}`);
   }
-  if (institucion === 'odontologia') {
-    throw new Error('El login de Odontologia requiere el backend');
+  if (typeof cuerpo.token !== 'string' || !cuerpo.token) {
+    throw new Error('El servidor no devolvio una sesion valida');
   }
-
-
-
-  // Fallback para funcionamiento autónomo del frontend sin backend activo
-  const payloadObj = {
-    institucion,
-    usuario: usuario || 'dra.ruiz',
-    rol: usuario === 'admin' ? 'admin' : (institucion === 'laboratorio' ? 'laboratorista' : institucion === 'pediatria' ? 'pediatra' : 'profesional'),
-    exp: Math.floor(Date.now() / 1000) + 8 * 3600
-  };
-  const token = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify(payloadObj))}.demo-signature`;
-  sessionStorage.setItem(CLAVE_TOKEN, token);
-  return obtenerSesion();
+  sessionStorage.setItem(CLAVE_TOKEN, cuerpo.token);
+  const sesion = obtenerSesion();
+  if (!sesion) throw new Error('El servidor no devolvio una sesion valida');
+  return sesion;
 }
 
 export function obtenerSesion() {
@@ -52,7 +33,8 @@ export function obtenerSesion() {
   try {
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(atob(base64));
-    if (payload.exp && payload.exp * 1000 < Date.now()) return cerrarSesion();
+    if (!INSTITUCIONES.includes(payload.institucion) ||
+        !Number.isFinite(payload.exp) || payload.exp * 1000 <= Date.now()) return cerrarSesion();
     return { token, institucion: payload.institucion, rol: payload.rol };
   } catch {
     return cerrarSesion();

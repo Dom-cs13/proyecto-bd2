@@ -262,7 +262,7 @@ function actualizarCuerpoDrawer() {
 
     const form = document.getElementById('form-drawer-nueva-consulta');
     if (form) {
-      form.addEventListener('submit', (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!puedeEjecutarAccion('registrar_consulta')) {
           const cfg = obtenerConfiguracionRol();
@@ -308,7 +308,7 @@ function actualizarCuerpoDrawer() {
           ] : []
         };
 
-        store.agregarConsulta(paciente.id, nuevaConsulta);
+        try { await store.agregarConsulta(paciente.id, nuevaConsulta); } catch (error) { return mostrarErrorHttp(error); }
         mostrarNotificacionExito('Consulta pediátrica registrada', `Diagnóstico y tratamiento agregados al expediente de ${paciente.nombre}.`);
         pestanaActiva = 'consultas';
         renderModalDrawer('drawer-container');

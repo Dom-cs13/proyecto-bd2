@@ -255,7 +255,7 @@ function configurarEventosPolizas() {
         }
       };
 
-      await store.agregarPoliza(nuevaPoliza);
+      try { await store.agregarPoliza(nuevaPoliza); } catch (error) { return mostrarToast({ titulo: 'No se pudo guardar', mensaje: error.message, tipo: 'error' }); }
       formNueva.reset();
       actualizarMetricasPolizas();
       poblarSelectsPolizas();
@@ -286,7 +286,8 @@ function configurarEventosPolizas() {
         return;
       }
 
-      const ok = await store.asociarPolizaAPaciente(polizaCodigo, pacienteId);
+      let ok;
+      try { ok = await store.asociarPolizaAPaciente(polizaCodigo, pacienteId); } catch (error) { return mostrarToast({ titulo: 'No se pudo guardar', mensaje: error.message, tipo: 'error' }); }
       if (ok) {
         const paciente = store.pacientes.find(p => p.id === pacienteId);
         actualizarMetricasPolizas();

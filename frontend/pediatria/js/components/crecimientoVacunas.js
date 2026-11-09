@@ -1,8 +1,6 @@
 import { store, ESQUEMA_NACIONAL_VACUNAS } from '../state.js';
 import { mostrarErrorHttp, mostrarNotificacionExito } from '../../../shared/js/components/mensajesError.js';
 import { puedeEjecutarAccion, obtenerConfiguracionRol } from '../../../shared/js/components/navegacionRol.js';
-import { apiPediatria } from '../../../shared/js/api/pediatria.js';
-import { obtenerSesion } from '../../../shared/js/api/auth.js';
 
 export function inicializarSelectorCrecimiento() {
   const select = document.getElementById('sel-paciente-crecimiento');
@@ -269,7 +267,7 @@ function abrirDialogoControl() {
   const cerrar = () => overlay.remove();
   overlay.querySelector('#btn-cerrar-modal-control').addEventListener('click', cerrar);
 
-  overlay.querySelector('#form-nuevo-control-modal').addEventListener('submit', (e) => {
+  overlay.querySelector('#form-nuevo-control-modal').addEventListener('submit', async (e) => {
     e.preventDefault();
     const peso = parseFloat(overlay.querySelector('#m-inp-peso').value);
     const talla = parseFloat(overlay.querySelector('#m-inp-talla').value);
@@ -299,19 +297,7 @@ function abrirDialogoControl() {
       imc,
       observaciones: obs || 'Control registrado en consultorio.'
     };
-    store.agregarControlCrecimiento(paciente.id, nuevoControl);
-    const sesion = obtenerSesion();
-    if (sesion?.institucion === 'pediatria' && sesion.token && !sesion.token.includes('demo') && /^[1-9]\d*$/.test(String(paciente.id))) {
-      apiPediatria.crecimiento(paciente.id, {
-        pesoKg: peso,
-        tallaCm: talla,
-        perimetroCefalicoCm: pc,
-        edadMeses: nuevoControl.edadMeses,
-        observaciones: nuevoControl.observaciones
-      }).catch((err) => {
-        mostrarErrorHttp(err);
-      });
-    }
+    try { await store.agregarControlCrecimiento(paciente.id, nuevoControl); } catch (error) { return mostrarErrorHttp(error); }
     cerrar();
     mostrarNotificacionExito('Control antropométrico registrado', `${peso} kg · ${talla} cm (IMC ${imc}) guardado para ${paciente.nombre}.`);
   });
@@ -385,7 +371,7 @@ function abrirDialogoVacuna() {
   const cerrar = () => overlay.remove();
   overlay.querySelector('#btn-cerrar-modal-vacuna').addEventListener('click', cerrar);
 
-  overlay.querySelector('#form-nueva-vacuna-modal').addEventListener('submit', (e) => {
+  overlay.querySelector('#form-nueva-vacuna-modal').addEventListener('submit', async (e) => {
     e.preventDefault();
     const idx = parseInt(overlay.querySelector('#m-sel-vacuna').value, 10);
     const seleccionada = ESQUEMA_NACIONAL_VACUNAS[idx];
@@ -402,18 +388,7 @@ function abrirDialogoVacuna() {
       lote,
       responsable: responsable || 'Enf. Rosa Elena'
     };
-    store.registrarVacuna(paciente.id, nuevaVacuna);
-    const sesion = obtenerSesion();
-    if (sesion?.institucion === 'pediatria' && sesion.token && !sesion.token.includes('demo') && /^[1-9]\d*$/.test(String(paciente.id))) {
-      apiPediatria.vacuna(paciente.id, {
-        vacunaId: String(idx + 1),
-        numeroDosis: seleccionada.dosis,
-        lote,
-        fechaAplicacion: nuevaVacuna.fechaAplicacion
-      }).catch((err) => {
-        mostrarErrorHttp(err);
-      });
-    }
+    try { await store.registrarVacuna(paciente.id, nuevaVacuna); } catch (error) { return mostrarErrorHttp(error); }
     cerrar();
     mostrarNotificacionExito('Vacuna registrada en el carnet', `${seleccionada.nombreVacuna} (Dosis ${seleccionada.dosis}, lote ${lote}).`);
   });

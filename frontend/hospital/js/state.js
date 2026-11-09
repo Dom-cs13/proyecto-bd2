@@ -1,21 +1,14 @@
-import {
-  MOCK_PACIENTES,
-  MOCK_LABORATORIOS,
-  MOCK_POLIZAS,
-  MOCK_DOCTORES,
-  MOCK_UNIDADES_LABORATORIO,
-  MOCK_TIPOS_EXAMENES,
-} from './api/mockData.js';
 import { apiClient } from '../../shared/js/api/client.js';
+import { solicitarJson } from '../../shared/js/api/persistencia.js';
 
 class StateStore {
   constructor() {
-    this.pacientes = [...MOCK_PACIENTES];
-    this.laboratorios = [...MOCK_LABORATORIOS];
-    this.polizas = [...MOCK_POLIZAS];
-    this.doctores = [...MOCK_DOCTORES];
-    this.unidadesLaboratorio = [...MOCK_UNIDADES_LABORATORIO];
-    this.tiposExamenes = [...MOCK_TIPOS_EXAMENES];
+    this.pacientes = [];
+    this.laboratorios = [];
+    this.polizas = [];
+    this.doctores = [];
+    this.unidadesLaboratorio = [];
+    this.tiposExamenes = [];
 
     this.filtroTexto = '';
     this.filtroArea = 'Todos'; // 'Todos' | 'Hospitalización' | 'Medicina General' | 'Críticos'
@@ -34,57 +27,63 @@ class StateStore {
   async sincronizarConBackend() {
     try {
       const resPacientes = await apiClient('/pacientes');
+      if (!resPacientes.ok) throw new Error('No se pudieron cargar pacientes desde el servidor');
       if (resPacientes.ok) {
         const data = await resPacientes.json();
-        if (Array.isArray(data.items) && data.items.length > 0) {
+        if (Array.isArray(data.items)) {
           this.pacientes = data.items.map(p => ({
             ...p,
             curp: p.documentoIdentidad || p.curp || '',
-            estadoClinico: p.estadoClinico || 'estable',
-            estadoArchivo: p.estado || p.estadoArchivo || 'activo',
-            servicioArea: p.servicioArea || (p.detallesInstitucion?.internamiento?.enCama ? 'Hospitalización' : 'Medicina General'),
-            medicoTratante: p.medicoTratante || 'Dr. Rodrigo Palma',
-            ubicacion: p.ubicacion || (p.detallesInstitucion?.internamiento?.pabellon || 'Consulta Externa')
+            estadoClinico: p.detallesInstitucion?.estadoClinico || p.estadoClinico || 'estable',
+            estadoArchivo: p.activo === false ? 'archivado' : 'activo',
+            servicioArea: p.detallesInstitucion?.servicioArea || p.servicioArea || (p.detallesInstitucion?.internamiento?.enCama ? 'Hospitalización' : 'Medicina General'),
+            medicoTratante: p.detallesInstitucion?.medicoTratante || p.medicoTratante || '',
+            ubicacion: p.detallesInstitucion?.ubicacion || p.ubicacion || (p.detallesInstitucion?.internamiento?.pabellon || 'Consulta Externa')
           }));
         }
       }
 
       const resPolizas = await apiClient('/polizas');
+      if (!resPolizas.ok) throw new Error('No se pudieron cargar todos los datos del servidor');
       if (resPolizas.ok) {
         const dataPol = await resPolizas.json();
-        if (Array.isArray(dataPol.items) && dataPol.items.length > 0) {
+        if (Array.isArray(dataPol.items)) {
           this.polizas = dataPol.items;
         }
       }
 
       const resDoctores = await apiClient('/doctores');
+      if (!resDoctores.ok) throw new Error('No se pudieron cargar todos los datos del servidor');
       if (resDoctores.ok) {
         const dataDoc = await resDoctores.json();
-        if (Array.isArray(dataDoc.items) && dataDoc.items.length > 0) {
+        if (Array.isArray(dataDoc.items)) {
           this.doctores = dataDoc.items;
         }
       }
 
       const resLabs = await apiClient('/laboratorios');
+      if (!resLabs.ok) throw new Error('No se pudieron cargar todos los datos del servidor');
       if (resLabs.ok) {
         const dataLabs = await resLabs.json();
-        if (Array.isArray(dataLabs.items) && dataLabs.items.length > 0) {
+        if (Array.isArray(dataLabs.items)) {
           this.unidadesLaboratorio = dataLabs.items;
         }
       }
 
       const resCat = await apiClient('/laboratorios/catalogo-examenes');
+      if (!resCat.ok) throw new Error('No se pudieron cargar todos los datos del servidor');
       if (resCat.ok) {
         const dataCat = await resCat.json();
-        if (Array.isArray(dataCat.items) && dataCat.items.length > 0) {
+        if (Array.isArray(dataCat.items)) {
           this.tiposExamenes = dataCat.items;
         }
       }
 
       const resOrd = await apiClient('/laboratorios/ordenes');
+      if (!resOrd.ok) throw new Error('No se pudieron cargar todos los datos del servidor');
       if (resOrd.ok) {
         const dataOrd = await resOrd.json();
-        if (Array.isArray(dataOrd.items) && dataOrd.items.length > 0) {
+        if (Array.isArray(dataOrd.items)) {
           this.laboratorios = dataOrd.items;
         }
       }
@@ -92,7 +91,9 @@ class StateStore {
       this.sincronizado = true;
       this.notify();
     } catch (err) {
-      console.warn('Operando en modo de respaldo local offline:', err.message);
+      this.sincronizado = false;
+      this.notify();
+      throw err;
     }
   }
 
@@ -241,45 +242,17 @@ class StateStore {
   }
 
   async agregarUnidadLaboratorio(nuevaUnidad) {
-    try {
-      const res = await apiClient('/laboratorios', {
-        method: 'POST',
-        body: JSON.stringify(nuevaUnidad)
-      });
-      if (res.ok) {
-        const guardado = await res.json();
-        this.unidadesLaboratorio.unshift(guardado);
-        this.notify();
-        return guardado;
-      }
-    } catch (err) {
-      console.warn('Persistencia remota de laboratorio no completada, guardando local:', err.message);
-    }
-
-    this.unidadesLaboratorio.unshift(nuevaUnidad);
+    const guardado = await solicitarJson('/laboratorios', { method: 'POST', body: JSON.stringify(nuevaUnidad) });
+    this.unidadesLaboratorio.unshift(guardado);
     this.notify();
-    return nuevaUnidad;
+    return guardado;
   }
 
   async agregarTipoExamen(nuevoExamen) {
-    try {
-      const res = await apiClient('/laboratorios/catalogo-examenes', {
-        method: 'POST',
-        body: JSON.stringify(nuevoExamen)
-      });
-      if (res.ok) {
-        const guardado = await res.json();
-        this.tiposExamenes.unshift(guardado);
-        this.notify();
-        return guardado;
-      }
-    } catch (err) {
-      console.warn('Persistencia remota de tipo de examen no completada, guardando local:', err.message);
-    }
-
-    this.tiposExamenes.unshift(nuevoExamen);
+    const guardado = await solicitarJson('/laboratorios/catalogo-examenes', { method: 'POST', body: JSON.stringify(nuevoExamen) });
+    this.tiposExamenes.unshift(guardado);
     this.notify();
-    return nuevoExamen;
+    return guardado;
   }
 
   getPolizasFiltradas() {
@@ -347,24 +320,10 @@ class StateStore {
   }
 
   async agregarDoctor(nuevoDoctor) {
-    try {
-      const res = await apiClient('/doctores', {
-        method: 'POST',
-        body: JSON.stringify(nuevoDoctor)
-      });
-      if (res.ok) {
-        const guardado = await res.json();
-        this.doctores.unshift(guardado);
-        this.notify();
-        return guardado;
-      }
-    } catch (err) {
-      console.warn('Persistencia de doctor no completada, guardando local:', err.message);
-    }
-
-    this.doctores.unshift(nuevoDoctor);
+    const guardado = await solicitarJson('/doctores', { method: 'POST', body: JSON.stringify(nuevoDoctor) });
+    this.doctores.unshift(guardado);
     this.notify();
-    return nuevoDoctor;
+    return guardado;
   }
 
   setFiltroPolizaTexto(texto) {
@@ -373,37 +332,16 @@ class StateStore {
   }
 
   async agregarPoliza(nuevaPoliza) {
-    try {
-      const res = await apiClient('/polizas', {
-        method: 'POST',
-        body: JSON.stringify(nuevaPoliza)
-      });
-      if (res.ok) {
-        const guardada = await res.json();
-        this.polizas.unshift(guardada);
-      } else {
-        this.polizas.unshift(nuevaPoliza);
-      }
-    } catch {
-      this.polizas.unshift(nuevaPoliza);
-    }
-
-    if (nuevaPoliza.pacienteId) {
-      await this.asociarPolizaAPaciente(nuevaPoliza.idPoliza, nuevaPoliza.pacienteId);
-    } else {
-      this.notify();
-    }
+    const guardado = await solicitarJson('/polizas', { method: 'POST', body: JSON.stringify(nuevaPoliza) });
+    this.polizas.unshift(guardado);
+    this.notify();
+    return guardado;
   }
 
   async asociarPolizaAPaciente(polizaIdentificador, pacienteId) {
-    try {
-      await apiClient(`/polizas/${encodeURIComponent(polizaIdentificador)}/asociar`, {
-        method: 'POST',
-        body: JSON.stringify({ pacienteId })
-      });
-    } catch (err) {
-      console.warn('Asociación remota no completada, aplicando localmente:', err.message);
-    }
+    await solicitarJson(`/polizas/${encodeURIComponent(polizaIdentificador)}/asociar`, {
+      method: 'POST', body: JSON.stringify({ pacienteId })
+    });
 
     const poliza = this.polizas.find(p => p.idPoliza === polizaIdentificador || p.id === polizaIdentificador);
     const paciente = this.pacientes.find(p => p.id === pacienteId || p.expediente === pacienteId);
@@ -458,78 +396,33 @@ class StateStore {
   }
 
   async agregarPaciente(nuevoPaciente) {
-    try {
-      const res = await apiClient('/pacientes', {
-        method: 'POST',
-        body: JSON.stringify(nuevoPaciente)
-      });
-      if (res.ok) {
-        const guardado = await res.json();
-        const normalizado = {
-          ...nuevoPaciente,
-          ...guardado,
-          curp: guardado.documentoIdentidad || nuevoPaciente.curp,
-          estadoArchivo: 'activo'
-        };
-        this.pacientes.unshift(normalizado);
-        this.notify();
-        return normalizado;
-      }
-    } catch (err) {
-      console.warn('Persistencia remota en MongoDB no completada, almacenando localmente:', err.message);
-    }
-
-    this.pacientes.unshift(nuevoPaciente);
+    const guardado = await solicitarJson('/pacientes', { method: 'POST', body: JSON.stringify(nuevoPaciente) });
+    const normalizado = { ...nuevoPaciente, ...guardado, curp: guardado.documentoIdentidad, estadoArchivo: 'activo' };
+    this.pacientes.unshift(normalizado);
     this.notify();
-    return nuevoPaciente;
+    return normalizado;
   }
 
-  actualizarPaciente(id, datosActualizados) {
+  async actualizarPaciente(id, datosActualizados) {
+    const guardado = await solicitarJson(`/pacientes/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(datosActualizados) });
     const idx = this.pacientes.findIndex(p => p.id === id);
-    if (idx !== -1) {
-      this.pacientes[idx] = { ...this.pacientes[idx], ...datosActualizados };
-      this.notify();
-    }
+    if (idx !== -1) this.pacientes[idx] = { ...this.pacientes[idx], ...datosActualizados, ...guardado };
+    this.notify();
+    return guardado;
   }
 
   async archivarPaciente(id, motivo) {
-    try {
-      await apiClient(`/pacientes/${encodeURIComponent(id)}/archivar`, {
-        method: 'PATCH',
-        body: JSON.stringify({ motivo })
-      });
-    } catch (err) {
-      console.warn('Archivado remoto no completado, archivando localmente:', err.message);
-    }
-
-    const idx = this.pacientes.findIndex(p => p.id === id);
-    if (idx !== -1) {
-      this.pacientes[idx].estadoArchivo = 'archivado';
-      this.pacientes[idx].motivoArchivo = motivo;
-      this.pacientes[idx].fechaArchivo = new Date().toISOString();
-      this.notify();
-    }
+    const historial = await solicitarJson(`/pacientes/${encodeURIComponent(id)}/archivar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
+    const paciente = this.pacientes.find(p => p.id === id);
+    if (paciente) Object.assign(paciente, { estadoArchivo: historial.estado, motivoArchivo: historial.motivoArchivo, fechaArchivo: historial.fechaArchivo });
+    this.notify();
   }
 
   async agregarOrdenLaboratorio(nuevaOrden) {
-    try {
-      const res = await apiClient('/laboratorios/ordenes', {
-        method: 'POST',
-        body: JSON.stringify(nuevaOrden)
-      });
-      if (res.ok) {
-        const guardada = await res.json();
-        this.laboratorios.unshift(guardada);
-        this.notify();
-        return guardada;
-      }
-    } catch (err) {
-      console.warn('Persistencia remota de orden no completada, guardando local:', err.message);
-    }
-
-    this.laboratorios.unshift(nuevaOrden);
+    const guardado = await solicitarJson('/laboratorios/ordenes', { method: 'POST', body: JSON.stringify(nuevaOrden) });
+    this.laboratorios.unshift(guardado);
     this.notify();
-    return nuevaOrden;
+    return guardado;
   }
 
   subscribe(listener) {

@@ -193,7 +193,7 @@ function configurarEventosDoctores() {
         institucionId: 'I1'
       };
 
-      await store.agregarDoctor(nuevoDoctor);
+      try { await store.agregarDoctor(nuevoDoctor); } catch (error) { return mostrarToast({ titulo: 'No se pudo guardar', mensaje: error.message, tipo: 'error' }); }
       form.reset();
       actualizarMetricasDoctores();
       renderDoctoresTable();

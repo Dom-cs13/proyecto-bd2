@@ -500,7 +500,7 @@ export function inicializarVistaLaboratorio() {
             observacionesTecnicas: observaciones || 'Toma de muestra según protocolo institucional.'
           };
 
-          await store.agregarOrdenLaboratorio(nuevaOrden);
+          try { await store.agregarOrdenLaboratorio(nuevaOrden); } catch (error) { return mostrarToast({ titulo: 'No se pudo guardar', mensaje: error.message, tipo: 'error' }); }
           renderLaboratorioTable('laboratorio-table-container');
           renderPacientesAsociadosTable('laboratorio-pacientes-asociados-container');
           actualizarMetricasLaboratorio();
@@ -573,7 +573,7 @@ export function inicializarVistaLaboratorio() {
         estado: 'activo'
       };
 
-      await store.agregarUnidadLaboratorio(nuevoLab);
+      try { await store.agregarUnidadLaboratorio(nuevoLab); } catch (error) { return mostrarToast({ titulo: 'No se pudo guardar', mensaje: error.message, tipo: 'error' }); }
       formLab.reset();
       poblarSelectsLaboratorio();
       renderUnidadesLaboratorio('unidades-laboratorio-cards-container');
@@ -633,7 +633,7 @@ export function inicializarVistaLaboratorio() {
         estado: 'activo'
       };
 
-      await store.agregarTipoExamen(nuevoExamen);
+      try { await store.agregarTipoExamen(nuevoExamen); } catch (error) { return mostrarToast({ titulo: 'No se pudo guardar', mensaje: error.message, tipo: 'error' }); }
       formEx.reset();
       renderCatalogoExamenes('catalogo-examenes-table-container');
       actualizarMetricasLaboratorio();
