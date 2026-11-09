@@ -23,8 +23,8 @@ export function crearPoolMariaDb(configuracion = {}) {
     password,
     database,
     connectionLimit: configuracion.max ?? 5,
-    connectTimeout: 5000,
-    acquireTimeout: 5000,
+    connectTimeout: 15000,
+    acquireTimeout: 15000,
   };
 
   if (usarSsl) {
