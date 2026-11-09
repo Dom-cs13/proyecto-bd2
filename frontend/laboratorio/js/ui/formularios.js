@@ -21,6 +21,8 @@ import {
   buscarPaciente,
   nombreDeCui,
   crearOrdenApi,
+  registrarMuestraApi,
+  registrarResultadoApi,
 } from '../datos.js';
 import { tablaExamenes, badgeEstado, badgeAnormalidad } from './tablas.js';
 import { renderResultadosEspecializados } from './visualizadores.js';
@@ -558,6 +560,36 @@ export function formOrden(onGuardar, existente = null, preseCui = null, preseTip
         prioridad: f.prioridad.value,
         estadoOrden: estado,
         examenesSolicitados: [{ codigo: tipoKey.toUpperCase(), nombre: `Examen de ${tipoKey}`, tipoLaboratorio: tipoKey }],
+      });
+    }
+
+    // Registrar muestra a través de la API Express (Regla 7)
+    registrarMuestraApi({
+      id: idMuestra,
+      ordenId,
+      codigoBarras,
+      tipoMuestra,
+      condicionMuestra: condMuestra,
+      estadoMuestra: estado === 'completado' ? 'completada' : 'en_proceso',
+      fechaToma: muestraActual?.fechaToma || new Date().toISOString(),
+    });
+
+    // Si hay resultados y/o la orden está completada, registrar resultado a través de la API Express
+    if (Object.keys(resultados).length > 0 || estado === 'completado') {
+      registrarResultadoApi({
+        ordenId,
+        muestraId: idMuestra,
+        examenCodigo: tipoKey.toUpperCase(),
+        examenNombre: `Examen de ${tipoKey}`,
+        tipoLaboratorio: tipoKey,
+        valorResultado: resultados,
+        flagAnormalidad,
+        tecnicoValido: estado === 'completado' ? tecnicoValido : null,
+        fechaValidacion: estado === 'completado' ? (fechaResultado || new Date().toISOString()) : null,
+        paciente: pac ? {
+          genero: pac.genero,
+          edad: pac.fechaNacimiento ? Math.floor((new Date() - new Date(pac.fechaNacimiento)) / (365.25 * 24 * 3600 * 1000)) : 30,
+        } : null,
       });
     }
 

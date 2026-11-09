@@ -516,6 +516,37 @@ export async function crearOrdenApi(ordenDatos) {
   return null;
 }
 
+export async function registrarMuestraApi(muestraDatos) {
+  try {
+    const res = await apiClient('/laboratorio/muestras', {
+      method: 'POST',
+      headers: headersAuth(),
+      body: JSON.stringify(muestraDatos),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('[datos] Error al registrar muestra en API:', err.message);
+  }
+  return null;
+}
+
+export async function registrarResultadoApi(resultadoDatos) {
+  try {
+    const res = await apiClient('/laboratorio/resultados', {
+      method: 'POST',
+      headers: headersAuth(),
+      body: JSON.stringify(resultadoDatos),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('[datos] Error al registrar resultado en API:', err.message);
+  }
+  return null;
+}
 /* ---------- Helpers de consulta y generación de claves ---------- */
 export const buscarPaciente = (cui) => pacientes.find((p) => p.cui === cui || p.documentoIdentidad === cui || p.id === cui);
 export const existeCui = (cui) => pacientes.some((p) => p.cui === cui || p.documentoIdentidad === cui || p.id === cui);

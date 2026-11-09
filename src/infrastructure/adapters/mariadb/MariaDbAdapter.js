@@ -1,4 +1,4 @@
-import { MotorNoDisponible } from "../../../domain/errores.js";
+import { Conflicto, MotorNoDisponible, NoEncontrado } from "../../../domain/errores.js";
 import {
   pacienteDesdeFila,
   historialDesdeFila,
@@ -40,11 +40,11 @@ export class MariaDbAdapter {
             (documento, nombres, apellidos, fecha_nacimiento, sexo, grupo_sanguineo, telefono, correo, direccion)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
-            datos.documento ?? null,
-            datos.nombres,
+            datos.documento ?? datos.documentoIdentidad ?? datos.cui ?? null,
+            datos.nombres ?? datos.nombre ?? '',
             datos.apellidos,
             datos.fechaNacimiento,
-            datos.sexo ?? null,
+            datos.sexo ?? datos.genero ?? null,
             datos.detallesInstitucion?.grupoSanguineo ?? null,
             datos.telefono ?? null,
             datos.correo ?? null,
@@ -58,7 +58,7 @@ export class MariaDbAdapter {
               (nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, direccion)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
-              datos.nombres,
+              datos.nombres ?? datos.nombre ?? '',
               datos.apellidos,
               datos.fechaNacimiento,
               datos.sexo ?? "M",
@@ -145,8 +145,9 @@ export class MariaDbAdapter {
 
       return pacienteDesdeFila({
         id_paciente: pacienteId,
-        documento: datos.documento ?? null,
-        nombres: datos.nombres,
+        documento: datos.documento ?? datos.documentoIdentidad ?? datos.cui ?? null,
+        documento_identidad: datos.documentoIdentidad ?? datos.documento ?? datos.cui ?? null,
+        nombres: datos.nombres ?? datos.nombre,
         apellidos: datos.apellidos,
         fecha_nacimiento: datos.fechaNacimiento,
         sexo: datos.sexo ?? null,
@@ -162,6 +163,9 @@ export class MariaDbAdapter {
         await conn.query("ROLLBACK");
       } catch {
         // Conservar error original
+      }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
       }
       throw error;
     } finally {
@@ -507,9 +511,13 @@ export class MariaDbAdapter {
         });
       }
 
+      const hObj = historialDesdeFila(filasHist[0]);
       return {
         paciente,
-        historial: historialDesdeFila(filasHist[0]),
+        estado: hObj.estado,
+        fechaArchivo: hObj.fechaArchivo,
+        motivoArchivo: hObj.motivoArchivo,
+        historial: hObj,
         consultas,
       };
     } finally {
@@ -552,8 +560,7 @@ export class MariaDbAdapter {
 
       const affected = resultado.affectedRows ?? resultado[0]?.affectedRows ?? 0;
       if (affected === 0) {
-        const error = new Error("Historial no encontrado o ya archivado");
-        error.codigo = "HISTORIAL_NO_DISPONIBLE";
+        const error = new NoEncontrado("HISTORIAL_NO_DISPONIBLE", "Historial no encontrado o ya archivado");
         throw error;
       }
 
@@ -565,9 +572,13 @@ export class MariaDbAdapter {
 
       await conn.query("COMMIT");
 
+      const hObj = historialDesdeFila(filasHist[0]);
       return {
         paciente: await this.obtenerPaciente(pacienteId),
-        historial: historialDesdeFila(filasHist[0]),
+        estado: hObj.estado,
+        fechaArchivo: hObj.fechaArchivo,
+        motivoArchivo: hObj.motivoArchivo,
+        historial: hObj,
         consultas: [],
       };
     } catch (error) {
@@ -575,6 +586,9 @@ export class MariaDbAdapter {
         await conn.query("ROLLBACK");
       } catch {
         // Conservar error original
+      }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
       }
       throw error;
     } finally {
@@ -660,6 +674,9 @@ export class MariaDbAdapter {
       } catch {
         // Conservar error original
       }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
+      }
       throw error;
     } finally {
       if (typeof conn.release === "function") conn.release();
@@ -743,6 +760,9 @@ export class MariaDbAdapter {
       } catch {
         // Conservar error original
       }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
+      }
       throw error;
     } finally {
       if (typeof conn.release === "function") conn.release();
@@ -799,6 +819,9 @@ export class MariaDbAdapter {
       } catch {
         // Conservar error original
       }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
+      }
       throw error;
     } finally {
       if (typeof conn.release === "function") conn.release();
@@ -831,7 +854,7 @@ export class MariaDbAdapter {
          VALUES (?, ?, ?, ?)`,
         [
           datos.consultaId,
-          datos.codigoCie10 ?? null,
+          datos.codigoCie10 ?? datos.codigoCie ?? null,
           datos.descripcion,
           datos.observaciones ?? null,
         ]
@@ -844,7 +867,8 @@ export class MariaDbAdapter {
       return {
         id: String(diagnosticoId),
         consultaId: String(datos.consultaId),
-        codigoCie10: datos.codigoCie10 ?? null,
+        codigoCie: datos.codigoCie ?? datos.codigoCie10 ?? 'Z00.0',
+        codigoCie10: datos.codigoCie10 ?? datos.codigoCie ?? 'Z00.0',
         descripcion: datos.descripcion,
         observaciones: datos.observaciones ?? null,
       };
@@ -853,6 +877,9 @@ export class MariaDbAdapter {
         await conn.query("ROLLBACK");
       } catch {
         // Conservar error original
+      }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
       }
       throw error;
     } finally {
@@ -937,6 +964,9 @@ export class MariaDbAdapter {
       } catch {
         // Conservar error original
       }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
+      }
       throw error;
     } finally {
       if (typeof conn.release === "function") conn.release();
@@ -992,7 +1022,7 @@ export class MariaDbAdapter {
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             recetaId,
-            med.medicamentoId,
+            med.medicamentoId ?? 1,
             med.dosis,
             med.frecuencia,
             med.duracion ?? null,
@@ -1004,7 +1034,8 @@ export class MariaDbAdapter {
         const detalleId = resDet.insertId ?? resDet[0]?.insertId;
         detalles.push({
           id: String(detalleId),
-          medicamentoId: String(med.medicamentoId),
+          medicamentoId: String(med.medicamentoId ?? 1),
+          medicamento: med.medicamento || 'Medicamento',
           dosis: med.dosis,
           frecuencia: med.frecuencia,
           duracion: med.duracion ?? null,
@@ -1027,6 +1058,9 @@ export class MariaDbAdapter {
         await conn.query("ROLLBACK");
       } catch {
         // Conservar error original
+      }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
       }
       throw error;
     } finally {
@@ -1169,6 +1203,9 @@ export class MariaDbAdapter {
         await conn.query("ROLLBACK");
       } catch {
         // Conservar error original
+      }
+      if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062 || error.message?.includes('Duplicate entry') || error instanceof Conflicto) {
+        throw new Conflicto('PACIENTE_DUPLICADO', error.message || 'Ya existe un paciente con ese documento');
       }
       throw error;
     } finally {

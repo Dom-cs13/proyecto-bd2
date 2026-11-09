@@ -24,6 +24,7 @@ export function pacienteDesdeFila(fila) {
     telefono: fila.telefono ?? '',
     correo: fila.correo ?? '',
     direccion: fila.direccion ?? '',
+    activo: fila.activo !== false,
     detallesInstitucion: {},
   };
 }
@@ -48,6 +49,7 @@ export function historialDesdeFila(fila) {
 
 export function diagnosticoDesdeFila(fila) {
   return { id: String(fila.id_diagnostico), consultaId: String(fila.id_consulta),
+    codigoCie: fila.codigo_cie ?? 'Z00.0',
     descripcion: fila.descripcion, observaciones: fila.observaciones ?? null };
 }
 
