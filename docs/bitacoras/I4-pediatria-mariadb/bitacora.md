@@ -164,3 +164,28 @@
 - **Tiempo invertido:** 40 min
 - **Siguiente paso:** Conectar vistas y formularios de `frontend/pediatria/` con los endpoints reales del backend en la nube.
 
+## Sesión 8 · 2026-11-08 · Tareas I4-02, I4-08, I4-09, I4-10 e I4-11 (API HTTP completa de Pediatría, MockAdapter, Aislamiento y Cliente Frontend)
+
+- **Objetivo de la sesión:** Implementar la capa HTTP completa para el Centro Pediátrico (`I4`), el cliente API frontend, el `MockAdapter` en memoria, la verificación de aislamiento institucional, el `compose.yaml` de MariaDB y la suite exhaustiva de pruebas unitarias y de integración.
+- **Qué hice:**
+  - Creé `src/infrastructure/config/pediatriaRepositoryFactory.js` resolviendo el adaptador de MariaDB de forma aislada para la institución `pediatria`.
+  - Creé `src/interfaces/http/middleware/pediatriaJwt.js` con verificación estricta de token JWT (`pediatria`, roles `pediatra`, `enfermeria`, `recepcion`).
+  - Creé `src/interfaces/http/validators/pediatria.js` con validaciones Zod completas para pacientes con tutor legal principal, citas, consultas, diagnósticos, tratamientos, recetas, controles antropométricos de crecimiento y dosis de vacunas aplicadas.
+  - Creé `src/application/useCases/pediatriaPacientes.js` aplicando la regla de negocio que prohíbe escrituras clínicas en expedientes archivados (`409 PACIENTE_ARCHIVADO`) y delegando las operaciones al puerto.
+  - Creé `src/interfaces/http/controllers/pediatriaPacientes.js` mapeando errores específicos de MariaDB (`1062` a conflicto, `1452` a validación, fallos de conexión a 503 `MOTOR_NO_DISPONIBLE`).
+  - Creé `src/interfaces/http/routes/pediatriaPacientes.js` montando las rutas con autorización por rol según la matriz de I4-01 y delegación de tokens ajenos vía `next('route')`.
+  - Monté el router pediátrico en `src/app.js` permitiendo coexistencia y montaje selectivo para suites aisladas.
+  - Creé `src/infrastructure/adapters/mock/MockAdapter.js` cumpliendo el contrato del puerto `HistorialRepository` en memoria (`I4-02`).
+  - Creé `compose.yaml` para despliegue local de MariaDB 11 con inicialización de DDL, índices y seeds (`I4-02`).
+  - Creé `scripts/seed-pediatria.js` y `scripts/verificar-aislamiento.js` verificando la no-fuga de datos entre instituciones y la resiliencia aislada ante fallos (`503`), integrados en `package.json` (`I4-09`).
+  - Creé `frontend/shared/js/api/pediatria.js` y `frontend/pediatria/js/portalApi.js` conectando las operaciones del portal pediátrico con la API REST (`I4-10` e `I4-11`).
+  - Desarrollé suites de prueba en `tests/integration/` y `tests/unit/`, alcanzando un total de 243 pruebas automáticas pasando al 100%.
+- **Decisiones tomadas (y por qué):**
+  - Implementar endpoints dedicados para crecimiento y vacunas (`POST /pacientes/:id/crecimiento` y `POST /pacientes/:id/vacunas`) garantiza apego fiel a la naturaleza clínica pediátrica y modularidad para enfermería y pediatras.
+  - Mantener la delegación por `next('route')` en routers Express permite que cada centro médico preserve su soberanía arquitectónica sin colisionar en endpoints comunes como `/pacientes` y `/consultas`.
+- **Problemas / bloqueos:** Ninguno.
+- **Evidencia:** rama `feat/I4-08-pediatria-api-completa`, PR a `main`.
+- **Tiempo invertido:** 75 min
+- **Siguiente paso:** Entrega I y comparativo tecnológico de MariaDB para Pediatría.
+
+

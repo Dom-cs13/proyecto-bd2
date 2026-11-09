@@ -11,7 +11,10 @@
     "lint": "eslint .",
     "test": "vitest run",
     "skills:sync": "node scripts/sync-skills.js",
-    "skills:check": "node scripts/sync-skills.js --check"
+    "skills:check": "node scripts/sync-skills.js --check",
+    "seed:pediatria": "node --env-file-if-exists=.env scripts/seed-pediatria.js",
+    "seed:all": "npm run seed:pediatria",
+    "verificar:aislamiento": "node scripts/verificar-aislamiento.js"
   },
   "dependencies": {
     "express": "^5.3.0",
