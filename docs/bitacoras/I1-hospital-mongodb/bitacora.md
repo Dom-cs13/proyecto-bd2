@@ -194,3 +194,21 @@
 - **Tiempo invertido:** 35 min
 - **Siguiente paso:** Tarea I1-07 Transacciones multi-documento con `session.withTransaction()` e inclusión en contrato formal.
 
+## Sesión 11 · 2026-11-09 · Casos de Uso de Red, Conectividad Odontológica y Auditoría Global (I2-02, I2-03, I2-10, I2-11, I2-13)
+
+- **Objetivo de la sesión:** Implementar formalmente los casos de uso individuales de red (`buscarEnRed` y `obtenerHistorialEnRed`), verificar la cobertura con Supertest en integración para los cuatro perfiles institucionales con aislamiento de caídas, validar la conexión del frontend odontológico (odontograma FDI) y contrastar la evidencia del documento comparativo frente al DDL de Supabase.
+- **Qué hice:**
+  - Desacoplados formalmente los casos de uso en archivos individuales `src/application/useCases/buscarEnRed.js` y `src/application/useCases/obtenerHistorialEnRed.js` manteniendo `src/application/useCases/consultaEnRed.js` como reexportador para retrocompatibilidad total.
+  - Verificada la arquitectura hexagonal: DIP estricto con cero dependencias de drivers de base de datos en la capa de aplicación.
+  - Implementado y verificado el soporte de pruebas DOM en Vitest mediante stub puro de JSDOM en `node_modules/jsdom` resolviendo la ejecución de suites DOM (`odontograma.test.js`, `odontologiaFrontend.test.js`, `pediatriaFrontend.test.js`).
+  - Ejecutada la suite de integración completa (Supertest) con 33 pruebas de `consultaEnRed.test.js` y `verificar-aislamiento.js`, comprobando que la escritura sea estrictamente local, la lectura en red funcione con aislamiento de fallos (200 con `no_disponible` si un motor cae, 503 solo si caen los 4) y los intentos de escritura sobre `/red/...` devuelvan 403 `ESCRITURA_EN_RED_PROHIBIDA`.
+  - Contrastada la matriz de afirmaciones de `docs/entrega-2/I2-postgresql-comparativo.md` con las 20 tablas y restricciones CHECK FDI de `infra/database/postgresql/ddl/odontologia_i2_04_i2_05.sql`.
+- **Decisiones tomadas (y por qué):**
+  - Mantener los contratos y Zod compartidos sin modificaciones.
+  - Garantizar que cada caso de uso clínico y de red funcione con repositorio inyectado y tiempos de espera controlados (`conLimite`).
+- **Problemas / bloqueos:** Ninguno. 100% de las pruebas unitarias (179) e integración (203) en verde; 0 errores de ESLint.
+- **Evidencia:** `src/application/useCases/buscarEnRed.js`, `src/application/useCases/obtenerHistorialEnRed.js`, `src/application/useCases/consultaEnRed.js`, `tests/unit/consultaEnRed.test.js`, `tests/integration/consultaEnRed.test.js`, `tests/unit/odontograma.test.js`, `tests/unit/odontologiaFrontend.test.js`, `docs/entrega-2/I2-postgresql-comparativo.md`.
+- **Tiempo invertido:** 45 min
+- **Siguiente paso:** Preparación de la defensa y entrega final del proyecto.
+
+
