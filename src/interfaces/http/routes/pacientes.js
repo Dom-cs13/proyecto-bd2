@@ -1,11 +1,19 @@
 import { Router } from 'express';
 import { autenticar } from '../middleware/auth.js';
 import { resolverRepositorio } from '../middleware/resolverRepositorio.js';
-import { NoEncontrado, Validacion } from '../../../domain/errores.js';
+import { NoEncontrado } from '../../../domain/errores.js';
+import { editarPacienteLocal, motivoArchivoLocal, pacienteLocal } from '../validators/pacientesLocales.js';
 
 const router = Router();
 router.use(autenticar);
 router.use(resolverRepositorio);
+
+router.patch('/:id', async (req, res, next) => {
+  try {
+    const datos = editarPacienteLocal.parse(req.body);
+    res.json(await req.repo.actualizarPaciente(req.params.id, datos));
+  } catch (error) { next(error); }
+});
 
 // GET /pacientes · Listar y buscar pacientes
 router.get('/', async (req, res, next) => {
@@ -21,10 +29,7 @@ router.get('/', async (req, res, next) => {
 // POST /pacientes · Crear paciente nuevo
 router.post('/', async (req, res, next) => {
   try {
-    const datos = req.body;
-    if (!datos || !datos.nombre || !datos.apellidos) {
-      throw new Validacion('DATOS_INCOMPLETOS', 'Nombre y apellidos son requeridos');
-    }
+    const datos = pacienteLocal.parse({ ...req.body, documentoIdentidad: req.body?.documentoIdentidad || req.body?.curp });
     const nuevo = await req.repo.crearPaciente(datos);
     res.status(201).json(nuevo);
   } catch (err) {
@@ -59,10 +64,7 @@ router.get('/:id/historial', async (req, res, next) => {
 router.patch('/:id/archivar', async (req, res, next) => {
   try {
     const { motivo } = req.body || {};
-    const motivoJustificado = motivo || {
-      tipo: 'administrativo',
-      detalle: 'Archivado formal desde interfaz clínica',
-    };
+    const motivoJustificado = motivoArchivoLocal.parse(motivo);
     const historial = await req.repo.archivarHistorial(req.params.id, motivoJustificado);
     res.json(historial);
   } catch (err) {

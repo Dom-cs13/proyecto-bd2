@@ -1,9 +1,11 @@
-import { describe, expect, test } from 'vitest';
+import { configurarCuenta } from '../helpers/cuentasConfiguradas.js';
+import { describe, expect, test, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { crearApp } from '../../src/app.js';
 
 describe('App base · formato de error único', () => {
   const app = crearApp();
+  afterEach(() => vi.unstubAllEnvs());
 
   test('una ruta inexistente responde 404 con { error: { codigo, mensaje } }', async () => {
     const res = await request(app).get('/no-existe');
@@ -18,6 +20,7 @@ describe('App base · formato de error único', () => {
   });
 
   test('POST /auth/login emite un token JWT con la institucion', async () => {
+    configurarCuenta('hospital', 'dr.palma', 'admin', 'Password123!');
     const res = await request(app)
       .post('/auth/login')
       .send({ institucion: 'hospital', usuario: 'dr.palma', password: 'Password123!' });

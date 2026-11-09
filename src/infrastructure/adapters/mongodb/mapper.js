@@ -31,10 +31,15 @@ export function pacienteToDomain(doc) {
     correo: doc.correo || '',
     alergias: doc.alergias || '',
     polizaSeguro: doc.polizaSeguro || null,
-    activo: doc.activo !== undefined ? Boolean(doc.activo) : doc.estado !== 'archivado',
-    detallesInstitucion: doc.detallesInstitucion || {
+    activo: doc.estado !== 'archivado' && doc.activo !== false,
+    detallesInstitucion: {
       institucionId: 'I1',
       nombreInstitucion: 'Hospital General',
+      ...(doc.detallesInstitucion || {}),
+      estadoClinico: doc.estadoClinico || 'estable',
+      medicoTratante: doc.medicoTratante || '',
+      ubicacion: doc.ubicacion || '',
+      servicioArea: doc.servicioArea || '',
     },
   };
 }
@@ -42,7 +47,7 @@ export function pacienteToDomain(doc) {
 export function consultaToDomain(doc) {
   if (!doc) return null;
 
-  return {
+  const consulta = {
     id: doc._id?.toString() || doc.id,
     pacienteId: doc.pacienteId?.toString() || doc.pacienteId,
     expediente: doc.expediente || '',
@@ -77,6 +82,15 @@ export function consultaToDomain(doc) {
         } : null,
       } : null,
     } : null,
+  };
+  // Conserva los alias de lectura heredados y expone las listas comunes al frontend.
+  const diagnostico = consulta.diagnostico;
+  const tratamiento = diagnostico?.tratamiento;
+  const receta = tratamiento?.receta;
+  return { ...consulta,
+    motivo: consulta.motivos,
+    diagnosticos: diagnostico ? [{ ...diagnostico, tratamientos: tratamiento ? [tratamiento] : [] }] : [],
+    recetas: receta ? [{ ...receta, medicamentos: receta.detalles }] : [],
   };
 }
 

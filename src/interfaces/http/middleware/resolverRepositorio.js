@@ -2,7 +2,7 @@ import { obtenerRepositorio } from '../../../infrastructure/config/RepositoryFac
 
 export function resolverRepositorio(req, res, next) {
   try {
-    const institucion = req.user?.institucion || 'hospital';
+    const institucion = req.user.institucion;
     req.repo = obtenerRepositorio(institucion);
     next();
   } catch (err) {

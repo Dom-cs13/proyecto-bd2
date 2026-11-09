@@ -7,15 +7,40 @@
 
 import { Router } from 'express';
 import { obtenerRepositorio, obtenerLaboratorioRepo } from '../../../infrastructure/config/RepositoryFactory.js';
-import { NoEncontrado, Validacion } from '../../../domain/errores.js';
+import { NoEncontrado, Validacion, Prohibido } from '../../../domain/errores.js';
+import { requerirAutenticacion } from '../middleware/auth.js';
+import { editarPacienteLocal, motivoArchivoLocal, pacienteLocal } from '../validators/pacientesLocales.js';
+import { validarPacienteLaboratorio } from '../../../application/useCases/validarPacienteLaboratorio.js';
+import { calcularEdad } from '../../../domain/entities/paciente.js';
 
 export const routerLaboratorio = Router();
 
+routerLaboratorio.use((req, res, next) => {
+  const pacientes = /^\/pacientes(?:\/|$)/.test(req.path);
+  const especializado = /^\/laboratorio(?:\/|$)/.test(req.path);
+  if (!pacientes && !especializado) return next();
+  if (pacientes && req.user && req.user.institucion !== 'laboratorio') return next('router');
+  requerirAutenticacion(req, res, (error) => {
+    if (error) return next(error);
+    if (req.user.institucion !== 'laboratorio' || !['laboratorista', 'tecnico', 'validador', 'admin'].includes(req.user.rol)) return next(new Prohibido());
+    if (/\/(validar|corregir)$/.test(req.path) && !['validador', 'admin'].includes(req.user.rol)) return next(new Prohibido());
+    next();
+  });
+});
+
 /* Helper para obtener el repositorio de la institución según JWT o laboratorio por defecto */
 function resolverRepo(req) {
-  const institucion = req.user?.institucion || 'laboratorio';
+  const institucion = req.user.institucion;
   return obtenerRepositorio(institucion);
 }
+
+routerLaboratorio.patch('/pacientes/:id', async (req, res, next) => {
+  try {
+    const datos = editarPacienteLocal.parse(req.body);
+    if (['estadoClinico', 'ubicacion', 'medicoTratante'].some((campo) => campo in datos)) throw new Validacion();
+    res.json(await resolverRepo(req).actualizarPaciente(req.params.id, datos));
+  } catch (error) { next(error); }
+});
 
 // ============================================================================
 // 1. Rutas de Pacientes e Historiales (Núcleo)
@@ -48,10 +73,7 @@ routerLaboratorio.get('/pacientes', async (req, res, next) => {
  */
 routerLaboratorio.post('/pacientes', async (req, res, next) => {
   try {
-    const datos = req.body;
-    if (!datos || (!datos.documentoIdentidad && !datos.cui) || !datos.nombre) {
-      throw new Validacion('DATOS_INVALIDOS', 'El documentoIdentidad y nombre son obligatorios');
-    }
+    const datos = pacienteLocal.parse({ ...req.body, documentoIdentidad: req.body?.documentoIdentidad || req.body?.cui });
 
     const repo = resolverRepo(req);
     const paciente = await repo.crearPaciente(datos);
@@ -99,7 +121,7 @@ routerLaboratorio.get('/pacientes/:id/historial', async (req, res, next) => {
 routerLaboratorio.patch('/pacientes/:id/archivar', async (req, res, next) => {
   try {
     const repo = resolverRepo(req);
-    const motivo = req.body?.motivo || 'Archivado administrativo';
+    const motivo = motivoArchivoLocal.parse(req.body?.motivo);
     const historial = await repo.archivarHistorial(req.params.id, motivo);
     res.json(historial);
   } catch (err) {
@@ -131,6 +153,7 @@ routerLaboratorio.get('/laboratorio/ordenes', async (req, res, next) => {
  */
 routerLaboratorio.post('/laboratorio/ordenes', async (req, res, next) => {
   try {
+    await validarPacienteLaboratorio(resolverRepo(req), req.body?.pacienteId);
     const labRepo = obtenerLaboratorioRepo();
     const orden = await labRepo.crearOrden(req.body);
     res.status(201).json(orden);
@@ -177,7 +200,11 @@ routerLaboratorio.post('/laboratorio/muestras', async (req, res, next) => {
 routerLaboratorio.post('/laboratorio/resultados', async (req, res, next) => {
   try {
     const labRepo = obtenerLaboratorioRepo();
-    const resultado = await labRepo.registrarResultado(req.body, req.body.paciente || null);
+    const orden = await labRepo.obtenerOrden(req.body?.ordenId);
+    if (!orden) throw new NoEncontrado('ORDEN_NO_ENCONTRADA');
+    const paciente = await validarPacienteLaboratorio(resolverRepo(req), orden.pacienteId);
+    if (!orden.muestras?.some(m => m.id === req.body.muestraId) || orden.tipoLaboratorio !== req.body.tipoLaboratorio) throw new Validacion('REFERENCIA_INVALIDA');
+    const resultado = await labRepo.registrarResultado({ ...req.body, tecnicoIngreso: req.user.usuario }, { genero: paciente.genero, edad: calcularEdad(paciente.fechaNacimiento) });
     res.status(201).json(resultado);
   } catch (err) {
     next(err);
@@ -191,9 +218,9 @@ routerLaboratorio.post('/laboratorio/resultados', async (req, res, next) => {
 routerLaboratorio.patch('/laboratorio/resultados/:id/validar', async (req, res, next) => {
   try {
     const labRepo = obtenerLaboratorioRepo();
-    const { tecnicoValido, fechaValidacion } = req.body;
+    const { fechaValidacion } = req.body;
     const resultado = await labRepo.validarResultado(req.params.id, {
-      tecnicoValido: tecnicoValido || req.user?.usuario || 'tecnico.laboratorio',
+      tecnicoValido: req.user.usuario,
       fechaValidacion,
     });
     res.json(resultado);
@@ -210,8 +237,9 @@ routerLaboratorio.patch('/laboratorio/resultados/:id/corregir', async (req, res,
   try {
     const labRepo = obtenerLaboratorioRepo();
     const { nuevoValor, motivo } = req.body;
-    const usuario = req.user?.usuario || 'usuario_laboratorio';
-    const resultado = await labRepo.corregirResultado(req.params.id, nuevoValor, motivo, usuario);
+    const resultado = await labRepo.corregirResultado(req.params.id, {
+      valorResultado: nuevoValor, motivoCorreccion: motivo, corregidoPor: req.user.usuario,
+    });
     res.json(resultado);
   } catch (err) {
     next(err);

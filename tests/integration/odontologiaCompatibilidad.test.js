@@ -1,4 +1,4 @@
-import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { crearApp } from '../../src/app.js';
@@ -15,7 +15,9 @@ const token = (institucion, rol) => jwt.sign({ institucion, rol }, clave, {
 
 describe('Odontología · composición de los routers actuales de main', () => {
   let app, odonto, pedia;
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
+    vi.stubEnv('JWT_SECRET', clave);
     hospital.listarPacientes.mockReset().mockResolvedValue({ items: [{ id: 'H' }], total: 1 });
     odonto = { listarPacientes: vi.fn().mockResolvedValue({ items: [{ id: 'O' }], total: 1 }), obtenerAgenda: vi.fn().mockResolvedValue({ items: [] }) };
     pedia = { listarPacientes: vi.fn().mockResolvedValue({ items: [{ id: 'P' }], total: 1 }) };

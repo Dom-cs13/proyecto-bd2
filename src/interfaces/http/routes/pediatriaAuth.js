@@ -56,12 +56,12 @@ routerPediatriaAuth.post('/auth/login', async (req, res, next) => {
       JOIN rol r ON r.id_rol = u.id_rol
       WHERE LOWER(u.correo) = LOWER(?)
         AND (u.estado = 1 OR u.estado = TRUE OR u.estado = 'activo' OR u.estado = 'ACTIVO')
-        AND (u.password_hash = SHA2(?, 256) OR u.password_hash = ?)
+        AND u.password_hash = SHA2(?, 256)
         AND r.nombre IN ('pediatra', 'enfermeria', 'recepcion')
       LIMIT 1
     `;
 
-    const resultado = await conn.query(sql, [correoBuscado, password, password]);
+    const resultado = await conn.query(sql, [correoBuscado, password]);
     const filas = Array.isArray(resultado) ? resultado : resultado.rows ?? [];
 
     if (filas.length !== 1) {
