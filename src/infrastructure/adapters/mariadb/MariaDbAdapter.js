@@ -1,5 +1,6 @@
 import { Conflicto, MotorNoDisponible, NoEncontrado } from "../../../domain/errores.js";
 import {
+  fechaSoloDiaISO,
   pacienteDesdeFila,
   historialDesdeFila,
   consultaDesdeFila,
@@ -450,8 +451,8 @@ export class MariaDbAdapter {
             tratamientos: filasTrat.map((tf) => ({
               id: String(tf.id_tratamiento),
               descripcion: tf.descripcion,
-              fechaInicio: tf.fecha_inicio ? String(tf.fecha_inicio).slice(0, 10) : null,
-              fechaFin: tf.fecha_fin ? String(tf.fecha_fin).slice(0, 10) : null,
+              fechaInicio: fechaSoloDiaISO(tf.fecha_inicio),
+              fechaFin: fechaSoloDiaISO(tf.fecha_fin),
               estado: tf.estado,
             })),
           });
@@ -459,14 +460,13 @@ export class MariaDbAdapter {
 
         // Receta
         const resRec = await conn.query(
-          "SELECT * FROM receta WHERE id_consulta = ? LIMIT 1",
+          "SELECT * FROM receta WHERE id_consulta = ? ORDER BY id_receta",
           [consulta.id]
         );
         const filasRec = Array.isArray(resRec) ? resRec : resRec.rows ?? [];
-        let receta = null;
+        const recetas = [];
 
-        if (filasRec.length > 0) {
-          const rf = filasRec[0];
+        for (const rf of filasRec) {
           const resDet = await conn.query(
             `SELECT dr.*, m.nombre AS nombre_medicamento
              FROM detalle_receta dr
@@ -476,7 +476,7 @@ export class MariaDbAdapter {
           );
           const filasDet = Array.isArray(resDet) ? resDet : resDet.rows ?? [];
 
-          receta = {
+          recetas.push({
             id: String(rf.id_receta),
             pesoReferenciaKg: rf.peso_referencia_kg == null ? null : Number(rf.peso_referencia_kg),
             indicacionesGenerales: rf.indicaciones_generales ?? null,
@@ -490,13 +490,14 @@ export class MariaDbAdapter {
               cantidad: df.cantidad == null ? null : Number(df.cantidad),
               indicaciones: df.indicaciones ?? null,
             })),
-          };
+          });
         }
 
         consultas.push({
           ...consulta,
           diagnosticos,
-          receta,
+          recetas,
+          receta: recetas[0] ?? null,
         });
       }
 

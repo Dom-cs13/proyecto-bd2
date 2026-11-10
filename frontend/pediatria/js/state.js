@@ -82,6 +82,7 @@ class PediatriaStore {
     return { ...paciente, expediente: paciente.expediente || paciente.id,
       detallesInstitucion: { ...detalles,
         tutorPrincipal: tutor ? { ...tutor, nombre: tutor.nombre || `${tutor.nombres || ''} ${tutor.apellidos || ''}`.trim() } : null },
+      informacionRestringida: obtenerSesion()?.rol === 'recepcion',
       historial: { ...(datos.historial || datos), consultas: datos.consultas || [] } };
   }
 

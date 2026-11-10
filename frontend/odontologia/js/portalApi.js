@@ -1,7 +1,7 @@
 import { apiOdontologia } from '../../shared/js/api/odontologia.js';
 import { vistaOdontograma, activarOdontograma } from './odontograma.js';
 
-import { escapar, campo, formulario, enlace, selectSimple, registroPaciente, busquedaPacientes, detallePaciente, tablaPacientes } from '../../shared/js/components/pacientes.js';
+import { datoSeguro, escapar, campo, formulario, enlace, selectSimple, registroPaciente, busquedaPacientes, detallePaciente, tablaPacientes } from '../../shared/js/components/pacientes.js';
 const opciones = (items) => items.map((item) => `<option value="${escapar(item.id)}">${escapar(item.nombre)}</option>`).join('');
 const opcionesArchivo = ['traslado', 'fallecimiento', 'administrativo', 'otro'];
 const opcionesSuperficie = ['O', 'M', 'D', 'V', 'L', 'P', 'I'];
@@ -91,7 +91,7 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
         if (filtro.documento || filtro.texto) {
           const respuesta = await api.buscarEnRed(filtro, signal);
           const nombres = { hospital: 'Hospital General', odontologia: 'Clínica Odontológica', laboratorio: 'Laboratorio Clínico', pediatria: 'Centro Pediátrico' };
-          resultados = `<div class="network-grid">${respuesta.resultados.map((r) => `<article class="network-card"><div class="section-intro"><h2>${escapar(nombres[r.institucion] ?? r.institucion)}</h2><span class="label ${r.estado === 'ok' ? 'blue' : 'amber'}">${r.estado === 'ok' ? 'Consultado' : 'No disponible'}</span></div>${r.estado !== 'ok' ? '<p>No se pudo consultar esta institución. Los resultados de las demás siguen disponibles.</p>' : `<p>${escapar(r.total)} coincidencias</p>${r.items.map((p) => `<div class="network-patient"><strong>${escapar(p.nombre)} ${escapar(p.apellidos)}</strong><small>${escapar(p.documentoIdentidad)}</small>${enlace(`red-historial/${r.institucion}/${p.id}?${new URLSearchParams(filtro)}`, 'Consultar ficha en red')}</div>`).join('') || '<p>No hay coincidencias.</p>'}${Number(filtro.pagina) > 1 ? enlace(`red?${new URLSearchParams({ ...filtro, pagina: Number(filtro.pagina) - 1 })}`, 'Página anterior') : ''}${Number(filtro.pagina) * filtro.limite < r.total ? enlace(`red?${new URLSearchParams({ ...filtro, pagina: Number(filtro.pagina) + 1 })}`, 'Página siguiente') : ''}`}</article>`).join('')}</div>`;
+          resultados = `<div class="network-grid">${respuesta.resultados.map((r) => `<article class="network-card"><div class="section-intro"><h2>${escapar(nombres[r.institucion] ?? r.institucion)}</h2><span class="label ${r.estado === 'ok' ? 'blue' : 'amber'}">${r.estado === 'ok' ? 'Consultado' : 'No disponible'}</span></div>${r.estado !== 'ok' ? '<p>No se pudo consultar esta institución. Los resultados de las demás siguen disponibles.</p>' : `<p>${escapar(r.total)} coincidencias</p>${r.items.map((p) => `<div class="network-patient"><strong>${datoSeguro(p.nombre)} ${datoSeguro(p.apellidos)}</strong><small>${datoSeguro(p.documentoIdentidad)}</small>${enlace(`red-historial/${r.institucion}/${p.id}?${new URLSearchParams(filtro)}`, 'Consultar ficha en red')}</div>`).join('') || '<p>No hay coincidencias.</p>'}${Number(filtro.pagina) > 1 ? enlace(`red?${new URLSearchParams({ ...filtro, pagina: Number(filtro.pagina) - 1 })}`, 'Página anterior') : ''}${Number(filtro.pagina) * filtro.limite < r.total ? enlace(`red?${new URLSearchParams({ ...filtro, pagina: Number(filtro.pagina) + 1 })}`, 'Página siguiente') : ''}`}</article>`).join('')}</div>`;
         }
         if (!mostrar('Consulta en red', '<p class="form-help">Información autorizada por tu rol. La consulta no modifica expedientes de otras instituciones.</p>' + busqueda + resultados)) return;
         for (const nombre of ['documento', 'texto']) contenido.querySelector(`[name="${nombre}"]`).value = filtro[nombre];
@@ -102,9 +102,9 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
         });
       } else if (seccion === 'red-historial') {
         const datos = await api.historialEnRed(pacienteId, entidadId, signal);
-        const ficha = `<h2>${escapar(datos.paciente?.nombre)} ${escapar(datos.paciente?.apellidos)}</h2><dl class="detail-grid">${[['Documento', datos.paciente?.documentoIdentidad], ['Nacimiento', datos.paciente?.fechaNacimiento], ['Género', datos.paciente?.genero]].filter(([,v]) => v !== undefined).map(([etiqueta, valor]) => `<div><dt>${etiqueta}</dt><dd>${escapar(valor)}</dd></div>`).join('')}</dl>`;
+        const ficha = `<h2>${datoSeguro(datos.paciente?.nombre)} ${datoSeguro(datos.paciente?.apellidos)}</h2><dl class="detail-grid">${[['Documento', datos.paciente?.documentoIdentidad], ['Nacimiento', datos.paciente?.fechaNacimiento], ['Género', datos.paciente?.genero]].map(([etiqueta, valor]) => `<div><dt>${etiqueta}</dt><dd>${datoSeguro(valor)}</dd></div>`).join('')}</dl>`;
         mostrar('Ficha en red · solo lectura', enlace(`red?${query ?? ''}`, 'Volver a resultados') + ficha +
-          `<p class="context-alert">Se muestran únicamente los campos autorizados. Las notas y extensiones restringidas de otras instituciones no se comparten.</p><p>Estado del historial: <strong>${escapar(datos.historial?.estado)}</strong></p>`);
+          `<p class="context-alert">${pacienteId !== 'odontologia' || !clinica ? 'Información restringida. ' : (datos.consultas?.length ? 'Consultas autorizadas disponibles en el expediente local. ' : 'Sin consultas registradas. ')}Se muestran únicamente los campos autorizados. Las notas y extensiones restringidas de otras instituciones no se comparten.</p><p>Estado del historial: <strong>${datoSeguro(datos.historial?.estado)}</strong></p>`);
       } else if (['inicio', 'citas'].includes(seccion)) {
         const fecha = new URLSearchParams(query).get('fecha') || new Intl.DateTimeFormat('en-CA').format(new Date());
         const agenda = await api.agenda(fecha, signal);
@@ -195,19 +195,19 @@ export function iniciarPortalOdontologia({ sesion, contenido, api = apiOdontolog
           expedienteActual = expediente;
           html += vistaOdontograma(expediente.consultas.flatMap((c) => c.detallesInstitucion?.servicios ?? []), true);
           const activo = expediente.historial.estado === 'activo';
-          html += `<p>Historial: <strong>${escapar(expediente.historial.estado)}</strong></p>`;
+          html += `<p>Historial: <strong>${datoSeguro(expediente.historial.estado)}</strong></p>`;
           if (activo) html += enlace(`consulta/${pacienteId}`, 'Nueva consulta') + enlace(`archivar/${pacienteId}`, 'Archivar historial');
-          else html += `<p>${escapar(expediente.historial.motivoArchivo?.detalle)} · ${escapar(expediente.historial.fechaArchivo)}</p>`;
+          else html += `<p>${datoSeguro(expediente.historial.motivoArchivo?.detalle)} · ${datoSeguro(expediente.historial.fechaArchivo)}</p>`;
           html += '<h2>Consultas</h2>' + (expediente.consultas.length ? expediente.consultas.map((consulta) =>
-            `<article class="api-consulta"><h3>Consulta ${escapar(consulta.id)} · ${escapar(consulta.fecha)}</h3><p>${escapar(consulta.motivo)}</p><p>${escapar(consulta.observaciones)}</p><span class="label blue">${escapar(consulta.estado)}</span><p class="form-help">Póliza vinculada: ${consulta.detallesInstitucion?.polizaId ? escapar(consulta.detallesInstitucion.polizaId) : "Sin póliza registrada"}</p>` +
+            `<article class="api-consulta"><h3>Consulta ${datoSeguro(consulta.id)} · ${datoSeguro(consulta.fecha)}</h3><p>${datoSeguro(consulta.motivo)}</p><p>${datoSeguro(consulta.observaciones)}</p><span class="label blue">${datoSeguro(consulta.estado)}</span><p class="form-help">Póliza vinculada: ${consulta.detallesInstitucion?.polizaId ? datoSeguro(consulta.detallesInstitucion.polizaId) : "Sin póliza registrada"}</p>` +
             (activo && consulta.estado === 'borrador' ? enlace(`diagnostico/${pacienteId}/${consulta.id}`, 'Agregar diagnóstico') + enlace(`receta/${pacienteId}/${consulta.id}`, 'Emitir receta') : '') +
-            '<h4>Diagnósticos y tratamientos</h4>' + (consulta.diagnosticos ?? []).map((d) => `<div><p>${escapar(d.descripcion)} · ${escapar(d.observaciones)}</p>` +
+            '<h4>Diagnósticos y tratamientos</h4>' + (consulta.diagnosticos ?? []).map((d) => `<div><p>${datoSeguro(d.descripcion)} · ${datoSeguro(d.observaciones)}</p>` +
               (activo && consulta.estado === 'borrador' ? enlace(`tratamiento/${pacienteId}/${d.id}`, 'Agregar tratamiento') : '') +
-              (d.tratamientos ?? []).map((t) => `<p>${escapar(t.descripcion)} · ${escapar(t.fechaInicio)} — ${escapar(t.fechaFin)} · ${escapar(t.estado)}</p>`).join('') + '</div>').join('') +
-            '<h4>Recetas</h4>' + (consulta.recetas ?? []).map((r) => `<p>${escapar(r.indicacionesGenerales)}</p><ul>${r.medicamentos.map((m) =>
-              `<li>${escapar(m.nombre)}: ${escapar(m.dosis)} · ${escapar(m.frecuencia)} · ${escapar(m.duracion)} · ${escapar(m.indicaciones)}</li>`).join('')}</ul>`).join('') +
+              (d.tratamientos ?? []).map((t) => `<p>${datoSeguro(t.descripcion)} · ${datoSeguro(t.fechaInicio)} — ${datoSeguro(t.fechaFin)} · ${datoSeguro(t.estado)}</p>`).join('') + '</div>').join('') +
+            '<h4>Recetas</h4>' + (consulta.recetas ?? []).map((r) => `<p>${datoSeguro(r.indicacionesGenerales)}</p><ul>${r.medicamentos.map((m) =>
+              `<li>${datoSeguro(m.nombre)}: ${datoSeguro(m.dosis)} · ${datoSeguro(m.frecuencia)} · ${datoSeguro(m.duracion)} · ${datoSeguro(m.indicaciones)}</li>`).join('')}</ul>`).join('') +
             '<h4>Servicios y piezas dentales</h4><ul>' + (consulta.detallesInstitucion?.servicios ?? []).map((s) =>
-              `<li>${escapar(s.nombre)} · Pieza ${escapar(s.piezaDental)} · ${escapar(s.superficie)} · ${escapar(s.precioAplicado)}</li>`).join('') + '</ul></article>').join('') : '<p>No hay consultas registradas.</p>');
+              `<li>${datoSeguro(s.nombre)} · Pieza ${datoSeguro(s.piezaDental)} · ${datoSeguro(s.superficie)} · ${datoSeguro(s.precioAplicado)}</li>`).join('') + '</ul></article>').join('') : '<p>Sin consultas registradas.</p>');
         }
         if (!mostrar(clinica ? 'Expediente clínico' : 'Ficha administrativa', html)) return;
         if (clinica) {

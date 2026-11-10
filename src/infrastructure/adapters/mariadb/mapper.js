@@ -25,8 +25,8 @@ export function pacienteDesdeFila(fila, detalles = {}) {
 
   return {
     id: String(fila.id_paciente),
-    documento: fila.documento ?? null,
-    documentoIdentidad: fila.documento ?? fila.documento_identidad ?? null,
+    documento: [fila.documento, fila.documento_identidad].map((valor) => valor == null ? '' : String(valor).trim()).find(Boolean) ?? null,
+    documentoIdentidad: [fila.documento, fila.documento_identidad].map((valor) => valor == null ? '' : String(valor).trim()).find(Boolean) ?? null,
     nombres: fila.nombres,
     nombre: fila.nombres,
     apellidos: fila.apellidos,

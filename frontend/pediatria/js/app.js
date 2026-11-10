@@ -1,3 +1,4 @@
+import { datoSeguro } from '../../shared/js/components/pacientes.js';
 import { store } from './state.js';
 import { renderSidebar } from './components/sidebar.js';
 import { renderKpiCards, renderInicioObservacion } from './components/kpiCards.js';
@@ -260,8 +261,8 @@ function renderizarResultadosRed(resultados = []) {
     el.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:8px;color:var(--text-dark);">
         <div>
-          <strong style="color:${meta.color};font-size:0.86rem;">${pac.nombre} ${pac.apellidos}</strong>
-          <span style="font-family:monospace;font-size:0.72rem;color:var(--text-muted);display:block;">${pac.expediente || pac.id} · Estado: ${pac.historial?.estado || 'activo'}</span>
+          <strong style="color:${meta.color};font-size:0.86rem;">${datoSeguro(pac.nombre)} ${datoSeguro(pac.apellidos)}</strong>
+          <span style="font-family:monospace;font-size:0.72rem;color:var(--text-muted);display:block;">${pac.expediente || pac.id} · Estado: ${datoSeguro(pac.historial?.estado)}</span>
         </div>
         <button type="button" class="btn btn-outline btn-sm btn-ver-historial-red" style="width:100%;justify-content:center;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -277,7 +278,7 @@ function renderizarResultadosRed(resultados = []) {
           const resp = await apiClient(`/red/${r.institucion}/pacientes/${encodeURIComponent(pac.id)}/historial`);
           const datos = await resp.json();
           if (!resp.ok) throw new Error(datos.error?.mensaje || 'Historial no disponible');
-          window.abrirDrawerSoloLectura?.({ ...datos.paciente, historial: { ...datos.historial, consultas: datos.consultas } }, meta.nombre);
+          window.abrirDrawerSoloLectura?.({ ...datos.paciente, informacionRestringida: r.institucion !== 'pediatria' || !['pediatra', 'enfermeria'].includes(sesionActual?.rol), historial: { ...datos.historial, consultas: datos.consultas } }, meta.nombre);
         } catch (error) { mostrarErrorHttp(error); }
       });
     }
