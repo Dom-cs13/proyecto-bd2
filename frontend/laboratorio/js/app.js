@@ -9,10 +9,9 @@
    ============================================================ */
 
 import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
+import { exigirSesion } from '../../shared/js/api/auth.js';
 import {
   cargarEstado,
-  guardarEstado,
-  reiniciarDemo,
   pacientes,
   examenes,
   registrarListenerActualizacion,
@@ -54,14 +53,8 @@ document.addEventListener('click', (e) => {
 function wireReset() {
   const btn = document.getElementById('btn-reset');
   if (!btn) return;
-  btn.onclick = (e) => {
-    e.preventDefault();
-    if (!confirm('¿Restaurar los datos de demostración con los 8 tipos de laboratorio?')) return;
-    reiniciarDemo();
-    guardarEstado();
-    toast('Datos de demostración restaurados');
-    refreshView();
-  };
+  btn.disabled = true;
+  btn.title = 'Demostraci?n no disponible en el portal conectado';
 }
 
 /* ---------- Botón superior de acción rápida ---------- */
@@ -128,9 +121,15 @@ registrarListenerActualizacion(() => {
   refreshView();
 });
 
-cargarEstado();
-inicializarBackdropModal();
-wireReset();
-wireTopAction();
-window.addEventListener('hashchange', navegar);
-navegar();
+if (exigirSesion('laboratorio')) {
+  cargarEstado().catch(error => {
+    const pill = document.querySelector('.status-pill');
+    if (pill) pill.textContent = 'Firestore: sin conexi?n';
+    toast(error.message, 'error');
+  });
+  inicializarBackdropModal();
+  wireReset();
+  wireTopAction();
+  window.addEventListener('hashchange', navegar);
+  navegar();
+}

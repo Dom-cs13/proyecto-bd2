@@ -102,7 +102,7 @@ export function renderPatientTable(containerId = 'table-container') {
         <div>Mostrando <strong>${pacientes.length}</strong> pacientes activos</div>
         <div style="display: flex; gap: 8px;">
           <button class="btn btn-outline btn-sm" disabled>Anterior</button>
-          <button class="btn btn-primary btn-sm">1</button>
+          <button class="btn btn-primary btn-sm" disabled title="Paginación no disponible">1</button>
           <button class="btn btn-outline btn-sm" disabled>Siguiente</button>
         </div>
       </div>

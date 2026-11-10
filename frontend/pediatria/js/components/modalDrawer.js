@@ -1,3 +1,4 @@
+import { datoSeguro, datoRegistrado } from '../../../shared/js/components/pacientes.js';
 import { store } from '../state.js';
 import { mostrarErrorHttp, mostrarNotificacionExito } from '../../../shared/js/components/mensajesError.js';
 import { puedeEjecutarAccion, obtenerConfiguracionRol } from '../../../shared/js/components/navegacionRol.js';
@@ -123,15 +124,16 @@ function actualizarCuerpoDrawer() {
   const titleEl = document.getElementById('drawer-paciente-nombre');
   const expEl = document.getElementById('drawer-paciente-exp');
   const subEl = document.getElementById('drawer-paciente-sub');
-  if (titleEl) titleEl.textContent = `${paciente.nombre} ${paciente.apellidos}`;
+  if (titleEl) titleEl.textContent = `${datoRegistrado(paciente.nombre)} ${datoRegistrado(paciente.apellidos)}`;
   if (expEl) expEl.textContent = paciente.expediente || paciente.id;
   if (subEl) {
-    const estadoTxt = paciente.historial?.estado === 'archivado' ? 'ARCHIVADO' : 'ACTIVO';
-    subEl.textContent = `Nacimiento: ${paciente.fechaNacimiento} · Estado: ${estadoTxt} · Tutor: ${paciente.detallesInstitucion?.tutorPrincipal?.nombre || 'N/R'}`;
+    const estadoTxt = paciente.historial?.estado ? String(paciente.historial.estado).toUpperCase() : 'No registrado';
+    subEl.textContent = `Nacimiento: ${datoRegistrado(paciente.fechaNacimiento)} · Estado: ${estadoTxt} · Tutor: ${paciente.detallesInstitucion?.tutorPrincipal?.nombre || 'No registrado'}`;
   }
 
   if (pestanaActiva === 'consultas') {
-    const consultas = paciente.historial?.consultas || [];
+    const restringida = paciente.informacionRestringida ?? Boolean(pacienteSoloLectura);
+    const consultas = restringida ? [] : paciente.historial?.consultas || [];
     const avisoArchivado = paciente.historial?.estado === 'archivado' ? `
       <div style="background-color:var(--color-bubblegum);border:1px solid #f8aba0;border-radius:var(--radius-md);padding:12px 14px;font-size:0.78rem;color:#7a1f22;">
         <strong>Expediente Archivado (${paciente.historial?.motivoArchivo?.tipo || 'cerrado'}):</strong>
@@ -143,8 +145,8 @@ function actualizarCuerpoDrawer() {
       body.innerHTML = `
         ${avisoArchivado}
         <div style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
-          <p style="font-weight: 700; color: var(--color-pacific); margin-bottom: 4px;">Sin consultas previas registradas</p>
-          <p style="font-size: 0.8rem;">Utiliza la pestaña "+ Nueva Atención" para registrar diagnóstico, tratamiento y receta.</p>
+          <p style="font-weight: 700; color: var(--color-pacific); margin-bottom: 4px;">${restringida ? 'Información restringida' : 'Sin consultas registradas'}</p>
+          <p style="font-size: 0.8rem;">${restringida ? 'Los permisos actuales no permiten consultar la información clínica de este expediente.' : 'No hay consultas disponibles en el historial local.'}</p>
         </div>
       `;
       return;
@@ -156,8 +158,8 @@ function actualizarCuerpoDrawer() {
         <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px;">
             <div>
-              <strong style="color: var(--color-pacific); font-size: 0.9rem;">${con.motivo}</strong>
-              <p style="font-size: 0.74rem; color: var(--text-muted);">${con.medico} · ${new Date(con.fecha).toLocaleString()}</p>
+              <strong style="color: var(--color-pacific); font-size: 0.9rem;">${datoSeguro(con.motivo)}</strong>
+              <p style="font-size: 0.74rem; color: var(--text-muted);">${datoSeguro(con.medico)} · ${datoSeguro(con.fecha && !Number.isNaN(new Date(con.fecha).getTime()) ? new Date(con.fecha).toLocaleString() : null)}</p>
             </div>
             <span class="badge badge-stable">Consulta Finalizada</span>
           </div>
@@ -168,11 +170,11 @@ function actualizarCuerpoDrawer() {
             <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
               ${(con.diagnosticos || []).map(d => `
                 <div style="background-color: var(--bg-subtle); padding: 8px 10px; border-radius: var(--radius-sm); border-left: 3px solid var(--color-treehouse); font-size: 0.8rem;">
-                  <strong>${d.codigo ? `[${d.codigo}] ` : ''}${d.descripcion}</strong>
+                  <strong>${d.codigo || d.codigoCie10 ? `[${datoSeguro(d.codigo ?? d.codigoCie10)}] ` : ''}${datoSeguro(d.descripcion)}</strong>
                   ${(d.tratamientos || []).map(t => `
                     <div style="margin-top: 4px; font-size: 0.74rem; color: #2e6987; display: flex; align-items: center; gap: 5px;">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-                      <span>Tratamiento: <em>${t.descripcion}</em> (${t.dias} días)</span>
+                      <span>Tratamiento: <em>${datoSeguro(t.descripcion)}</em> (${datoSeguro(t.dias != null ? `${t.dias} días` : (t.fechaInicio || t.fechaFin ? `${datoRegistrado(t.fechaInicio)} / ${datoRegistrado(t.fechaFin)}` : null))})</span>
                     </div>
                   `).join('')}
                 </div>
@@ -188,7 +190,7 @@ function actualizarCuerpoDrawer() {
                 ${con.recetas.flatMap(r => r.medicamentos || []).map(m => `
                   <div style="font-size: 0.76rem; color: var(--text-dark); background-color: #f7fafb; padding: 6px 8px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 6px;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-treehouse)" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>
-                    <span><strong>${m.nombre}</strong> — ${m.dosis} (${m.frecuencia}, ${m.duracion})</span>
+                    <span><strong>${datoSeguro(m.nombre)}</strong> — ${datoSeguro(m.dosis)} (${datoSeguro(m.frecuencia)}, ${datoSeguro(m.duracion)})</span>
                   </div>
                 `).join('')}
               </div>
@@ -206,7 +208,7 @@ function actualizarCuerpoDrawer() {
             <strong style="font-size:0.9rem;">409 · PACIENTE_ARCHIVADO</strong>
           </div>
           <p style="font-size:0.82rem;margin:0;line-height:1.45;">
-            El expediente de <strong>${paciente.nombre} ${paciente.apellidos}</strong> se encuentra en estado <code>archivado</code>. Conforme al contrato del dominio, no se permite registrar nuevas consultas médicas sobre un historial archivado.
+            El expediente de <strong>${datoRegistrado(paciente.nombre)} ${datoRegistrado(paciente.apellidos)}</strong> se encuentra en estado <code>archivado</code>. Conforme al contrato del dominio, no se permite registrar nuevas consultas médicas sobre un historial archivado.
           </p>
         </div>
       `;
@@ -262,7 +264,7 @@ function actualizarCuerpoDrawer() {
 
     const form = document.getElementById('form-drawer-nueva-consulta');
     if (form) {
-      form.addEventListener('submit', (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!puedeEjecutarAccion('registrar_consulta')) {
           const cfg = obtenerConfiguracionRol();
@@ -308,7 +310,7 @@ function actualizarCuerpoDrawer() {
           ] : []
         };
 
-        store.agregarConsulta(paciente.id, nuevaConsulta);
+        try { await store.agregarConsulta(paciente.id, nuevaConsulta); } catch (error) { return mostrarErrorHttp(error); }
         mostrarNotificacionExito('Consulta pediátrica registrada', `Diagnóstico y tratamiento agregados al expediente de ${paciente.nombre}.`);
         pestanaActiva = 'consultas';
         renderModalDrawer('drawer-container');
@@ -332,12 +334,12 @@ function actualizarCuerpoDrawer() {
           <h4 style="font-size:0.85rem;font-weight:800;color:var(--color-pacific);margin-bottom:8px;">Última Medición Antropométrica</h4>
           ${ultimo ? `
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:0.8rem;color:var(--text-dark);">
-              <div>Peso: <strong>${ultimo.pesoKg} kg</strong></div>
-              <div>Talla: <strong>${ultimo.tallaCm} cm</strong></div>
-              <div>Perímetro Cefálico: <strong>${ultimo.perimetroCefalicoCm} cm</strong></div>
-              <div>IMC: <strong>${ultimo.imc}</strong> (${ultimo.fecha})</div>
+              <div>Peso: <strong>${datoSeguro(ultimo.pesoKg)} kg</strong></div>
+              <div>Talla: <strong>${datoSeguro(ultimo.tallaCm)} cm</strong></div>
+              <div>Perímetro Cefálico: <strong>${datoSeguro(ultimo.perimetroCefalicoCm)} cm</strong></div>
+              <div>IMC: <strong>${datoSeguro(ultimo.imc)}</strong> (${datoSeguro(ultimo.fecha)})</div>
             </div>
-            <p style="font-size:0.75rem;color:var(--color-pacific);margin-top:8px;">${ultimo.observaciones}</p>
+            <p style="font-size:0.75rem;color:var(--color-pacific);margin-top:8px;">${datoSeguro(ultimo.observaciones)}</p>
           ` : `<p style="font-size:0.8rem;color:var(--text-muted);">Sin controles de crecimiento registrados.</p>`}
         </div>
 
@@ -348,10 +350,10 @@ function actualizarCuerpoDrawer() {
               ${vacunas.map(v => `
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg-subtle);border-radius:var(--radius-sm);font-size:0.78rem;">
                   <div>
-                    <strong style="color:var(--color-pacific);">${v.nombreVacuna}</strong>
-                    <span style="color:var(--text-muted);"> · Dosis ${v.dosis}</span>
+                    <strong style="color:var(--color-pacific);">${datoSeguro(v.nombreVacuna)}</strong>
+                    <span style="color:var(--text-muted);"> · Dosis ${datoSeguro(v.dosis ?? v.numeroDosis)}</span>
                   </div>
-                  <span class="badge badge-vacuna-ok">${v.fechaAplicacion}</span>
+                  <span class="badge badge-vacuna-ok">${datoSeguro(v.fechaAplicacion)}</span>
                 </div>
               `).join('')}
             </div>
@@ -368,21 +370,21 @@ function actualizarCuerpoDrawer() {
         <div class="kpi-card" style="padding: 16px; background-color: var(--color-daydream); border-color: #95c8cb;">
           <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--color-pacific); margin-bottom: 8px;">Tutor Principal Único (Responsable Legal)</h4>
           <div style="font-size: 0.82rem; display: flex; flex-direction: column; gap: 4px; color: var(--text-dark);">
-            <div>Nombre: <strong>${tutor?.nombre || 'No registrado'}</strong></div>
-            <div>Parentesco: <strong>${tutor?.parentesco || 'Tutor Legal'}</strong></div>
-            <div>Documento / Cédula: <code>${tutor?.documento || 'N/R'}</code></div>
-            <div>Teléfono de Contacto: <strong>${tutor?.telefono || 'N/R'}</strong></div>
-            <div>Correo Electrónico: ${tutor?.correo || 'N/R'}</div>
+            <div>Nombre: <strong>${datoSeguro(tutor?.nombre || 'No registrado')}</strong></div>
+            <div>Parentesco: <strong>${datoSeguro(tutor?.parentesco || 'No registrado')}</strong></div>
+            <div>Documento / Cédula: <code>${datoSeguro(tutor?.documento || tutor?.dpi || 'No registrado')}</code></div>
+            <div>Teléfono de Contacto: <strong>${datoSeguro(tutor?.telefono || 'No registrado')}</strong></div>
+            <div>Correo Electrónico: ${datoSeguro(tutor?.correo || 'No registrado')}</div>
           </div>
         </div>
 
         <div class="kpi-card" style="padding: 16px;">
           <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--color-pacific); margin-bottom: 8px;">Filiación y Domicilio</h4>
           <div style="font-size: 0.82rem; display: flex; flex-direction: column; gap: 4px; color: var(--text-muted);">
-            <div>CUI / Identificación del Menor: <code>${paciente.documentoIdentidad}</code></div>
-            <div>Sexo Biológico: <strong>${paciente.genero}</strong></div>
-            <div>Tipo de Sangre: <strong>${paciente.detallesInstitucion?.tipoSangre || 'N/R'}</strong></div>
-            <div>Dirección Residencial: <strong>${paciente.direccion}</strong></div>
+            <div>CUI / Identificación del Menor: <code>${datoSeguro(paciente.documentoIdentidad)}</code></div>
+            <div>Sexo Biológico: <strong>${datoSeguro(paciente.genero)}</strong></div>
+            <div>Tipo de Sangre: <strong>${datoSeguro(paciente.detallesInstitucion?.tipoSangre ?? paciente.detallesInstitucion?.grupoSanguineo)}</strong></div>
+            <div>Dirección Residencial: <strong>${datoSeguro(paciente.direccion)}</strong></div>
           </div>
         </div>
 
@@ -392,7 +394,7 @@ function actualizarCuerpoDrawer() {
             ${alergias.length > 0 ? alergias.map(a => `
               <div style="display: flex; align-items: center; gap: 6px;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a2428" stroke-width="2.2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                <span><strong>${a.alergeno}</strong> (Severidad: ${a.severidad})</span>
+                <span><strong>${datoSeguro(a.alergeno ?? a.nombre)}</strong> (Severidad: ${datoSeguro(a.severidad ?? a.nivelSeveridad)})</span>
               </div>
             `).join('') : 'Sin alergias medicamentosas o alimentarias registradas.'}
           </div>

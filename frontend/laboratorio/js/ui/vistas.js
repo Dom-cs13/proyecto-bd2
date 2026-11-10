@@ -2,12 +2,12 @@
    vistas.js · Controladores de Vistas para Laboratorio Clínico
    ============================================================ */
 
-import { $, norm, debounce, toast, hoy } from './modal.js';
+import { $, norm, debounce, toast, abrirModal } from './modal.js';
+import { consultarRed } from '../../../shared/js/components/consultaRed.js';
 import { GENEROS, TIPOS_SANGRE, MOTIVOS_BAJA } from '../catalogo.js';
 import {
   pacientes,
   examenes,
-  guardarEstado,
   buscarPaciente,
   crearPacienteApi,
   archivarPacienteApi,
@@ -129,6 +129,13 @@ export const vistas = {
     // Búsqueda en vivo con debounce
     const inputBuscar = $('#exp-buscar') || $('#filtro-expedientes-q');
     if (inputBuscar) {
+      inputBuscar.placeholder = 'Buscar localmente; Enter para consultar la red';
+      inputBuscar.onkeydown = (evento) => {
+        if (evento.key !== 'Enter' || !inputBuscar.value.trim()) return;
+        evento.preventDefault();
+        const modal = abrirModal('Consulta en red · solo lectura', '<div id="resultados-red"></div>');
+        if (modal) consultarRed(inputBuscar.value, modal.querySelector('#resultados-red'));
+      };
       inputBuscar.oninput = debounce((e) => {
         q = e.target.value;
         render();
@@ -200,11 +207,8 @@ export const vistas = {
         if (!p) return;
         const motivo = b.previousElementSibling.value;
         if (!confirm(`¿Archivar el expediente de ${p.nombre} ${p.apellidos}?\nMotivo formal: ${motivo}`)) return;
-        p.activo = false;
-        p.motivoBaja = motivo;
-        p.fechaBaja = hoy();
-        guardarEstado();
-        archivarPacienteApi(cui, motivo);
+        try { await archivarPacienteApi(cui, motivo); }
+        catch (error) { return toast(error.message, 'error'); }
         toast('Expediente archivado con justificación formal');
         renderArchivar();
       };
@@ -240,9 +244,8 @@ export const vistas = {
           },
         };
 
-        pacientes.push(nuevo);
-        guardarEstado();
-        crearPacienteApi(nuevo);
+        try { await crearPacienteApi(nuevo); }
+        catch (error) { return toast(error.message, 'error'); }
         e.target.reset();
         toast('Paciente registrado en el Laboratorio');
         renderArchivar();

@@ -13,8 +13,6 @@ import {
 import {
   pacientes,
   examenes,
-  muestras,
-  guardarEstado,
   generarIdOrden,
   generarCodigoBarras,
   obtenerMuestrasDeOrden,
@@ -23,6 +21,8 @@ import {
   crearOrdenApi,
   registrarMuestraApi,
   registrarResultadoApi,
+  cargarEstado,
+  validarResultadoApi,
 } from '../datos.js';
 import { tablaExamenes, badgeEstado, badgeAnormalidad } from './tablas.js';
 import { renderResultadosEspecializados } from './visualizadores.js';
@@ -448,7 +448,7 @@ export function formOrden(onGuardar, existente = null, preseCui = null, preseTip
   f.addEventListener('input', prev);
   $('#cancel-orden', m).onclick = () => m.close();
 
-  f.onsubmit = (ev) => {
+  f.onsubmit = async (ev) => {
     ev.preventDefault();
     const tipoKey = f.tipo.value;
     const def = TIPOS_LABORATORIO[tipoKey];
@@ -497,106 +497,65 @@ export function formOrden(onGuardar, existente = null, preseCui = null, preseTip
     let fechaResultado = f.fechaResultado ? f.fechaResultado.value : null;
     if (estado === 'completado' && !fechaResultado) fechaResultado = hoy();
 
-    const tecnicoValido = f.tecnicoValido ? f.tecnicoValido.value.trim() : null;
 
-    // Guardar o actualizar muestra vinculada (Regla 2)
-    const codigoBarras = muestraActual?.codigoBarras || generarCodigoBarras(ordenId, tipoKey);
-    const idMuestra = muestraActual?.id || `MUE-${ordenId.replace('ORD-', '')}`;
-
-    if (muestraActual) {
-      Object.assign(muestraActual, {
+    // Cada paso espera confirmaci?n del servidor; un fallo puede dejar pasos previos guardados.
+    const submit = f.querySelector('[type="submit"]');
+    if (submit?.disabled) return;
+    if (submit) submit.disabled = true;
+    try {
+      let ordenRealId = existente?.id || ordenId;
+      if (!esEdicion) {
+        const orden = await crearOrdenApi({
+          numeroOrden: ordenId,
+          pacienteId: pac.id,
+          tipoLaboratorio: tipoKey,
+          fechaSolicitud: f.fechaSolicitud.value || hoy(),
+          medicoSolicitante: medico,
+          prioridad: f.prioridad.value,
+          estadoOrden: 'pendiente',
+          examenesSolicitados: [{ codigo: tipoKey.toUpperCase(), nombre: `Examen de ${tipoKey}`, tipoLaboratorio: tipoKey }],
+        });
+        ordenRealId = orden.id;
+      }
+      const muestra = muestraActual || await registrarMuestraApi({
+        ordenId: ordenRealId,
+        codigoBarras: generarCodigoBarras(ordenRealId, tipoKey),
         tipoMuestra,
         condicionMuestra: condMuestra,
-        estadoMuestra: estado === 'completado' ? 'completada' : 'en_proceso',
-      });
-    } else {
-      muestras.push({
-        id: idMuestra,
-        ordenId,
-        codigoBarras,
-        tipoMuestra,
-        condicionMuestra: condMuestra,
-        estadoMuestra: estado === 'completado' ? 'completada' : 'en_proceso',
+        estadoMuestra: 'en_proceso',
         fechaToma: new Date().toISOString(),
       });
+      if (Object.keys(resultados).length > 0 || estado === 'completado') {
+        const resultado = await registrarResultadoApi({
+          ordenId: ordenRealId, muestraId: muestra.id,
+          examenCodigo: tipoKey.toUpperCase(), examenNombre: `Examen de ${tipoKey}`,
+          tipoLaboratorio: tipoKey, valorResultado: resultados, flagAnormalidad,
+          fechaResultado: fechaResultado || new Date().toISOString(),
+        });
+        if (estado === 'completado') await validarResultadoApi(resultado.id);
+      }
+      await cargarEstado();
+      toast('Guardado confirmado por el servidor');
+      m.close();
+      onGuardar?.();
+    } catch (error) {
+      toast(`No se complet? la operaci?n: ${error.message}. Verifique los pasos ya guardados antes de reintentar.`, 'error');
+      await cargarEstado().catch(() => {});
+      onGuardar?.();
+    } finally {
+      if (submit) submit.disabled = false;
     }
-
-    if (esEdicion) {
-      Object.assign(existente, {
-        medicoSolicitante: medico,
-        prioridad: f.prioridad.value,
-        estado,
-        fechaResultado,
-        tecnicoValido: estado === 'completado' ? tecnicoValido : null,
-        fechaValidacion: estado === 'completado' ? new Date().toISOString() : null,
-        flagAnormalidad,
-        resultados,
-      });
-      toast('Orden de laboratorio actualizada');
-    } else {
-      examenes.unshift({
-        id: ordenId,
-        pacienteCui: f.pacienteCui.value,
-        tipo: tipoKey,
-        tipoLaboratorio: tipoKey,
-        fechaSolicitud: f.fechaSolicitud.value || hoy(),
-        fechaResultado,
-        medicoSolicitante: medico,
-        prioridad: f.prioridad.value,
-        estado,
-        flagAnormalidad,
-        tecnicoValido: estado === 'completado' ? tecnicoValido : null,
-        fechaValidacion: estado === 'completado' ? new Date().toISOString() : null,
-        resultados,
-      });
-      toast('Orden de examen registrada con éxito');
-      crearOrdenApi({
-        id: ordenId,
-        numeroOrden: ordenId,
-        pacienteId: f.pacienteCui.value,
-        tipoLaboratorio: tipoKey,
-        fechaSolicitud: f.fechaSolicitud.value || hoy(),
-        medicoSolicitante: medico,
-        prioridad: f.prioridad.value,
-        estadoOrden: estado,
-        examenesSolicitados: [{ codigo: tipoKey.toUpperCase(), nombre: `Examen de ${tipoKey}`, tipoLaboratorio: tipoKey }],
-      });
-    }
-
-    // Registrar muestra a través de la API Express (Regla 7)
-    registrarMuestraApi({
-      id: idMuestra,
-      ordenId,
-      codigoBarras,
-      tipoMuestra,
-      condicionMuestra: condMuestra,
-      estadoMuestra: estado === 'completado' ? 'completada' : 'en_proceso',
-      fechaToma: muestraActual?.fechaToma || new Date().toISOString(),
-    });
-
-    // Si hay resultados y/o la orden está completada, registrar resultado a través de la API Express
-    if (Object.keys(resultados).length > 0 || estado === 'completado') {
-      registrarResultadoApi({
-        ordenId,
-        muestraId: idMuestra,
-        examenCodigo: tipoKey.toUpperCase(),
-        examenNombre: `Examen de ${tipoKey}`,
-        tipoLaboratorio: tipoKey,
-        valorResultado: resultados,
-        flagAnormalidad,
-        tecnicoValido: estado === 'completado' ? tecnicoValido : null,
-        fechaValidacion: estado === 'completado' ? (fechaResultado || new Date().toISOString()) : null,
-        paciente: pac ? {
-          genero: pac.genero,
-          edad: pac.fechaNacimiento ? Math.floor((new Date() - new Date(pac.fechaNacimiento)) / (365.25 * 24 * 3600 * 1000)) : 30,
-        } : null,
-      });
-    }
-
-    guardarEstado();
-    m.close();
-    onGuardar?.();
   };
 
+  if (esEdicion) {
+    for (const nombre of ['medicoSolicitante', 'prioridad', 'fechaSolicitud']) {
+      if (f[nombre]) { f[nombre].disabled = true; f[nombre].title = 'Edicion de la orden no disponible'; }
+    }
+    for (const id of ['sel-cond-muestra', 'sel-tipo-muestra']) {
+      const campo = m.querySelector(`#${id}`);
+      if (campo) { campo.disabled = true; campo.title = 'Edicion de muestras no disponible'; }
+    }
+  }
+  if (f.tecnicoValido) { f.tecnicoValido.disabled = true; f.tecnicoValido.title = 'La identidad del validador proviene de la sesion'; }
   pintar();
 }

@@ -83,6 +83,15 @@ export class FirestoreAdapter extends HistorialRepository {
     });
   }
 
+  async actualizarPaciente(id, datos) {
+    return this._ejecutar(async (db) => {
+      const ref = db.collection('pacientes').doc(id);
+      if (!(await ref.get()).exists) throw new NoEncontrado('PACIENTE_NO_ENCONTRADO');
+      await ref.update({ ...datos, updatedAt: new Date().toISOString() });
+      return pacienteToDomain(await ref.get());
+    });
+  }
+
   /**
    * Lista pacientes con filtros opcionales.
    */

@@ -8,7 +8,7 @@
  * 4. La caída de un motor devuelva 503 aislado sin tumbar el sistema global.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { crearApp } from '../../src/app.js';
@@ -38,7 +38,9 @@ describe('Aislamiento Institucional y No-Fuga · Laboratorio Clínico (I3-09)', 
     );
   }
 
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
+    vi.stubEnv('JWT_SECRET', JWT_SECRET);
     app = crearApp();
     storage = {
       pacientes: new Map(),
@@ -141,7 +143,7 @@ describe('Aislamiento Institucional y No-Fuga · Laboratorio Clínico (I3-09)', 
       };
       registrarRepositorio('laboratorio', adapterFallo);
 
-      const res = await request(app).get('/laboratorio/status');
+      const res = await request(app).get('/laboratorio/status').auth(firmarToken('laboratorio', 'laboratorista'), { type: 'bearer' });
       expect(res.status).toBe(503);
       expect(res.body.error.codigo).toBe('MOTOR_NO_DISPONIBLE');
     });

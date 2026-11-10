@@ -1,6 +1,8 @@
 // Componentes puros: no consultan APIs ni toman decisiones de permisos.
 export const escapar = (valor) => String(valor ?? '').replace(/[&<>"']/g,
   (caracter) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[caracter]);
+export const datoRegistrado = (valor) => valor == null || String(valor).trim() === '' ? 'No registrado' : String(valor);
+export const datoSeguro = (valor) => escapar(datoRegistrado(valor));
 export const campo = (nombre, etiqueta, tipo = 'text', requerido = true, extra = '') =>
   `<label>${etiqueta}<input name="${nombre}" type="${tipo}" ${requerido ? 'required' : ''} ${extra}></label>`;
 export const formulario = (id, campos, texto) => `<form id="${id}" class="api-form">${campos}<button class="button primary" type="submit">${texto}</button></form>`;
@@ -22,14 +24,14 @@ export function busquedaPacientes() {
 }
 
 export function detallePaciente(paciente) {
-  return `<h2>${escapar(paciente.nombre ?? paciente.nombres)} ${escapar(paciente.apellidos)}</h2><dl class="detail-grid">${[
+  return `<h2>${datoSeguro(paciente.nombre ?? paciente.nombres)} ${datoSeguro(paciente.apellidos)}</h2><dl class="detail-grid">${[
     ['Expediente', paciente.id], ['Documento', paciente.documentoIdentidad], ['Nacimiento', paciente.fechaNacimiento],
     ['Género', paciente.genero ?? paciente.sexo], ['Teléfono', paciente.telefono], ['Correo', paciente.correo], ['Dirección', paciente.direccion],
-  ].map(([nombre, valor]) => `<div><dt>${nombre}</dt><dd>${escapar(valor) || 'Sin registrar'}</dd></div>`).join('')}</dl>`;
+  ].map(([nombre, valor]) => `<div><dt>${nombre}</dt><dd>${datoSeguro(valor)}</dd></div>`).join('')}</dl>`;
 }
 
 export function tablaPacientes(items, clinica = false) {
   if (!items.length) return '<p>No se encontraron pacientes.</p>';
   return `<div class="api-table"><table><thead><tr><th>Expediente</th><th>Paciente</th><th>Acciones</th></tr></thead><tbody>${items.map((paciente) =>
-    `<tr><td>${escapar(paciente.id)}</td><td>${escapar(paciente.nombre ?? paciente.nombres)} ${escapar(paciente.apellidos)}</td><td>${enlace(`${clinica ? 'expediente' : 'ficha'}/${paciente.id}`, clinica ? 'Abrir expediente' : 'Ver ficha')}</td></tr>`).join('')}</tbody></table></div>`;
+    `<tr><td>${escapar(paciente.id)}</td><td>${datoSeguro(paciente.nombre ?? paciente.nombres)} ${datoSeguro(paciente.apellidos)}</td><td>${enlace(`${clinica ? 'expediente' : 'ficha'}/${paciente.id}`, clinica ? 'Abrir expediente' : 'Ver ficha')}</td></tr>`).join('')}</tbody></table></div>`;
 }

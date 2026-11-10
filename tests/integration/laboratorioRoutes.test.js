@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { configurarCuenta } from '../helpers/cuentasConfiguradas.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { crearApp } from '../../src/app.js';
 import { FirestoreAdapter } from '../../src/infrastructure/adapters/firestore/FirestoreAdapter.js';
@@ -13,7 +14,9 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
   let storage;
   let tokenAuth;
 
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(async () => {
+    configurarCuenta('laboratorio', 'laboratorista', 'laboratorista', 'password123');
     app = crearApp();
     storage = {
       pacientes: new Map(),
@@ -135,7 +138,7 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
   });
 
   describe('Autenticación Laboratorio (/auth/login)', () => {
-    it('debe autenticar satisfactoriamente con usuario demo de laboratorio', async () => {
+    it('debe autenticar satisfactoriamente con cuenta de laboratorio provisionada para la prueba', async () => {
       const res = await request(app)
         .post('/auth/login')
         .send({
@@ -237,9 +240,12 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
   });
 
   describe('Órdenes, Muestras y Resultados Especializados', () => {
+    beforeEach(async () => {
+      await adapter.crearPaciente({ id: 'pac-001', documentoIdentidad: 'PACIENTE-FICTICIO', nombre: 'Paciente', apellidos: 'Ficticio', fechaNacimiento: '2000-01-01', genero: 'Otro' });
+    });
     it('debe crear y listar órdenes de examen', async () => {
       const res = await request(app)
-        .post('/laboratorio/ordenes')
+        .post('/laboratorio/ordenes').set('Authorization', `Bearer ${tokenAuth}`)
         .send({
           id: 'ord-test-01',
           pacienteId: 'pac-001',
@@ -251,7 +257,7 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
       expect(res.status).toBe(201);
       expect(res.body.tipoLaboratorio).toBe('hematologia');
 
-      const resListar = await request(app).get('/laboratorio/ordenes');
+      const resListar = await request(app).get('/laboratorio/ordenes').set('Authorization', `Bearer ${tokenAuth}`);
       expect(resListar.status).toBe(200);
       expect(Array.isArray(resListar.body)).toBe(true);
       expect(resListar.body.length).toBeGreaterThanOrEqual(1);
@@ -268,7 +274,7 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
       });
 
       const resMuestra = await request(app)
-        .post('/laboratorio/muestras')
+        .post('/laboratorio/muestras').set('Authorization', `Bearer ${tokenAuth}`)
         .send({
           ordenId: 'ord-test-02',
           codigoBarras: 'BAR-HEMATO-01',
@@ -280,7 +286,7 @@ describe('Rutas HTTP de Laboratorio Clínico (I3)', () => {
     });
 
     it('debe diagnosticar estado de motor con /laboratorio/status', async () => {
-      const res = await request(app).get('/laboratorio/status');
+      const res = await request(app).get('/laboratorio/status').set('Authorization', `Bearer ${tokenAuth}`);
       expect(res.status).toBe(200);
       expect(res.body.motor).toBe('firestore');
       expect(res.body.ok).toBe(true);

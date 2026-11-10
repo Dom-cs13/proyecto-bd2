@@ -1,3 +1,4 @@
+import { datoSeguro } from '../../shared/js/components/pacientes.js';
 import { store } from './state.js';
 import { renderSidebar } from './components/sidebar.js';
 import { renderKpiCards, renderInicioObservacion } from './components/kpiCards.js';
@@ -6,7 +7,7 @@ import { renderCrecimientoVacunas, inicializarSelectorCrecimiento } from './comp
 import { renderListaArchivar } from './components/listaArchivar.js';
 import { renderModalDrawer } from './components/modalDrawer.js';
 import { fetchPlantillaHtml, apiClient } from '../../shared/js/api/client.js';
-import { exigirSesion, obtenerSesion, cerrarSesion } from '../../shared/js/api/auth.js';
+import { exigirSesion, cerrarSesion } from '../../shared/js/api/auth.js';
 import { mostrarErrorHttp, mostrarNotificacionExito } from '../../shared/js/components/mensajesError.js';
 import {
   obtenerRolActivo,
@@ -16,12 +17,7 @@ import {
   puedeEjecutarAccion
 } from '../../shared/js/components/navegacionRol.js';
 
-// Verificación de sesión: si estamos en localhost y no hay sesión, permitimos modo demo
-const esLocal = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-const sesionActual = obtenerSesion();
-if (!esLocal || sesionActual) {
-  exigirSesion('pediatria');
-}
+const sesionActual = exigirSesion('pediatria');
 
 let vistaActual = 'principal'; // 'principal' | 'buscador' | 'crecimiento' | 'gestion' | 'consulta-red'
 const plantillasCargadas = {};
@@ -113,9 +109,14 @@ async function cargarVista(nombreVista) {
 function inicializarFormularioGestion() {
   const form = document.getElementById('form-gestion-nuevo-paciente');
   if (!form) return;
+  for (const id of ['g-inp-estado', 'g-inp-alergias']) {
+    const campo = document.getElementById(id);
+    if (campo) { campo.disabled = true; campo.title = 'No disponible mediante el contrato actual'; }
+  }
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (form.dataset.enviando) return;
 
     if (!puedeEjecutarAccion('crear_paciente')) {
       const cfg = obtenerConfiguracionRol();
@@ -135,8 +136,6 @@ function inicializarFormularioGestion() {
     const genero = document.getElementById('g-inp-genero').value;
     const curp = document.getElementById('g-inp-curp').value.trim();
     const sangre = document.getElementById('g-inp-sangre').value;
-    const estadoClinico = document.getElementById('g-inp-estado').value;
-    const alergiasTxt = document.getElementById('g-inp-alergias').value;
 
     const tutorNombre = document.getElementById('g-inp-tutor-nombre').value.trim();
     const tutorParentesco = document.getElementById('g-inp-tutor-parentesco').value;
@@ -155,63 +154,26 @@ function inicializarFormularioGestion() {
       return;
     }
 
-    const alergiasArr = alergiasTxt
-      ? alergiasTxt.split(',').map(s => s.trim()).filter(Boolean).map(a => ({ alergeno: a, severidad: "media" }))
-      : [];
-
-    const nuevo = {
-      id: `ped-${Date.now()}`,
-      expediente: `PED-0${Math.floor(100 + Math.random() * 900)}`,
-      nombre,
-      apellidos,
-      fechaNacimiento: fecha,
-      genero,
-      documentoIdentidad: curp,
-      telefono: tutorTel,
-      correo: `tutor.${curp}@correo.com`,
-      direccion: direccion || "Dirección reportada por tutor",
-      estadoClinico,
-      detallesInstitucion: {
-        institucionId: "I4",
-        nombreInstitucion: "Centro Pediátrico",
-        tipoSangre: sangre,
-        tutorPrincipal: {
-          nombre: tutorNombre,
-          parentesco: tutorParentesco,
-          documento: tutorDoc,
-          telefono: tutorTel,
-          correo: `tutor.${curp}@correo.com`
-        },
-        alergias: alergiasArr,
-        controlesCrecimiento: [
-          {
-            id: `cc-${Date.now()}`,
-            fecha: new Date().toISOString().split('T')[0],
-            edadMeses: 24,
-            pesoKg: 12.0,
-            tallaCm: 86.0,
-            perimetroCefalicoCm: 48.0,
-            imc: 16.2,
-            observaciones: "Control inicial de ingreso al Centro Pediátrico."
-          }
-        ],
-        vacunasAplicadas: [
-          { vacunaId: "VAC-01", nombreVacuna: "BCG (Tuberculosis)", dosis: 1, fechaAplicacion: fecha, lote: "L-INIC", responsable: "Enf. Rosa Elena" }
-        ]
-      },
-      historial: {
-        estado: "activo",
-        consultas: []
-      }
-    };
-
-    store.agregarPaciente(nuevo);
-    form.reset();
-    mostrarNotificacionExito(
-      `Paciente ${nuevo.nombre} ${nuevo.apellidos} registrado`,
-      `Expediente ${nuevo.expediente} vinculado a Tutor Principal: ${tutorNombre}.`
-    );
-    renderListaArchivar('lista-archivar-pacientes-container');
+    const nuevo = { nombre, apellidos, fechaNacimiento: fecha, genero, documentoIdentidad: curp,
+      telefono: tutorTel, direccion, detallesInstitucion: { tipoSangre: sangre,
+        tutorPrincipal: { nombre: tutorNombre, parentesco: tutorParentesco, documento: tutorDoc, telefono: tutorTel } } };
+    const submit = form.querySelector('[type="submit"]');
+    form.dataset.enviando = 'true';
+    if (submit) submit.disabled = true;
+    try {
+      const paciente = await store.agregarPaciente(nuevo);
+      form.reset();
+      mostrarNotificacionExito(
+        `Paciente ${nuevo.nombre} ${nuevo.apellidos} registrado`,
+        `Expediente ${paciente.expediente} vinculado a Tutor Principal: ${tutorNombre}.`
+      );
+      if (store.avisoUltimaOperacion) mostrarErrorHttp({ status: 503, mensaje: store.avisoUltimaOperacion });
+      renderListaArchivar('lista-archivar-pacientes-container');
+    } catch (error) { mostrarErrorHttp(error); }
+    finally {
+      delete form.dataset.enviando;
+      if (submit) submit.disabled = false;
+    }
   });
 }
 
@@ -223,6 +185,8 @@ function inicializarConsultaRed() {
     btnStatus.addEventListener('click', () => cargarEstadoPanelTecnico());
   }
   if (!btn || !input) return;
+  const simulacion = document.getElementById('chk-simular-caida-red');
+  if (simulacion) { simulacion.disabled = true; simulacion.title = 'Simulacion no disponible en el portal conectado'; }
 
   const ejecutarBusqueda = async () => {
     const doc = input.value.trim();
@@ -237,98 +201,16 @@ function inicializarConsultaRed() {
       return;
     }
 
-    const simularCaida = Boolean(document.getElementById('chk-simular-caida-red')?.checked);
-    let respuestaRed = null;
-
-    // Intentar primero contra el backend real (/red/pacientes?documento=...)
+    let respuestaRed;
     try {
       const resp = await apiClient(`/red/pacientes?documento=${encodeURIComponent(doc)}`);
-      if (resp.ok) {
-        respuestaRed = await resp.json();
-      }
-    } catch {
-      // Fallback limpio de demostración con la forma exacta de la sección 3.5 del plan
-    }
-
-    const matchLocal = store.pacientes.find(p => p.documentoIdentidad === doc);
-
-    if (!respuestaRed) {
-      respuestaRed = {
-        resultados: [
-          {
-            institucion: 'hospital',
-            estado: 'ok',
-            total: doc === '3051498210101' ? 1 : 0,
-            items: doc === '3051498210101' ? [{
-              id: 'hosp-ext-01',
-              expediente: 'HOSP-8821',
-              nombre: 'Mateo',
-              apellidos: 'García Morales',
-              fechaNacimiento: '2024-03-12',
-              genero: 'Masculino',
-              documentoIdentidad: doc,
-              direccion: 'Zona 11, Colonia Mariscal',
-              detallesInstitucion: {
-                tutorPrincipal: { nombre: 'Valeria Morales de García', parentesco: 'Madre', telefono: '+502 5551-2341' },
-                alergias: [{ alergeno: 'Amoxicilina', severidad: 'alta' }]
-              },
-              historial: {
-                estado: 'activo',
-                consultas: [{
-                  id: 'con-ext-1',
-                  fecha: '2025-11-04T09:15:00.000Z',
-                  medico: 'Dr. Roberto Chang (Urgencias)',
-                  motivo: 'Atención de urgencia por broncoespasmo leve',
-                  diagnosticos: [{ codigo: 'J20', descripcion: 'Bronquitis aguda', tratamientos: [{ descripcion: 'Salbutamol inhalado', dias: 5 }] }],
-                  recetas: []
-                }]
-              }
-            }] : []
-          },
-          {
-            institucion: 'odontologia',
-            estado: 'ok',
-            total: 0,
-            items: []
-          },
-          {
-            institucion: 'laboratorio',
-            estado: simularCaida ? 'no_disponible' : 'ok',
-            total: simularCaida ? 0 : 1,
-            items: simularCaida ? [] : [{
-              id: 'lab-ext-01',
-              expediente: 'LAB-4012',
-              nombre: matchLocal?.nombre || 'Paciente',
-              apellidos: matchLocal?.apellidos || 'En Red',
-              fechaNacimiento: matchLocal?.fechaNacimiento || '2024-03-12',
-              genero: matchLocal?.genero || 'Masculino',
-              documentoIdentidad: doc,
-              direccion: 'Registrado en Red de Salud',
-              detallesInstitucion: {
-                tutorPrincipal: matchLocal?.detallesInstitucion?.tutorPrincipal || { nombre: 'Tutor Verificado', parentesco: 'Responsable' },
-                alergias: []
-              },
-              historial: {
-                estado: 'activo',
-                consultas: [{
-                  id: 'con-lab-1',
-                  fecha: '2026-08-19T11:00:00.000Z',
-                  medico: 'Licda. Patricia Gómez (Bioquímica)',
-                  motivo: 'Hematología completa y perfil pediátrico',
-                  diagnosticos: [{ codigo: 'Z01.7', descripcion: 'Examen de laboratorio sin hallazgos patológicos', tratamientos: [] }],
-                  recetas: []
-                }]
-              }
-            }]
-          },
-          {
-            institucion: 'pediatria',
-            estado: 'ok',
-            total: matchLocal ? 1 : 0,
-            items: matchLocal ? [matchLocal] : []
-          }
-        ]
-      };
+      const datos = await resp.json();
+      if (!resp.ok) throw new Error(datos.error?.mensaje || 'Consulta de red no disponible');
+      respuestaRed = datos;
+    } catch (error) {
+      renderizarResultadosRed(['hospital', 'odontologia', 'laboratorio', 'pediatria'].map(institucion => ({ institucion, estado: 'no_disponible' })));
+      mostrarErrorHttp(error);
+      return;
     }
 
     renderizarResultadosRed(respuestaRed.resultados);
@@ -379,8 +261,8 @@ function renderizarResultadosRed(resultados = []) {
     el.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:8px;color:var(--text-dark);">
         <div>
-          <strong style="color:${meta.color};font-size:0.86rem;">${pac.nombre} ${pac.apellidos}</strong>
-          <span style="font-family:monospace;font-size:0.72rem;color:var(--text-muted);display:block;">${pac.expediente || pac.id} · Estado: ${pac.historial?.estado || 'activo'}</span>
+          <strong style="color:${meta.color};font-size:0.86rem;">${datoSeguro(pac.nombre)} ${datoSeguro(pac.apellidos)}</strong>
+          <span style="font-family:monospace;font-size:0.72rem;color:var(--text-muted);display:block;">${pac.expediente || pac.id} · Estado: ${datoSeguro(pac.historial?.estado)}</span>
         </div>
         <button type="button" class="btn btn-outline btn-sm btn-ver-historial-red" style="width:100%;justify-content:center;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -391,10 +273,13 @@ function renderizarResultadosRed(resultados = []) {
 
     const btnVer = el.querySelector('.btn-ver-historial-red');
     if (btnVer) {
-      btnVer.addEventListener('click', () => {
-        if (window.abrirDrawerSoloLectura) {
-          window.abrirDrawerSoloLectura(pac, meta.nombre);
-        }
+      btnVer.addEventListener('click', async () => {
+        try {
+          const resp = await apiClient(`/red/${r.institucion}/pacientes/${encodeURIComponent(pac.id)}/historial`);
+          const datos = await resp.json();
+          if (!resp.ok) throw new Error(datos.error?.mensaje || 'Historial no disponible');
+          window.abrirDrawerSoloLectura?.({ ...datos.paciente, informacionRestringida: r.institucion !== 'pediatria' || !['pediatra', 'enfermeria'].includes(sesionActual?.rol), historial: { ...datos.historial, consultas: datos.consultas } }, meta.nombre);
+        } catch (error) { mostrarErrorHttp(error); }
       });
     }
   });
@@ -414,9 +299,9 @@ async function cargarEstadoPanelTecnico() {
     // Fallback demostrativo cuando el servidor backend no está levantado
   }
 
-  const motorPediatria = statusData?.pediatria?.motor || 'MariaDB 11.4 (Docker Local)';
-  const estadoPediatria = statusData?.pediatria?.estado || 'ok';
-  const fuente = statusData ? 'Respuesta en vivo de GET /system/status' : 'Simulación local de GET /system/status';
+  const motorPediatria = statusData?.motores?.pediatria?.motor || 'mariadb';
+  const estadoPediatria = statusData?.motores?.pediatria?.estado || 'no_disponible';
+  const fuente = statusData ? 'Respuesta en vivo de GET /system/status' : 'Estado no verificado: API no disponible';
 
   container.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
@@ -430,8 +315,8 @@ async function cargarEstadoPanelTecnico() {
         </p>
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <span class="badge badge-stable">Contrato LSP Cumplido</span>
-        <span class="badge badge-stable">Aislamiento 503 Activo</span>
+        <span class="badge badge-stable">Contrato LSP</span>
+        <span class="badge badge-stable">503 por institución</span>
       </div>
     </div>
   `;
@@ -450,12 +335,16 @@ window.cerrarSesionApp = () => {
   location.replace('../index.html');
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!sesionActual) return;
+  try { await store.sincronizarConBackend(); } catch (error) { mostrarErrorHttp(error); }
   renderModalDrawer('drawer-container');
 
   // Inicializar selector de rol en Topbar
   const selectorRol = document.getElementById('selector-rol-demo');
   if (selectorRol) {
+    selectorRol.disabled = true;
+    selectorRol.title = 'El rol proviene de la sesión autenticada';
     selectorRol.value = obtenerRolActivo();
     selectorRol.addEventListener('change', (e) => {
       const nuevoRol = establecerRolDemo(e.target.value);

@@ -19,6 +19,7 @@ import { inicializarVistaPolizas, renderPolizasTable, actualizarMetricasPolizas,
 import { inicializarVistaDoctores, renderDoctoresTable, actualizarMetricasDoctores } from './components/doctoresComponent.js';
 import { mostrarToast, mostrarAlertaPersonalizada } from './components/modalDialog.js';
 import { fetchPlantillaHtml } from '../../shared/js/api/client.js';
+import { exigirSesion } from '../../shared/js/api/auth.js';
 
 let vistaActual = 'principal'; // 'principal' | 'buscador' | 'gestion' | 'laboratorio' | 'polizas' | 'doctores'
 const plantillasCargadas = {};
@@ -232,7 +233,9 @@ function inicializarFormularioGestion() {
       historial: { consultas: [] }
     };
 
-    const guardado = await store.agregarPaciente(nuevo);
+    let guardado;
+    try { guardado = await store.agregarPaciente(nuevo); }
+    catch (error) { return mostrarToast({ titulo: 'No se pudo guardar', mensaje: error.message, tipo: 'error' }); }
     form.reset();
     poblarSelectDoctoresEnGestion();
     renderListaArchivar('lista-archivar-pacientes-container');
@@ -251,9 +254,10 @@ window.navegarA = (nombreVista) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (!exigirSesion('hospital')) return;
   renderModalDrawer('drawer-container');
   cargarVista('principal');
-  store.sincronizarConBackend();
+  store.sincronizarConBackend().catch(error => mostrarToast({ titulo: 'Sin conexi?n', mensaje: error.message, tipo: 'error' }));
 
   store.subscribe(() => {
     if (vistaActual === 'principal') {

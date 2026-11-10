@@ -1,4 +1,5 @@
 import { store } from '../state.js';
+import { consultarRed } from '../../../shared/js/components/consultaRed.js';
 
 export function renderSearchBar(containerId = 'search-container') {
   const container = document.getElementById(containerId);
@@ -15,7 +16,7 @@ export function renderSearchBar(containerId = 'search-container') {
           type="text" 
           id="global-search-input" 
           class="search-input" 
-          placeholder="Buscar por nombre, expediente (#EXP), diagnóstico, médico asignado o CURP..."
+          placeholder="Buscar localmente; Enter para consultar las cuatro instituciones..."
           value="${store.filtroTexto}"
         />
       </div>
@@ -37,7 +38,7 @@ export function renderSearchBar(containerId = 'search-container') {
         </div>
 
         <div class="filter-results-info">
-          Estado: <strong style="color: var(--primary);">Conexión MongoDB Atlas lista</strong>
+          Estado: <strong style="color: var(--primary);">${store.sincronizado ? 'Datos cargados del servidor' : 'Conexión sin verificar'}</strong>
         </div>
       </div>
     </div>
@@ -45,6 +46,15 @@ export function renderSearchBar(containerId = 'search-container') {
 
   // Listener para el input con debounce
   const input = document.getElementById('global-search-input');
+  input.addEventListener('keydown', (evento) => {
+    if (evento.key !== 'Enter' || !input.value.trim()) return;
+    evento.preventDefault();
+    document.getElementById('drawer-title').textContent = 'Consulta en red · solo lectura';
+    document.getElementById('drawer-footer').replaceChildren();
+    document.getElementById('drawer-backdrop').classList.add('open');
+    document.getElementById('drawer-panel').classList.add('open');
+    consultarRed(input.value, document.getElementById('drawer-body'), 'clinical-table');
+  });
   let timeoutId;
   input.addEventListener('input', (e) => {
     clearTimeout(timeoutId);

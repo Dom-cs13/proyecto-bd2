@@ -9,7 +9,7 @@ const prAutor = process.env.PR_AUTHOR || 'colaborador';
 const prHeadRef = process.env.PR_HEAD_REF || process.env.GITHUB_HEAD_REF || '';
 const esDraft = process.env.PR_IS_DRAFT === 'true';
 // I2-11: el dueño solicitó expresamente un PR Open con revisión manual.
-const revisionManual = prHeadRef === 'feat/I2-11-mejoras-frontend';
+const revisionManual = ['feat/I2-11-mejoras-frontend', 'fix/I3-09-auditoria-integracion'].includes(prHeadRef);
 const baseSha = process.env.BASE_SHA;
 const headSha = process.env.HEAD_SHA;
 const resReglas = process.env.RESULT_REGLAS || 'success';

@@ -1,3 +1,4 @@
+import { datoSeguro } from '../../../shared/js/components/pacientes.js';
 import { store } from '../state.js';
 
 export function renderSearchBar(containerId = 'search-container') {
@@ -66,28 +67,28 @@ export function renderPatientTable(containerId = 'table-container') {
             return `
               <tr style="${!esActivo ? 'opacity: 0.65; background-color: #fafbfc;' : ''}">
                 <td>
-                  <span class="badge badge-tutor" style="font-family: monospace;">${p.expediente}</span>
+                  <span class="badge badge-tutor" style="font-family: monospace;">${datoSeguro(p.expediente ?? p.id)}</span>
                 </td>
                 <td>
                   <div class="patient-cell">
-                    <div class="patient-avatar">${p.nombre[0]}${p.apellidos[0]}</div>
+                    <div class="patient-avatar">${datoSeguro(p.nombre?.[0] ?? p.apellidos?.[0])}${p.nombre && p.apellidos ? datoSeguro(p.apellidos[0]) : ''}</div>
                     <div class="patient-meta">
-                      <span class="patient-name">${p.nombre} ${p.apellidos}</span>
-                      <span class="patient-age">${p.fechaNacimiento} · ${p.genero}</span>
+                      <span class="patient-name">${datoSeguro(p.nombre)} ${datoSeguro(p.apellidos)}</span>
+                      <span class="patient-age">${datoSeguro(p.fechaNacimiento)} · ${datoSeguro(p.genero)}</span>
                     </div>
                   </div>
                 </td>
                 <td>
                   <div style="display: flex; flex-direction: column;">
-                    <strong style="color: var(--color-pacific); font-size: 0.82rem;">${tutor?.nombre || 'Sin tutor'}</strong>
-                    <span style="color: var(--text-muted); font-size: 0.74rem;">${tutor?.parentesco || 'Tutor'} · ${tutor?.telefono || ''}</span>
+                    <strong style="color: var(--color-pacific); font-size: 0.82rem;">${datoSeguro(tutor?.nombre)}</strong>
+                    <span style="color: var(--text-muted); font-size: 0.74rem;">${datoSeguro(tutor?.parentesco)} · ${datoSeguro(tutor?.telefono)}</span>
                   </div>
                 </td>
                 <td>
                   ${ultimoControl ? `
                     <div style="display: flex; flex-direction: column; font-size: 0.78rem;">
-                      <span style="font-weight: 700; color: var(--color-pacific);">${ultimoControl.pesoKg} kg · ${ultimoControl.tallaCm} cm</span>
-                      <span style="color: var(--text-muted); font-size: 0.72rem;">PC: ${ultimoControl.perimetroCefalicoCm} cm (${ultimoControl.fecha})</span>
+                      <span style="font-weight: 700; color: var(--color-pacific);">${datoSeguro(ultimoControl.pesoKg)} kg · ${datoSeguro(ultimoControl.tallaCm)} cm</span>
+                      <span style="color: var(--text-muted); font-size: 0.72rem;">PC: ${datoSeguro(ultimoControl.perimetroCefalicoCm)} cm (${datoSeguro(ultimoControl.fecha)})</span>
                     </div>
                   ` : `
                     <span style="color: var(--text-muted); font-size: 0.76rem;">Sin controles previos</span>
@@ -101,7 +102,7 @@ export function renderPatientTable(containerId = 'table-container') {
                 <td>
                   ${esActivo ? `
                     <span class="badge ${p.estadoClinico === 'critico' ? 'badge-critical' : p.estadoClinico === 'observacion' ? 'badge-warning' : 'badge-stable'}">
-                      ● ${p.estadoClinico.toUpperCase()}
+                      ● ${(p.estadoClinico ?? 'estable').toUpperCase()}
                     </span>
                   ` : `
                     <span class="badge badge-archived">ARCHIVADO (${p.historial?.motivoArchivo?.tipo || 'cerrado'})</span>

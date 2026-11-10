@@ -201,8 +201,9 @@ export function renderModalDrawer(containerId = 'drawer-container') {
     const paciente = store.pacientes.find(p => p.id === id);
     if (!paciente) return;
 
-    mostrarModalArchivarPaciente(paciente, ({ tipo, detalle }) => {
-      store.archivarPaciente(id, { tipo, detalle });
+    mostrarModalArchivarPaciente(paciente, async ({ tipo, detalle }) => {
+      try { await store.archivarPaciente(id, { tipo, detalle }); }
+      catch (error) { return mostrarToast({ titulo: 'No se pudo archivar', mensaje: error.message, tipo: 'error' }); }
       mostrarToast({
         titulo: 'Expediente Archivado',
         mensaje: `El expediente ${paciente.expediente} (${paciente.nombre} ${paciente.apellidos}) ha sido archivado con motivo justificado.`,
@@ -280,7 +281,7 @@ export function renderModalDrawer(containerId = 'drawer-container') {
       });
     }
 
-    document.getElementById('btn-actualizar-datos').addEventListener('click', () => {
+    document.getElementById('btn-actualizar-datos').addEventListener('click', async () => {
       const telVal = (document.getElementById('edit-telefono').value || '').trim();
       if (telVal && !/^\d{8}$/.test(telVal)) {
         mostrarAlertaPersonalizada({
@@ -291,14 +292,14 @@ export function renderModalDrawer(containerId = 'drawer-container') {
         return;
       }
 
-      store.actualizarPaciente(id, {
+      try { await store.actualizarPaciente(id, {
         nombre: document.getElementById('edit-nombre').value,
         apellidos: document.getElementById('edit-apellidos').value,
         telefono: telVal,
         estadoClinico: document.getElementById('edit-estado').value,
         ubicacion: document.getElementById('edit-ubicacion').value,
         medicoTratante: document.getElementById('edit-medico').value
-      });
+      }); } catch (error) { return mostrarToast({ titulo: 'No se pudo actualizar', mensaje: error.message, tipo: 'error' }); }
 
       mostrarToast({
         titulo: 'Expediente Actualizado',

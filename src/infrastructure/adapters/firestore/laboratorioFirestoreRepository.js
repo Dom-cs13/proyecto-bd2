@@ -116,7 +116,7 @@ export class LaboratorioFirestoreRepository {
       if (filtro.estado) q = q.where('estadoOrden', '==', filtro.estado);
 
       const snapshot = await q.get();
-      return snapshot.docs.map((d) => ordenToDomain(d));
+      return Promise.all(snapshot.docs.map((d) => this.obtenerOrden(d.id)));
     });
   }
 

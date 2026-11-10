@@ -63,8 +63,8 @@ export function renderListaArchivar(containerId = 'lista-archivar-pacientes-cont
 
       abrirModalArchivado({
         paciente,
-        onConfirmar: ({ tipo, detalle }) => {
-          store.archivarPaciente(id, { tipo, detalle });
+        onConfirmar: async ({ tipo, detalle }) => {
+          try { await store.archivarPaciente(id, { tipo, detalle }); } catch (error) { return mostrarErrorHttp(error); }
           mostrarNotificacionExito(
             `Expediente ${paciente.expediente} archivado`,
             `Estado actualizado en historial.estado = "archivado" bajo causal "${tipo}".`
